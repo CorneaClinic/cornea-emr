@@ -1,0 +1,34 @@
+# Cornea EMR — optional HTTPS reverse proxy (Caddy)
+#
+# Prerequisites:
+#   winget install Caddy.Caddy
+#   Add to C:\Windows\System32\drivers\etc\hosts:
+#     127.0.0.1 clinic.local api.local
+#
+# Start:  caddy run --config Caddyfile
+# Or:     scripts\start-caddy.ps1
+#
+# Clinic UI:  https://clinic.local
+# API:        https://api.local
+#
+# Update apps/api/.env:
+#   APP_PUBLIC_URL=https://api.local
+#   AUTH_COOKIE_SECURE=true
+#   CORS_ORIGIN=https://clinic.local
+#
+# In the clinic app Cloud Sign In dialog, set API URL to https://api.local
+
+{
+  # Local dev certificates (trusted after: caddy trust)
+  local_certs
+}
+
+clinic.local {
+  tls internal
+  reverse_proxy 127.0.0.1:8080
+}
+
+api.local {
+  tls internal
+  reverse_proxy 127.0.0.1:3000
+}

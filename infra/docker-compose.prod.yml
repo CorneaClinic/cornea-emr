@@ -1,0 +1,70 @@
+# Production Docker Compose — use with infra/.env (never commit).
+#
+#   cd infra
+#   copy .env.example .env   # fill in secrets
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Migrations run automatically on API container start.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cornea-emr-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cornea
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in infra/.env}
+      POSTGRES_DB: cornea_emr_v1
+    volumes:
+      - cornea_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cornea -d cornea_emr_v1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    # Do not expose Postgres to the host in production — API connects internally.
+    expose:
+      - "5432"
+
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    container_name: cornea-emr-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      API_VERSION: 0.2.0
+      DATABASE_URL: postgres://cornea:${POSTGRES_PASSWORD}@postgres:5432/cornea_emr_v1
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in infra/.env}
+      SECRETS_ENCRYPTION_KEY: ${SECRETS_ENCRYPTION_KEY:?Set SECRETS_ENCRYPTION_KEY in infra/.env}
+      CORS_ORIGIN: ${CORS_ORIGIN:?Set CORS_ORIGIN in infra/.env}
+      AUTH_EXPOSE_REFRESH_IN_BODY: "false"
+      AUTH_COOKIE_SECURE: ${AUTH_COOKIE_SECURE:-true}
+      AUTH_COOKIE_SAME_SITE: lax
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:?Set APP_PUBLIC_URL in infra/.env}
+      MEDIA_STORAGE_PATH: /app/data/media
+      LOG_LEVEL: info
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+    ports:
+      - "${API_PORT:-3000}:3000"
+    volumes:
+      - cornea_media_data:/app/data/media
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+volumes:
+  cornea_pg_data:
+  cornea_media_data:

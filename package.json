@@ -1,0 +1,17 @@
+{
+  "name": "cornea-emr",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cornea Clinic cloud EMR monorepo",
+  "scripts": {
+    "api:install": "npm install --prefix apps/api",
+    "api:dev": "npm run dev --prefix apps/api",
+    "api:migrate": "npm run migrate --prefix apps/api",
+    "api:verify": "npm run verify:api --prefix apps/api",
+    "api:verify-sync": "npm run verify:sync --prefix apps/api",
+    "api:test": "npm test --prefix apps/api",
+    "db:embedded": "npm run db:embedded --prefix apps/api",
+    "docker:up": "docker compose -f infra/docker-compose.yml up -d postgres",
+    "docker:down": "docker compose -f infra/docker-compose.yml down"
+  }
+}

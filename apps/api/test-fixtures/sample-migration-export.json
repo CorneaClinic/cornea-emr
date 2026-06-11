@@ -1,0 +1,12 @@
+[
+  {
+    "id": 9001,
+    "patientId": "MRN-MIG-TEST-001",
+    "fullName": "Migration Test Patient",
+    "visitDate": "2026-05-29",
+    "sex": "Female",
+    "dob": "1990-01-15",
+    "phone": "555-0100",
+    "chiefComplaint": "Dry eye evaluation"
+  }
+]

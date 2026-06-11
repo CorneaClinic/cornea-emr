@@ -1,0 +1,53 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cornea-emr-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: cornea
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cornea_dev}
+      POSTGRES_DB: cornea_emr_v1
+    ports:
+      - "5432:5432"
+    volumes:
+      - cornea_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cornea -d cornea_emr_v1"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build:
+      context: ../apps/api
+      dockerfile: Dockerfile
+    container_name: cornea-emr-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      API_VERSION: 0.2.0
+      DATABASE_URL: postgres://cornea:${POSTGRES_PASSWORD:-cornea_dev}@postgres:5432/cornea_emr_v1
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env or environment}
+      SECRETS_ENCRYPTION_KEY: ${SECRETS_ENCRYPTION_KEY:-${JWT_SECRET}}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://127.0.0.1:8080,http://localhost:8080}
+      AUTH_EXPOSE_REFRESH_IN_BODY: ${AUTH_EXPOSE_REFRESH_IN_BODY:-true}
+      MEDIA_STORAGE_PATH: /app/data/media
+      LOG_LEVEL: info
+    ports:
+      - "3000:3000"
+    volumes:
+      - cornea_media_data:/app/data/media
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+
+volumes:
+  cornea_pg_data:
+  cornea_media_data:

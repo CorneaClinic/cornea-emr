@@ -1,0 +1,44 @@
+{
+  "name": "@cornea-emr/api",
+  "version": "0.2.0",
+  "private": true,
+  "type": "module",
+  "description": "Cornea EMR API — production backend foundation",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "migrate": "node src/db/migrate-cli.js",
+    "seed": "node src/db/seed-cli.js",
+    "reset-admin-password": "node src/db/reset-admin-password-cli.js",
+    "verify:sync": "node scripts/e2e-sync-test.js",
+    "verify:api": "node scripts/verify-live.js",
+    "test:smtp": "node scripts/test-smtp.js",
+    "verify:password-reset": "node scripts/verify-password-reset.js",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "migrate:idb": "node src/db/migrate-indexeddb-cli.js",
+    "setup:db": "node ../../scripts/setup-local-db.js"
+  },
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^1.4.5-lts.2",
+    "nodemailer": "^8.0.11",
+    "pg": "^8.13.1",
+    "pino": "^9.6.0",
+    "pino-http": "^10.4.0"
+  },
+  "devDependencies": {
+    "pino-pretty": "^13.0.0",
+    "supertest": "^7.2.2",
+    "vitest": "^4.1.8"
+  }
+}

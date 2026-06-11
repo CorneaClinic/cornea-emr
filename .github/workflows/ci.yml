@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+defaults:
+  run:
+    working-directory: apps/api
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cornea
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: cornea_emr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cornea -d cornea_emr_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      NODE_ENV: test
+      DATABASE_URL: postgres://cornea:test@127.0.0.1:5432/cornea_emr_test
+      JWT_SECRET: ci-jwt-secret-at-least-32-characters-long!!
+      SECRETS_ENCRYPTION_KEY: ci-encryption-key-32-characters-min!!
+      CORS_ORIGIN: http://127.0.0.1:8080
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run migrations
+        run: npm run migrate
+
+      - name: Unit tests
+        run: npm test
+
+      - name: E2E sync verification
+        run: |
+          node src/index.js &
+          API_PID=$!
+          for i in $(seq 1 30); do
+            if curl -sf http://127.0.0.1:3000/health/live > /dev/null; then break; fi
+            sleep 1
+          done
+          npm run verify:sync
+          kill $API_PID || true

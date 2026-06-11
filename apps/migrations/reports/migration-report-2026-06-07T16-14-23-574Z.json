@@ -1,0 +1,80 @@
+{
+  "generatedAt": "2026-06-07T16:14:23.574Z",
+  "mode": "dry-run",
+  "clinicId": "39483b5f-7cd0-474d-83f1-4ee120151edb",
+  "userId": "e7503a7c-d53b-4051-a7f1-b2abdcf88f70",
+  "source": {
+    "version": "1.0",
+    "exportedAt": "2026-06-07T16:14:23.086Z",
+    "source": "legacy-array",
+    "dbVersion": null,
+    "counts": {
+      "visits": 1,
+      "kpPatients": 0,
+      "kpTissues": 0
+    },
+    "checksums": {
+      "patients": "022582a9e4cf31b70a2058b2bf1e22d7c0b6cf63da0e217360c2faf01e1d5e2a",
+      "kpPatients": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "kpTissues": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "bundle": "2f14071be62ace16cacb5db8f2eba41fd1c45abb540ba50ac03191ee0fd62329"
+    }
+  },
+  "validation": {
+    "valid": true,
+    "errors": [],
+    "warnings": []
+  },
+  "duplicates": {
+    "withinExport": [],
+    "againstDatabase": []
+  },
+  "import": {
+    "visits": {
+      "inserted": 0,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "items": []
+    },
+    "kpPatients": {
+      "inserted": 0,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "items": []
+    },
+    "kpTissues": {
+      "inserted": 0,
+      "updated": 0,
+      "skipped": 0,
+      "failed": 0,
+      "items": []
+    }
+  },
+  "failures": [],
+  "idMappings": {
+    "visits": [],
+    "kpPatients": [],
+    "kpTissues": []
+  },
+  "database": {
+    "before": {
+      "visits": 2,
+      "patients": 3,
+      "kpPatients": 1,
+      "kpTissues": 1
+    },
+    "after": {
+      "visits": 2,
+      "patients": 3,
+      "kpPatients": 1,
+      "kpTissues": 1
+    }
+  },
+  "verification": {
+    "passed": true,
+    "dryRun": true,
+    "message": "Dry run complete — no database writes performed"
+  }
+}
