@@ -9,6 +9,7 @@ import {
   verifyPassword
 } from '../core/auth-crypto.js';
 import { ROLE_LABELS } from '../core/permissions.js';
+import { resolveEmrSections } from '../core/emr-sections.js';
 import {
   UnauthorizedError,
   ValidationError,
@@ -23,6 +24,7 @@ import { sendPasswordResetEmail } from './mailService.js';
  * @param {object} row
  */
 function mapUserProfile(row) {
+  const sectionOverride = row.emr_sections ?? null;
   return {
     id: row.id,
     email: row.email,
@@ -33,7 +35,9 @@ function mapUserProfile(row) {
     clinicName: row.clinic_name,
     clinicSlug: row.clinic_slug,
     isActive: row.is_active,
-    mustChangePassword: !!row.must_change_password
+    mustChangePassword: !!row.must_change_password,
+    emrSectionOverride: sectionOverride,
+    emrSections: resolveEmrSections(row.role, sectionOverride)
   };
 }
 
@@ -49,6 +53,7 @@ const USER_SELECT = `
     u.failed_login_count,
     u.locked_until,
     u.must_change_password,
+    u.emr_sections,
     c.name AS clinic_name,
     c.slug AS clinic_slug,
     c.status AS clinic_status

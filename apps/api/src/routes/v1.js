@@ -8,6 +8,7 @@ import keratoplastyPatientsRouter from './keratoplasty-patients.js';
 import cornealTissuesRouter from './corneal-tissues.js';
 import syncRouter from './sync.js';
 import migrationRouter from './migration.js';
+import adminUsersRouter from './admin-users.js';
 import mediaRouter from './media.js';
 import drawingRouter from './drawing.js';
 import icdRouter from './icd.js';
@@ -49,5 +50,6 @@ router.use('/media', mediaRouter);
 router.use('/sync', syncRouter);
 router.use('/icd', icdRouter);
 router.use('/admin/migration', migrationRouter);
+router.use('/admin/users', adminUsersRouter);
 
 export default router;
