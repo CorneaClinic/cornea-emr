@@ -55,7 +55,25 @@ npm run dev
 
 Health: http://127.0.0.1:3000/health
 
-Day-to-day startup: double-click `Cornea Clinic file/start-clinic.bat` — it starts the API, the clinic UI server, and opens the app in the browser.
+### Frontend (`apps/clinic`)
+
+Offline-first browser EMR (`Cornea.html` + JavaScript modules). Local dev server:
+
+```powershell
+npm run clinic:dev
+# → http://127.0.0.1:8080/Cornea.html
+```
+
+Day-to-day startup: double-click `apps/clinic/start-clinic.bat` — it starts the API, the clinic UI server, and opens the app in the browser.
+
+### Cloudflare deploy (static UI)
+
+```powershell
+npm install
+npm run deploy:clinic
+```
+
+Requires Cloudflare Workers configured for this repo. Static assets are served from `apps/clinic/` (`wrangler.toml`).
 
 ### Verification
 

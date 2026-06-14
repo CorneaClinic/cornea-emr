@@ -12,6 +12,11 @@
     "api:test": "npm test --prefix apps/api",
     "db:embedded": "npm run db:embedded --prefix apps/api",
     "docker:up": "docker compose -f infra/docker-compose.yml up -d postgres",
-    "docker:down": "docker compose -f infra/docker-compose.yml down"
+    "docker:down": "docker compose -f infra/docker-compose.yml down",
+    "clinic:dev": "node apps/clinic/clinic-server.js",
+    "deploy:clinic": "wrangler deploy"
+  },
+  "devDependencies": {
+    "wrangler": "^4.100.0"
   }
 }

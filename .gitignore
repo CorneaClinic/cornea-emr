@@ -8,6 +8,7 @@ apps/api/.env.local
 # Dependencies & runtime
 node_modules/
 apps/api/node_modules/
+apps/clinic/scripts/node_modules/
 apps/api/data/media/
 
 # Database backups — contain patient data, never commit

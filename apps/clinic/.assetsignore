@@ -1,0 +1,6 @@
+# Exclude non-app files from Cloudflare static deploy
+scripts/
+node_modules/
+*.md
+*.docx
+Cornea-Clinic-EMR-Project-Status-Audit.docx

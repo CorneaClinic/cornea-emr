@@ -12,7 +12,7 @@ $ErrorActionPreference = 'Stop'
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $EnvFile  = Join-Path $RepoRoot 'apps\api\.env'
-$Adapter  = Join-Path $RepoRoot '..\Cornea Clinic file\cornea-api-adapter.js'
+$Adapter  = Join-Path $RepoRoot 'apps\clinic\cornea-api-adapter.js'
 $ConfigOut = Join-Path $RepoRoot 'infra\cloudflared-config.yml'
 $TunnelName = 'cornea-clinic'
 
@@ -122,7 +122,7 @@ Write-Host ''
 Write-Host 'Next steps:' -ForegroundColor Cyan
 Write-Host "  1. Restart API:  Stop-ScheduledTask CorneaEMR-API; Start-ScheduledTask CorneaEMR-API"
 Write-Host '  2. Install tunnel service:  scripts\install-cloudflare-tunnel-service.ps1'
-Write-Host "  3. Start clinic UI:  Cornea Clinic file\start-clinic.bat"
+Write-Host "  3. Start clinic UI:  apps\clinic\start-clinic.bat"
 Write-Host ''
 Write-Host "Public URLs:"
 Write-Host "  Clinic:  $clinicUrl/Cornea.html"

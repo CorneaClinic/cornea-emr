@@ -39,5 +39,5 @@ if not errorlevel 1 (
 )
 
 echo Starting clinic UI server...
-cd /d "%~dp0..\Cornea Clinic file"
+cd /d "%~dp0apps\clinic"
 node clinic-server.js
