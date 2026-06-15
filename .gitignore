@@ -24,3 +24,6 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+# Cloudflare Tunnel (machine-specific credentials path)
+infra/cloudflared-config.yml
