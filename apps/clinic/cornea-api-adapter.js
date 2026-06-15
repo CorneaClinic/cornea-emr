@@ -170,19 +170,20 @@
     });
   }
 
+  function dismissAuthModalOverlay(overlay) {
+    if (!overlay) return;
+    overlay.classList.remove('is-open');
+    overlay.setAttribute('aria-hidden', 'true');
+    if (!document.querySelector('.emr-modal-overlay.is-open')) {
+      document.body.classList.remove('emr-modal-open');
+    }
+  }
+
   function closeLoginModal(result) {
     if (!result) return;
     const overlay = document.getElementById('corneaCloudLoginModal');
     if (!overlay) return;
-    if (typeof global.closeEmrModal === 'function') {
-      global.closeEmrModal('corneaCloudLoginModal');
-    } else {
-      overlay.classList.remove('is-open');
-      overlay.setAttribute('aria-hidden', 'true');
-      if (!document.querySelector('.emr-modal-overlay.is-open')) {
-        document.body.classList.remove('emr-modal-open');
-      }
-    }
+    dismissAuthModalOverlay(overlay);
     const resolve = overlay._corneaLoginResolve;
     overlay._corneaLoginResolve = null;
     if (resolve) resolve(result);
@@ -278,15 +279,7 @@
     if (!result) return;
     const overlay = document.getElementById('corneaPwChangeModal');
     if (!overlay) return;
-    if (typeof global.closeEmrModal === 'function') {
-      global.closeEmrModal('corneaPwChangeModal');
-    } else {
-      overlay.classList.remove('is-open');
-      overlay.setAttribute('aria-hidden', 'true');
-      if (!document.querySelector('.emr-modal-overlay.is-open')) {
-        document.body.classList.remove('emr-modal-open');
-      }
-    }
+    dismissAuthModalOverlay(overlay);
     const resolve = overlay._corneaPwResolve;
     overlay._corneaPwResolve = null;
     if (resolve) resolve(result);
