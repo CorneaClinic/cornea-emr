@@ -23,6 +23,10 @@ function escapeHtml(str) {
 }
 window.escapeHtml = escapeHtml;
 
+function isAuthModalId(modalId) {
+    return window.CorneaAuthEnv?.isAuthModal?.(modalId) === true;
+}
+
 window.openEmrModal = function(modalId) {
     const el = document.getElementById(modalId);
     if (!el) return;
@@ -32,6 +36,7 @@ window.openEmrModal = function(modalId) {
 };
 
 window.closeEmrModal = function(modalId) {
+    if (isAuthModalId(modalId)) return;
     const el = document.getElementById(modalId);
     if (!el) return;
     el.classList.remove('is-open');
@@ -59,11 +64,15 @@ function initEmrModals() {
         actions.remove();
     }
     document.querySelectorAll('.emr-modal-overlay').forEach(ov => {
-        ov.addEventListener('click', e => { if (e.target === ov) closeEmrModal(ov.id); });
+        ov.addEventListener('click', e => {
+            if (e.target === ov && !isAuthModalId(ov.id)) closeEmrModal(ov.id);
+        });
     });
     document.addEventListener('keydown', e => {
         if (e.key === 'Escape') {
-            document.querySelectorAll('.emr-modal-overlay.is-open').forEach(m => closeEmrModal(m.id));
+            document.querySelectorAll('.emr-modal-overlay.is-open').forEach(m => {
+                if (!isAuthModalId(m.id)) closeEmrModal(m.id);
+            });
         }
     });
     renderIcdReadOnlyView();
@@ -72,6 +81,9 @@ function initEmrModals() {
 window.initEmrModals = initEmrModals;
 
 window.switchTab = function(tabId) {
+    if (window.CorneaAuthEnv?.isAuthenticated && !window.CorneaAuthEnv.isAuthenticated()) {
+        return;
+    }
     if (window.CorneaSections?.isTabAllowed && !window.CorneaSections.isTabAllowed(tabId)) {
         alert('You do not have access to this section.');
         return;
@@ -97,7 +109,6 @@ window.switchTab = function(tabId) {
         navItem.setAttribute('aria-current', 'page');
     }
 
-    // Update topbar title
     const meta = PAGE_META[tabId];
     if (meta) {
         document.getElementById('pageTitle').textContent = meta.title;
@@ -134,11 +145,9 @@ window.switchTab = function(tabId) {
         initKeratoplastyTab();
     }
 
-    // Close sidebar on mobile
     if (window.innerWidth < 900) closeSidebar();
 };
 
-// --- Sidebar Mobile ---
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     const overlay = document.getElementById('sidebarOverlay');

@@ -371,7 +371,7 @@ function updatePatientReadOnlyToolbar(hasRecord) {
 }
 
 window.openPatientFormModal = function(mode) {
-    if (window.CorneaOfflineAuth?.shouldEnforce?.() && !window.CorneaOfflineAuth.hasPermission('visits:write')) {
+    if (!window.CorneaOfflineAuth?.hasPermission?.('visits:write')) {
         alert('You do not have permission to edit patient records.');
         return;
     }
@@ -703,7 +703,7 @@ function setupVisitHistoryListeners() {
 
 // --- New Patient Helper ---
 window.newPatient = function() {
-    if (window.CorneaOfflineAuth?.shouldEnforce?.() && !window.CorneaOfflineAuth.hasPermission('visits:write')) {
+    if (!window.CorneaOfflineAuth?.hasPermission?.('visits:write')) {
         alert('You do not have permission to register new patients.');
         return;
     }

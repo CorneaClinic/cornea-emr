@@ -72,6 +72,8 @@
     if (user && global.CorneaOfflineAuth) {
       global.__corneaCloudMode = true;
       global.CorneaOfflineAuth.initAfterCloudCheck(true);
+    } else if (!user) {
+      global.CorneaAuthEnv?.lockUi?.();
     }
     if (global.CorneaSections) {
       global.CorneaSections.apply(user?.emrSections || null);
@@ -106,12 +108,11 @@
   }
 
   function configureCloudLoginModal() {
-    const skipBtn = document.getElementById('corneaLoginSkipBtn');
     const hint = document.querySelector('#corneaCloudLoginModal .form-hint');
-    const isPublic = isPublicHost();
-    if (skipBtn) skipBtn.style.display = isPublic ? 'none' : '';
-    if (hint && isPublic) {
-      hint.textContent = 'Sign in with your clinic account to access Cornea Clinic. Offline access is not available on the public site.';
+    if (hint) {
+      hint.textContent = isPublicHost()
+        ? 'Sign in with your clinic account to access Cornea Clinic.'
+        : 'Sign in with your clinic cloud account, or use offline sign in below.';
     }
   }
 
@@ -137,13 +138,10 @@
           <p id="corneaLoginError" class="form-hint" style="color:var(--danger,#c62828);display:none;"></p>
         </div>
         <div class="emr-modal-footer">
-          <button type="button" class="btn-secondary" id="corneaLoginSkipBtn">Continue offline</button>
           <button type="button" class="btn-primary" id="corneaLoginSubmitBtn"><i class="fa-solid fa-right-to-bracket"></i> Sign in</button>
         </div>
       </div>`;
-    overlay.addEventListener('click', (e) => {
-      if (e.target === overlay && !isPublicHost()) closeLoginModal(null);
-    });
+    overlay.setAttribute('data-auth-modal', 'required');
     document.body.appendChild(overlay);
   }
 
@@ -166,12 +164,14 @@
       overlay.setAttribute('aria-hidden', 'false');
       document.body.classList.add('emr-modal-open');
     }
+    global.CorneaAuthEnv?.lockUi?.();
     return new Promise((resolve) => {
       overlay._corneaLoginResolve = resolve;
     });
   }
 
   function closeLoginModal(result) {
+    if (!result) return;
     const overlay = document.getElementById('corneaCloudLoginModal');
     if (!overlay) return;
     if (typeof global.closeEmrModal === 'function') {
@@ -193,18 +193,14 @@
     bindLoginModalOnce._bound = true;
     ensureLoginModal();
     document.addEventListener('keydown', (e) => {
-      if (e.key !== 'Escape' || !isPublicHost()) return;
+      if (e.key !== 'Escape') return;
       const modal = document.getElementById('corneaCloudLoginModal');
-      if (modal?.classList.contains('is-open')) {
+      const pwModal = document.getElementById('corneaPwChangeModal');
+      if (modal?.classList.contains('is-open') || pwModal?.classList.contains('is-open')) {
         e.stopImmediatePropagation();
         e.preventDefault();
       }
     }, true);
-    document.getElementById('corneaLoginSkipBtn')?.addEventListener('click', () => {
-      if (isPublicHost()) return;
-      closeLoginModal(null);
-      updateCloudHeader(false);
-    });
     document.getElementById('corneaLoginSubmitBtn')?.addEventListener('click', async () => {
       const errEl = document.getElementById('corneaLoginError');
       const base = document.getElementById('corneaLoginApiUrl')?.value.trim();
@@ -218,6 +214,7 @@
       if (submitBtn) submitBtn.disabled = true;
       try {
         await CorneaApi.enable({ baseUrl: base, email, password });
+        global.CorneaAuthEnv?.unlockUi?.();
         closeLoginModal(true);
       } catch (e) {
         if (errEl) { errEl.textContent = e.message || 'Sign in failed'; errEl.style.display = 'block'; }
@@ -252,6 +249,7 @@
           <button type="button" class="btn-primary" id="corneaPwChangeSubmitBtn"><i class="fa-solid fa-check"></i> Update password</button>
         </div>
       </div>`;
+    overlay.setAttribute('data-auth-modal', 'required');
     document.body.appendChild(overlay);
   }
 
@@ -277,6 +275,7 @@
   }
 
   function closePasswordChangeModal(result) {
+    if (!result) return;
     const overlay = document.getElementById('corneaPwChangeModal');
     if (!overlay) return;
     if (typeof global.closeEmrModal === 'function') {

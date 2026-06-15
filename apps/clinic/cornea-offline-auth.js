@@ -291,7 +291,11 @@
   }
 
   function showApp(show) {
-    document.body.classList.toggle('cornea-auth-pending', !show);
+    if (show) {
+      global.CorneaAuthEnv?.unlockUi?.();
+    } else {
+      global.CorneaAuthEnv?.lockUi?.();
+    }
     const overlay = document.getElementById('corneaOfflineLogin');
     if (overlay) {
       overlay.classList.toggle('is-open', !show);
@@ -310,7 +314,8 @@
     style.textContent = `
       body.cornea-auth-pending .main-wrapper,
       body.cornea-auth-pending #sidebar,
-      body.cornea-auth-pending .sidebar-overlay { visibility: hidden; pointer-events: none; }
+      body.cornea-auth-pending .sidebar-overlay,
+      body.cornea-auth-pending .topbar { visibility: hidden !important; pointer-events: none !important; }
       #corneaOfflineLogin {
         position: fixed; inset: 0; z-index: 10000;
         display: none; align-items: center; justify-content: center;
@@ -524,26 +529,31 @@
     return saved;
   }
 
+  function isAuthenticated() {
+    if (global.__corneaCloudMode && global.CorneaApi?.isEnabled?.()) return true;
+    return !!currentUser;
+  }
+
   function requirePermission(permission) {
-    if (!shouldEnforce()) return;
     if (!hasPermission(permission)) {
       throw new Error('You do not have permission for this action');
     }
   }
 
   function shouldEnforce() {
-    return !global.__corneaCloudMode && !!currentUser;
+    return isAuthenticated() && !global.__corneaCloudMode;
   }
 
   function hasPermission(permission) {
-    if (!shouldEnforce()) return true;
+    if (!isAuthenticated()) return false;
+    if (global.__corneaCloudMode) return true;
     const perms = ROLE_PERMISSIONS[currentUser.role] || [];
     return perms.includes(permission);
   }
 
   function guard(permission, fn) {
     return function (...args) {
-      if (shouldEnforce() && !hasPermission(permission)) {
+      if (!hasPermission(permission)) {
         alert('You do not have permission for this action.');
         return undefined;
       }
@@ -803,6 +813,7 @@
     },
 
     getCurrentUser() { return currentUser; },
+    isAuthenticated,
     shouldEnforce,
     hasPermission,
     requirePermission,

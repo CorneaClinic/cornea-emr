@@ -60,24 +60,17 @@
     return { userId: null, userName: 'Unknown user' };
   }
 
-  function shouldEnforceAuth() {
-    return global.CorneaOfflineAuth?.shouldEnforce?.() === true;
-  }
-
   function canEditClinicalRecord() {
-    if (!shouldEnforceAuth()) return true;
-    return global.CorneaOfflineAuth.hasPermission('visits:write');
+    return global.CorneaOfflineAuth?.hasPermission?.('visits:write') === true;
   }
 
   function canMovePatient() {
-    if (!shouldEnforceAuth()) return true;
     const auth = global.CorneaOfflineAuth;
-    return auth.hasPermission('flow:move') || auth.hasPermission('visits:write');
+    return auth?.hasPermission?.('flow:move') || auth?.hasPermission?.('visits:write') || false;
   }
 
   function canCompletePatient() {
-    if (!shouldEnforceAuth()) return true;
-    return global.CorneaOfflineAuth.hasPermission('flow:complete');
+    return global.CorneaOfflineAuth?.hasPermission?.('flow:complete') === true;
   }
 
   function effectiveStation(record) {

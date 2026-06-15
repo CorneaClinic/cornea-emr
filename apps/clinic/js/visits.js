@@ -5,7 +5,7 @@
 
 // --- Data Management ---
 window.saveToDatabase = async function() {
-    if (window.CorneaOfflineAuth?.shouldEnforce?.() && !window.CorneaOfflineAuth.hasPermission('visits:write')) {
+    if (!window.CorneaOfflineAuth?.hasPermission?.('visits:write')) {
         alert('You do not have permission to save patient records.');
         return;
     }
@@ -155,8 +155,8 @@ function loadRecords() {
         if (cursor) {
             hasRows = true;
             const row = document.createElement('tr');
-            const canEdit = !window.CorneaOfflineAuth?.shouldEnforce?.() || window.CorneaOfflineAuth.hasPermission('visits:write');
-            const canDelete = !window.CorneaOfflineAuth?.shouldEnforce?.() || window.CorneaOfflineAuth.hasPermission('visits:delete');
+            const canEdit = window.CorneaOfflineAuth?.hasPermission?.('visits:write') ?? false;
+            const canDelete = window.CorneaOfflineAuth?.hasPermission?.('visits:delete') ?? false;
             const editBtn = canEdit ? `<button type="button" class="btn-secondary btn-sm" onclick="loadAndEditRecord(${cursor.value.id})"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>` : '';
             const deleteBtn = canDelete ? `<button type="button" class="btn-danger btn-sm" onclick="deleteRecord(${cursor.value.id})"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>` : '';
             row.innerHTML = `
@@ -179,7 +179,7 @@ function loadRecords() {
 }
 
 window.loadAndEditRecord = function(id) {
-    if (window.CorneaOfflineAuth?.shouldEnforce?.() && !window.CorneaOfflineAuth.hasPermission('visits:write')) {
+    if (!window.CorneaOfflineAuth?.hasPermission?.('visits:write')) {
         alert('You do not have permission to edit patient records.');
         return;
     }
@@ -202,7 +202,7 @@ window.editRecord = function(id) {
 };
 
 window.deleteRecord = async function(id) {
-    if (window.CorneaOfflineAuth?.shouldEnforce?.() && !window.CorneaOfflineAuth.hasPermission('visits:delete')) {
+    if (!window.CorneaOfflineAuth?.hasPermission?.('visits:delete')) {
         alert('You do not have permission to delete patient records.');
         return;
     }

@@ -82,12 +82,8 @@ function initDB() {
                 if (typeof window.__corneaOnCloudReady === 'function') {
                     window.__corneaOnCloudReady();
                 }
-            } else if (window.CorneaOfflineAuth) {
-                window.CorneaOfflineAuth.onDbReady();
-            } else {
-                updateDashboardStats();
-                loadRecords();
             }
+            // Offline auth UI is initialized by initAfterCloudCheck in Cornea.html
         };
     } catch (e) {
         console.error("Initialization failed:", e);
@@ -97,7 +93,7 @@ function initDB() {
 window.initDB = initDB;
 
 window.exportDatabase = async function() {
-    if (window.CorneaOfflineAuth?.shouldEnforce?.() && !window.CorneaOfflineAuth.hasPermission('database:export')) {
+    if (!window.CorneaOfflineAuth?.hasPermission?.('database:export')) {
         alert('You do not have permission to export the database.');
         return;
     }
@@ -123,7 +119,7 @@ window.exportDatabase = async function() {
 };
 
 window.importDatabase = function(input) {
-    if (window.CorneaOfflineAuth?.shouldEnforce?.() && !window.CorneaOfflineAuth.hasPermission('database:import')) {
+    if (!window.CorneaOfflineAuth?.hasPermission?.('database:import')) {
         alert('You do not have permission to import the database.');
         if (input) input.value = '';
         return;
@@ -247,7 +243,7 @@ window.importDatabase = function(input) {
 };
 
 window.clearAllData = async function() {
-    if (window.CorneaOfflineAuth?.shouldEnforce?.() && !window.CorneaOfflineAuth.hasPermission('database:clear')) {
+    if (!window.CorneaOfflineAuth?.hasPermission?.('database:clear')) {
         alert('You do not have permission to clear all data.');
         return;
     }
