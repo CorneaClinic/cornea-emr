@@ -4951,6 +4951,7 @@
 <script src="js/init.js"></script>
 <script src="cornea-sync-client.js"></script>
 <script src="cornea-visit-media.js"></script>
+<script src="cornea-auth-env.js"></script>
 <script src="cornea-offline-auth.js"></script>
 <script src="cornea-section-attribution.js"></script>
 <script src="cornea-visual-acuity.js"></script>
@@ -4966,9 +4967,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.removeItem('corneaClinic_icdClientId');
         localStorage.removeItem('corneaClinic_icdClientSecret');
     } catch (_) { /* ignore */ }
+    const isPublic = window.CorneaAuthEnv?.isPublicDeployment?.() === true;
     let cloudConnected = false;
     try {
-        cloudConnected = await CorneaApi.tryConnect({ prompt: false });
+        cloudConnected = await CorneaApi.tryConnect({ prompt: isPublic });
     } catch (err) {
         console.warn('[CorneaApi] Cloud mode unavailable — using offline authentication.', err);
     }

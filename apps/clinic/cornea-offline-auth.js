@@ -373,11 +373,10 @@
     document.getElementById('corneaOfflinePassword')?.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') submitLogin().catch((err) => showLoginError(err.message));
     });
-    document.getElementById('corneaOfflineCloudBtn')?.addEventListener('click', () => {
-      if (global.CorneaApi?.signIn) {
-        showApp(true);
-        global.CorneaApi.signIn().catch(() => {});
-      }
+    document.getElementById('corneaOfflineCloudBtn')?.addEventListener('click', async () => {
+      if (!global.CorneaApi?.signIn) return;
+      const ok = await global.CorneaApi.signIn();
+      if (ok) showApp(true);
     });
     document.getElementById('corneaLogoutBtn')?.addEventListener('click', async () => {
       if (global.__corneaCloudMode && global.CorneaApi?.logout) {
@@ -703,6 +702,24 @@
     });
   }
 
+  async function resetAdministratorPassword(plainPassword, username = 'admin') {
+    validatePassword(plainPassword);
+    const row = await getUserByUsername(username);
+    if (!row) throw new Error(`User not found: ${username}`);
+    if (row.role !== 'administrator') {
+      throw new Error('Only administrator accounts can be reset with this tool');
+    }
+    row.password = await hashPassword(plainPassword);
+    row.mustChangePassword = true;
+    row.isActive = true;
+    await saveUser(row);
+    if (currentUser?.id === row.id) {
+      currentUser = null;
+      clearSession();
+    }
+    return { username: row.username, password: plainPassword };
+  }
+
   global.CorneaOfflineAuth = {
     STORE_USERS,
     ROLES,
@@ -712,6 +729,8 @@
     ensureUsersStore,
 
     async onDbReady() {
+      if (global.CorneaAuthEnv?.isPublicDeployment?.()) return;
+
       ensureLoginUi();
       ensureAdminModals();
       if (!dbReady) {
@@ -751,6 +770,19 @@
         toggleAdminPanels();
         return;
       }
+
+      if (global.CorneaAuthEnv?.isPublicDeployment?.()) {
+        ensureLoginUi();
+        showApp(false);
+        const offlineOverlay = document.getElementById('corneaOfflineLogin');
+        if (offlineOverlay) offlineOverlay.style.display = 'none';
+        if (global.CorneaApi?.signIn) {
+          await global.CorneaApi.signIn();
+        }
+        if (!global.__corneaCloudMode) showApp(false);
+        return;
+      }
+
       if (global.db) await this.onDbReady();
     },
 
@@ -778,6 +810,7 @@
     listUsers,
     createUser,
     updateUser,
+    resetAdministratorPassword,
     renderOfflineUsersAdmin,
     touchSession
   };

@@ -8,7 +8,7 @@
   const STORAGE_TOKEN = 'corneaEmr_apiToken';
   const STORAGE_BASE = 'corneaEmr_apiBase';
   const STORAGE_EMAIL = 'corneaEmr_apiEmail';
-  const DEFAULT_API_BASE = 'https://api.local';
+  const DEFAULT_API_BASE = 'https://api.visionemr.net';
   const STORE_PATIENTS = 'patients';
   const STORE_KP_PATIENTS = 'kpPatients';
   const STORE_KP_TISSUES = 'kpTissues';
@@ -93,7 +93,25 @@
     applyUserContext(null);
     updateCloudHeader(false);
     if (global.CorneaOfflineAuth) {
-      await global.CorneaOfflineAuth.onDbReady();
+      if (isPublicHost()) {
+        await global.CorneaOfflineAuth.initAfterCloudCheck(false);
+      } else {
+        await global.CorneaOfflineAuth.onDbReady();
+      }
+    }
+  }
+
+  function isPublicHost() {
+    return global.CorneaAuthEnv?.isPublicDeployment?.() === true;
+  }
+
+  function configureCloudLoginModal() {
+    const skipBtn = document.getElementById('corneaLoginSkipBtn');
+    const hint = document.querySelector('#corneaCloudLoginModal .form-hint');
+    const isPublic = isPublicHost();
+    if (skipBtn) skipBtn.style.display = isPublic ? 'none' : '';
+    if (hint && isPublic) {
+      hint.textContent = 'Sign in with your clinic account to access Cornea Clinic. Offline access is not available on the public site.';
     }
   }
 
@@ -124,13 +142,14 @@
         </div>
       </div>`;
     overlay.addEventListener('click', (e) => {
-      if (e.target === overlay) closeLoginModal(null);
+      if (e.target === overlay && !isPublicHost()) closeLoginModal(null);
     });
     document.body.appendChild(overlay);
   }
 
   function openLoginModal(opts = {}) {
     ensureLoginModal();
+    configureCloudLoginModal();
     const overlay = document.getElementById('corneaCloudLoginModal');
     const errEl = document.getElementById('corneaLoginError');
     const urlEl = document.getElementById('corneaLoginApiUrl');
@@ -173,7 +192,16 @@
     if (bindLoginModalOnce._bound) return;
     bindLoginModalOnce._bound = true;
     ensureLoginModal();
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape' || !isPublicHost()) return;
+      const modal = document.getElementById('corneaCloudLoginModal');
+      if (modal?.classList.contains('is-open')) {
+        e.stopImmediatePropagation();
+        e.preventDefault();
+      }
+    }, true);
     document.getElementById('corneaLoginSkipBtn')?.addEventListener('click', () => {
+      if (isPublicHost()) return;
       closeLoginModal(null);
       updateCloudHeader(false);
     });
@@ -420,7 +448,8 @@
 
     async signIn() {
       bindLoginModalOnce();
-      return openLoginModal();
+      const ok = await openLoginModal();
+      return !!ok;
     },
 
     async tryConnect(opts = {}) {
