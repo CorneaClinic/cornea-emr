@@ -11,6 +11,8 @@
     'corneaPwChangeModal'
   ]);
 
+  const OFFLINE_FALLBACK_KEY = 'corneaEmr_offlineFallback';
+
   function isPublicDeployment() {
     const host = (global.location?.hostname || '').toLowerCase();
     if (LOCAL_HOSTS.has(host)) return false;
@@ -40,6 +42,31 @@
     document.body.classList.remove('cornea-auth-pending');
   }
 
+  function enableOfflineFallback() {
+    try {
+      sessionStorage.setItem(OFFLINE_FALLBACK_KEY, '1');
+    } catch (_) { /* ignore */ }
+  }
+
+  function clearOfflineFallback() {
+    try {
+      sessionStorage.removeItem(OFFLINE_FALLBACK_KEY);
+    } catch (_) { /* ignore */ }
+  }
+
+  function isOfflineFallbackActive() {
+    try {
+      return sessionStorage.getItem(OFFLINE_FALLBACK_KEY) === '1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /** Offline sign-in allowed on local install, or on public site when the clinic API is unreachable. */
+  function allowsOfflineAuth() {
+    return isLocalDeployment() || isOfflineFallbackActive();
+  }
+
   global.CorneaAuthEnv = {
     isPublicDeployment,
     isLocalDeployment,
@@ -47,6 +74,10 @@
     isAuthModal,
     lockUi,
     unlockUi,
+    enableOfflineFallback,
+    clearOfflineFallback,
+    isOfflineFallbackActive,
+    allowsOfflineAuth,
     AUTH_MODAL_IDS
   };
 

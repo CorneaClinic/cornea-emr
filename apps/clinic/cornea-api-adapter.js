@@ -48,21 +48,35 @@
   async function refreshLoginApiStatus() {
     const urlEl = document.getElementById('corneaLoginApiUrl');
     const statusEl = document.getElementById('corneaLoginApiStatus');
+    const offlineBtn = document.getElementById('corneaLoginOfflineBtn');
     if (!statusEl || !urlEl) return;
     const url = urlEl.value.trim() || DEFAULT_API_BASE;
     statusEl.textContent = 'Checking server…';
     statusEl.style.color = 'var(--text-muted, #666)';
     statusEl.style.display = 'block';
     const ok = await probeApiReachable(url);
+    if (offlineBtn) {
+      offlineBtn.style.display = isPublicHost() && !ok ? '' : 'none';
+    }
     if (ok) {
       statusEl.textContent = 'Server reachable';
       statusEl.style.color = 'var(--success, #2e7d32)';
     } else {
       statusEl.textContent = isPublicHost()
-        ? 'Server unreachable — cloud sign-in requires the clinic API PC to be online.'
+        ? 'Server unreachable — you can continue offline with a local account on this device.'
         : 'Server unreachable — start the API before signing in.';
       statusEl.style.color = 'var(--danger, #c62828)';
     }
+  }
+
+  function beginOfflineFallbackFromCloudModal() {
+    global.CorneaAuthEnv?.enableOfflineFallback?.();
+    const overlay = document.getElementById('corneaCloudLoginModal');
+    if (!overlay) return;
+    dismissAuthModalOverlay(overlay);
+    const resolve = overlay._corneaLoginResolve;
+    overlay._corneaLoginResolve = null;
+    if (resolve) resolve('offline');
   }
 
   async function api(path, options = {}) {
@@ -111,6 +125,9 @@
 
   function applyUserContext(user) {
     global.__corneaUser = user || null;
+    if (user) {
+      global.CorneaAuthEnv?.clearOfflineFallback?.();
+    }
     if (user && global.CorneaOfflineAuth) {
       global.__corneaCloudMode = true;
       global.CorneaOfflineAuth.initAfterCloudCheck(true);
@@ -153,7 +170,7 @@
     const hint = document.querySelector('#corneaCloudLoginModal .form-hint');
     if (hint) {
       hint.textContent = isPublicHost()
-        ? 'Sign in with your clinic account to access Cornea Clinic.'
+        ? 'Sign in with your clinic cloud account. If the clinic server is offline, use Continue offline (local data on this device only).'
         : 'Sign in with your clinic cloud account, or use offline sign in below.';
     }
   }
@@ -182,6 +199,7 @@
         </div>
         <div class="emr-modal-footer">
           <button type="button" class="btn-primary" id="corneaLoginSubmitBtn"><i class="fa-solid fa-right-to-bracket"></i> Sign in</button>
+          <button type="button" class="btn-secondary" id="corneaLoginOfflineBtn" style="display:none;margin-left:8px;"><i class="fa-solid fa-laptop"></i> Continue offline</button>
         </div>
       </div>`;
     overlay.setAttribute('data-auth-modal', 'required');
@@ -238,6 +256,9 @@
     bindLoginModalOnce._bound = true;
     ensureLoginModal();
     document.getElementById('corneaLoginApiUrl')?.addEventListener('change', () => refreshLoginApiStatus());
+    document.getElementById('corneaLoginOfflineBtn')?.addEventListener('click', () => {
+      beginOfflineFallbackFromCloudModal();
+    });
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       const modal = document.getElementById('corneaCloudLoginModal');
@@ -520,7 +541,15 @@
       updateCloudHeader(false);
 
       if (opts.prompt !== false) {
+        const apiUp = await probeApiReachable(url);
+        if (isPublicHost() && !apiUp) {
+          global.CorneaAuthEnv?.enableOfflineFallback?.();
+          return false;
+        }
         const signedIn = await openLoginModal({ baseUrl: url });
+        if (signedIn === 'offline') {
+          return false;
+        }
         if (!signedIn) updateCloudHeader(false);
         return !!signedIn;
       }

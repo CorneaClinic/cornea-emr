@@ -290,6 +290,17 @@
     if (offlinePanel) offlinePanel.style.display = cloudOn ? 'none' : '';
   }
 
+  function updateOfflineLoginCopy() {
+    const subtitle = document.querySelector('#corneaOfflineLogin .cornea-offline-login-header p');
+    if (global.CorneaAuthEnv?.isPublicDeployment?.() && global.CorneaAuthEnv?.isOfflineFallbackActive?.()) {
+      if (subtitle) {
+        subtitle.textContent = 'Clinic server offline — records stay on this device until cloud sync is available.';
+      }
+    } else if (subtitle) {
+      subtitle.textContent = 'Offline sign in';
+    }
+  }
+
   function showApp(show) {
     if (show) {
       global.CorneaAuthEnv?.unlockUi?.();
@@ -739,10 +750,11 @@
     ensureUsersStore,
 
     async onDbReady() {
-      if (global.CorneaAuthEnv?.isPublicDeployment?.()) return;
+      if (global.CorneaAuthEnv?.isPublicDeployment?.() && !global.CorneaAuthEnv?.allowsOfflineAuth?.()) return;
 
       ensureLoginUi();
       ensureAdminModals();
+      updateOfflineLoginCopy();
       if (!dbReady) {
         dbReady = true;
         bindActivityListeners();
@@ -782,6 +794,12 @@
       }
 
       if (global.CorneaAuthEnv?.isPublicDeployment?.()) {
+        if (global.CorneaAuthEnv?.isOfflineFallbackActive?.()) {
+          ensureLoginUi();
+          updateOfflineLoginCopy();
+          if (global.db) await this.onDbReady();
+          return;
+        }
         ensureLoginUi();
         showApp(false);
         const offlineOverlay = document.getElementById('corneaOfflineLogin');
@@ -789,7 +807,12 @@
         if (global.CorneaApi?.signIn) {
           await global.CorneaApi.signIn();
         }
-        if (!global.__corneaCloudMode) showApp(false);
+        if (global.CorneaAuthEnv?.isOfflineFallbackActive?.() && global.db) {
+          updateOfflineLoginCopy();
+          await this.onDbReady();
+        } else if (!global.__corneaCloudMode) {
+          showApp(false);
+        }
         return;
       }
 
