@@ -110,7 +110,7 @@ if (Test-Path $EnvFile) {
 
 Write-Host ''
 Write-Host 'Next steps:' -ForegroundColor Cyan
-Write-Host '  1. Restart API:  Stop-ScheduledTask CorneaEMR-API; Start-ScheduledTask CorneaEMR-API'
+Write-Host '  1. Restart stack:  scripts\restart-production-stack.ps1'
 Write-Host '  2. Install tunnel:  scripts\install-cloudflare-tunnel-service.ps1'
 Write-Host ''
 Write-Host "Test:  $apiUrl/health/live"

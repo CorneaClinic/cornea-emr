@@ -20,7 +20,49 @@
     if (location.protocol === 'file:') {
       return 'Open via http://127.0.0.1:8080/Cornea.html (run: node clinic-server.js) — not as a file on disk.';
     }
-    return `Cannot reach the API at ${baseUrl || DEFAULT_API_BASE}. Start it with: cd cornea-emr/apps/api && npm run dev`;
+    const api = baseUrl || DEFAULT_API_BASE;
+    if (global.CorneaAuthEnv?.isPublicDeployment?.()) {
+      return `Cannot reach the clinic server at ${api}. The API PC may be off or the Cloudflare tunnel may need restarting. Ask your administrator to run scripts/restart-production-stack.ps1 on the clinic computer, then try again.`;
+    }
+    return `Cannot reach the API at ${api}. Start it with: cd cornea-emr/apps/api && npm run dev`;
+  }
+
+  async function probeApiReachable(url) {
+    const base = (url || baseUrl || DEFAULT_API_BASE).replace(/\/$/, '');
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 8000);
+    try {
+      const res = await fetch(`${base}/health/live`, {
+        method: 'GET',
+        signal: controller.signal,
+        cache: 'no-store'
+      });
+      return res.ok;
+    } catch (_) {
+      return false;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+
+  async function refreshLoginApiStatus() {
+    const urlEl = document.getElementById('corneaLoginApiUrl');
+    const statusEl = document.getElementById('corneaLoginApiStatus');
+    if (!statusEl || !urlEl) return;
+    const url = urlEl.value.trim() || DEFAULT_API_BASE;
+    statusEl.textContent = 'Checking server…';
+    statusEl.style.color = 'var(--text-muted, #666)';
+    statusEl.style.display = 'block';
+    const ok = await probeApiReachable(url);
+    if (ok) {
+      statusEl.textContent = 'Server reachable';
+      statusEl.style.color = 'var(--success, #2e7d32)';
+    } else {
+      statusEl.textContent = isPublicHost()
+        ? 'Server unreachable — cloud sign-in requires the clinic API PC to be online.'
+        : 'Server unreachable — start the API before signing in.';
+      statusEl.style.color = 'var(--danger, #c62828)';
+    }
   }
 
   async function api(path, options = {}) {
@@ -135,6 +177,7 @@
             <input type="email" id="corneaLoginEmail" autocomplete="username" /></div>
           <div class="form-group"><label for="corneaLoginPassword">Password</label>
             <input type="password" id="corneaLoginPassword" autocomplete="current-password" /></div>
+          <p id="corneaLoginApiStatus" class="form-hint" style="display:none;margin-top:4px;"></p>
           <p id="corneaLoginError" class="form-hint" style="color:var(--danger,#c62828);display:none;"></p>
         </div>
         <div class="emr-modal-footer">
@@ -157,6 +200,7 @@
     if (emailEl) emailEl.value = opts.email || localStorage.getItem(STORAGE_EMAIL) || '';
     if (passEl) passEl.value = '';
     if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+    refreshLoginApiStatus();
     if (typeof global.openEmrModal === 'function') {
       global.openEmrModal('corneaCloudLoginModal');
     } else {
@@ -193,6 +237,7 @@
     if (bindLoginModalOnce._bound) return;
     bindLoginModalOnce._bound = true;
     ensureLoginModal();
+    document.getElementById('corneaLoginApiUrl')?.addEventListener('change', () => refreshLoginApiStatus());
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
       const modal = document.getElementById('corneaCloudLoginModal');
