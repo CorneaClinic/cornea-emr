@@ -124,7 +124,7 @@ Not suitable for production — URLs rotate and there is no access control beyon
 
 ## VPS alternative
 
-For 24/7 uptime without keeping a clinic PC online, deploy to a VPS with `infra/docker-compose.prod.yml` and a reverse proxy. See `docs/PRODUCTION_DEPLOY.md`.
+For 24/7 uptime without keeping a clinic PC online, deploy to a VPS. See **[VPS_DEPLOY.md](VPS_DEPLOY.md)** for the full migration guide (Docker, database export, Cloudflare Tunnel on Linux).
 
 ---
 

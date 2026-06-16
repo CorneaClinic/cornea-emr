@@ -126,12 +126,16 @@ For daily use after installing the scheduled task, only the clinic UI server is 
 
 ## 5. Docker (VPS)
 
+**Full VPS guide:** [VPS_DEPLOY.md](VPS_DEPLOY.md) — migrate from clinic PC, Cloudflare Tunnel on Linux, backups.
+
+Quick start:
+
 ```powershell
 cd cornea-emr\infra
 copy .env.example .env
 # fill POSTGRES_PASSWORD, JWT_SECRET, SECRETS_ENCRYPTION_KEY, CORS_ORIGIN, APP_PUBLIC_URL
 
-docker compose -f docker-compose.prod.yml up -d --build
+docker compose -f docker-compose.prod.yml -f docker-compose.vps.yml up -d --build
 ```
 
 Production compose differences:

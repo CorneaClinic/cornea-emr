@@ -7,6 +7,7 @@ Production ophthalmology EMR platform (offline-first, multi-clinic).
 - [Migration Blueprint](docs/MIGRATION_BLUEPRINT.md) — legacy field inventory
 - [Production Architecture](docs/PRODUCTION_ARCHITECTURE.md) — target system design
 - [Production Deploy](docs/PRODUCTION_DEPLOY.md) — HTTPS, Windows service, Docker, SMTP
+- [VPS Deploy](docs/VPS_DEPLOY.md) — 24/7 API on a cloud server (no clinic PC required)
 
 ## Backend foundation (v0.2)
 
