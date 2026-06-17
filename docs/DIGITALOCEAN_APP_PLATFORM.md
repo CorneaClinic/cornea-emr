@@ -1,0 +1,86 @@
+# DigitalOcean App Platform deployment
+
+Use this if you deploy via **Apps** (not a Droplet). The clinic UI stays on Cloudflare Workers; only the API + PostgreSQL run on DigitalOcean.
+
+## Why your first deploy did not start
+
+The build log showed:
+
+- `no default process type` / `may not specify any way to start a node process`
+
+DigitalOcean built the **repo root** (`package.json` with only Wrangler). The API lives in **`apps/api`** and must be the component source directory.
+
+## Fix in the dashboard (existing app)
+
+1. Open [DigitalOcean Apps](https://cloud.digitalocean.com/apps)
+2. Select your app → **Settings** → **Components** → edit the **Web Service**
+3. Set:
+
+| Setting | Value |
+|---------|--------|
+| **Source directory** | `apps/api` |
+| **Build command** | `npm install` |
+| **Run command** | `node src/db/migrate-cli.js && node src/index.js` |
+| **HTTP port** | `3000` |
+| **Health check path** | `/health/live` |
+
+4. **Resources** → **Create Database** → PostgreSQL 16 (if not added yet). Attach it to the web service so `DATABASE_URL` is injected.
+
+5. **Settings** → **App-Level Environment Variables** (or component env):
+
+| Variable | Value |
+|----------|--------|
+| `NODE_ENV` | `production` |
+| `JWT_SECRET` | Same as clinic PC `apps/api/.env` (SECRET) |
+| `SECRETS_ENCRYPTION_KEY` | Same as clinic PC (SECRET) |
+| `CORS_ORIGIN` | `https://corneaclinic.visionemr.net,http://127.0.0.1:8080` |
+| `APP_PUBLIC_URL` | `https://api.visionemr.net` |
+| `AUTH_COOKIE_SECURE` | `true` |
+| `AUTH_EXPOSE_REFRESH_IN_BODY` | `false` |
+
+6. **Save** → **Deploy** (or trigger redeploy).
+
+7. After deploy succeeds, open **Console** on the `api` component and run once:
+
+```bash
+node src/db/seed-cli.js
+```
+
+Save the printed admin password. Or restore a clinic PC dump (see [VPS_DEPLOY.md](VPS_DEPLOY.md) restore section — use `psql`/`pg_restore` against the managed DB connection string).
+
+## Public URL
+
+App Platform gives a URL like `https://cornea-emr-api-xxxxx.ondigitalocean.app`.
+
+Either:
+
+- **Cloudflare**: CNAME `api.visionemr.net` → that hostname (with SSL in Cloudflare), or
+- **Custom domain** in App Platform → add `api.visionemr.net`
+
+Update `APP_PUBLIC_URL` and clinic sign-in API URL to match.
+
+Stop the clinic PC tunnel when the new API is live:
+
+```powershell
+Stop-ScheduledTask -TaskName 'CorneaEMR-CloudflareTunnel' -ErrorAction SilentlyContinue
+Stop-ScheduledTask -TaskName 'CorneaEMR-API' -ErrorAction SilentlyContinue
+```
+
+## App spec (automated)
+
+The repo includes `.do/app.yaml`. To recreate the app from spec:
+
+1. Apps → **Create App** → **GitHub** → `CorneaClinic/cornea-emr`
+2. Choose **Edit your App Spec** and paste from `.do/app.yaml`
+3. Set secret env vars in the UI before first deploy
+
+## App Platform vs Droplet
+
+| | App Platform | Droplet + Docker |
+|--|--------------|------------------|
+| Ops | Managed, simpler | You maintain the VM |
+| Postgres | Managed DB addon | Container on same VM |
+| Cost | App + DB monthly | Single Droplet |
+| Guide | This file | [VPS_DEPLOY.md](VPS_DEPLOY.md) |
+
+Both work. Use one path only — do not run API on both the Droplet and App Platform.

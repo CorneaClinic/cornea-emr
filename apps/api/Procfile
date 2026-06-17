@@ -1,0 +1,1 @@
+web: node src/db/migrate-cli.js && node src/index.js

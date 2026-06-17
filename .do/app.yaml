@@ -1,0 +1,88 @@
+# DigitalOcean App Platform — Cornea EMR API
+# https://docs.digitalocean.com/products/app-platform/reference/app-spec/
+#
+# Deploy: DO Dashboard → Apps → Create → GitHub → use this spec, or paste in Settings → App Spec
+#
+# After first deploy: run seed once via Console:
+#   node src/db/seed-cli.js
+# Or restore a dump from the clinic PC (see docs/VPS_DEPLOY.md).
+
+name: cornea-emr-api
+region: blr
+
+services:
+  - name: api
+    github:
+      repo: CorneaClinic/cornea-emr
+      branch: main
+      deploy_on_push: true
+    source_dir: /apps/api
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    http_port: 3000
+    build_command: npm install
+    run_command: node src/db/migrate-cli.js && node src/index.js
+    health_check:
+      http_path: /health/live
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 3
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: API_VERSION
+        value: "0.2.0"
+      - key: AUTH_COOKIE_SECURE
+        value: "true"
+      - key: AUTH_EXPOSE_REFRESH_IN_BODY
+        value: "false"
+      - key: AUTH_COOKIE_SAME_SITE
+        value: lax
+      - key: LOG_LEVEL
+        value: info
+      - key: MEDIA_STORAGE_PATH
+        value: /tmp/media
+      - key: CORS_ORIGIN
+        value: https://corneaclinic.visionemr.net,http://127.0.0.1:8080
+      - key: APP_PUBLIC_URL
+        value: https://api.visionemr.net
+        scope: RUN_TIME
+      - key: DATABASE_URL
+        scope: RUN_TIME
+        value: ${cornea-db.DATABASE_URL}
+      - key: JWT_SECRET
+        scope: RUN_TIME
+        type: SECRET
+      - key: SECRETS_ENCRYPTION_KEY
+        scope: RUN_TIME
+        type: SECRET
+      - key: POSTGRES_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+      - key: SMTP_HOST
+        scope: RUN_TIME
+        value: ""
+      - key: SMTP_PORT
+        scope: RUN_TIME
+        value: "587"
+      - key: SMTP_USER
+        scope: RUN_TIME
+        type: SECRET
+      - key: SMTP_PASS
+        scope: RUN_TIME
+        type: SECRET
+      - key: SMTP_FROM
+        scope: RUN_TIME
+        value: ""
+
+databases:
+  - name: cornea-db
+    engine: PG
+    version: "16"
+    production: true
+    cluster_name: cornea-emr-db
