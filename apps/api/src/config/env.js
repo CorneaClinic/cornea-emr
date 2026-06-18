@@ -86,8 +86,32 @@ function resolveDatabaseSsl(databaseUrl) {
   return strictVerify ? true : { rejectUnauthorized: false };
 }
 
+/** Remove sslmode from URL so pg Pool ssl.rejectUnauthorized is not overridden. */
+function stripSslParamsFromDatabaseUrl(databaseUrl) {
+  try {
+    const normalized = databaseUrl.replace(/^postgres:/, 'postgresql:');
+    const url = new URL(normalized);
+    for (const key of ['sslmode', 'ssl', 'sslcert', 'sslkey', 'sslrootcert']) {
+      url.searchParams.delete(key);
+    }
+    const out = url.toString().replace(/^postgresql:/, 'postgres:');
+    return out.replace(/\?$/, '');
+  } catch {
+    return databaseUrl
+      .replace(/([?&])sslmode=[^&]*/gi, '$1')
+      .replace(/([?&])sslrootcert=[^&]*/gi, '$1')
+      .replace(/\?&/, '?')
+      .replace(/[?&]$/, '');
+  }
+}
+
 const databaseUrl = required('DATABASE_URL');
 const databaseSsl = resolveDatabaseSsl(databaseUrl);
+const databaseConnectionUrl = databaseSsl &&
+  typeof databaseSsl === 'object' &&
+  databaseSsl.rejectUnauthorized === false
+  ? stripSslParamsFromDatabaseUrl(databaseUrl)
+  : databaseUrl;
 
 export const env = Object.freeze({
   nodeEnv: NODE_ENV,
@@ -96,6 +120,7 @@ export const env = Object.freeze({
   port: parseIntEnv('PORT', 3000),
   apiVersion: optional('API_VERSION', '0.2.0'),
   databaseUrl,
+  databaseConnectionUrl,
   db: Object.freeze({
     poolMax: parseIntEnv('DB_POOL_MAX', 20),
     idleTimeoutMs: parseIntEnv('DB_IDLE_TIMEOUT_MS', 30000),

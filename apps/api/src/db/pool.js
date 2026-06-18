@@ -5,7 +5,7 @@ import { logger } from '../core/logger.js';
 const { Pool } = pg;
 
 const poolConfig = {
-  connectionString: env.databaseUrl,
+  connectionString: env.databaseConnectionUrl,
   max: env.db.poolMax,
   idleTimeoutMillis: env.db.idleTimeoutMs,
   connectionTimeoutMillis: env.db.connectionTimeoutMs
