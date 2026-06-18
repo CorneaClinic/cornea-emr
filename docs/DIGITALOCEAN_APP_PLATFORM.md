@@ -38,7 +38,11 @@ DigitalOcean built the **repo root** (`package.json` with only Wrangler). The AP
 | `AUTH_COOKIE_SECURE` | `true` |
 | `AUTH_EXPOSE_REFRESH_IN_BODY` | `false` |
 
-6. **Save** → **Deploy** (or trigger redeploy).
+Managed PostgreSQL on DigitalOcean uses SSL. The API auto-configures SSL for `*.ondigitalocean.com` hosts. If you still see `SELF_SIGNED_CERT_IN_CHAIN`, add:
+
+| `DATABASE_SSL_REJECT_UNAUTHORIZED` | `false` | Run time | No |
+
+6. **Save** → **Deploy**
 
 7. After deploy succeeds, open **Console** on the `api` component and run once:
 

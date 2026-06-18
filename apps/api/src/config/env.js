@@ -64,17 +64,43 @@ if (!isDevelopment && process.argv.some((a) => a.includes('seed-cli'))) {
 
 const secretsEncryptionKey = optional('SECRETS_ENCRYPTION_KEY', jwtSecret);
 
+/**
+ * SSL for managed PostgreSQL (DigitalOcean, etc.). Local dev typically has no sslmode.
+ * @param {string} databaseUrl
+ * @returns {true | { rejectUnauthorized: boolean } | undefined}
+ */
+function resolveDatabaseSsl(databaseUrl) {
+  if (optional('DATABASE_SSL', '').toLowerCase() === 'false') return undefined;
+
+  const urlWantsSsl = /[?&]sslmode=(require|verify-full|verify-ca|prefer)/i.test(databaseUrl);
+  const managedCloud = /ondigitalocean\.com/i.test(databaseUrl);
+  const useSsl = optional('DATABASE_SSL', '').toLowerCase() === 'true' || urlWantsSsl || managedCloud;
+
+  if (!useSsl) return undefined;
+
+  // Cloud managed DBs (DO App Platform, etc.) use sslmode=require with a CA Node may not trust.
+  const strictVerify = optional(
+    'DATABASE_SSL_REJECT_UNAUTHORIZED',
+    (managedCloud || urlWantsSsl) ? 'false' : 'true'
+  ) === 'true';
+  return strictVerify ? true : { rejectUnauthorized: false };
+}
+
+const databaseUrl = required('DATABASE_URL');
+const databaseSsl = resolveDatabaseSsl(databaseUrl);
+
 export const env = Object.freeze({
   nodeEnv: NODE_ENV,
   isProduction,
   isDevelopment,
   port: parseIntEnv('PORT', 3000),
   apiVersion: optional('API_VERSION', '0.2.0'),
-  databaseUrl: required('DATABASE_URL'),
+  databaseUrl,
   db: Object.freeze({
     poolMax: parseIntEnv('DB_POOL_MAX', 20),
     idleTimeoutMs: parseIntEnv('DB_IDLE_TIMEOUT_MS', 30000),
-    connectionTimeoutMs: parseIntEnv('DB_CONNECTION_TIMEOUT_MS', 5000)
+    connectionTimeoutMs: parseIntEnv('DB_CONNECTION_TIMEOUT_MS', 5000),
+    ssl: databaseSsl
   }),
   corsOrigin,
   logLevel: optional('LOG_LEVEL', NODE_ENV === 'development' ? 'debug' : 'info'),

@@ -4,12 +4,18 @@ import { logger } from '../core/logger.js';
 
 const { Pool } = pg;
 
-export const pool = new Pool({
+const poolConfig = {
   connectionString: env.databaseUrl,
   max: env.db.poolMax,
   idleTimeoutMillis: env.db.idleTimeoutMs,
   connectionTimeoutMillis: env.db.connectionTimeoutMs
-});
+};
+
+if (env.db.ssl) {
+  poolConfig.ssl = env.db.ssl;
+}
+
+export const pool = new Pool(poolConfig);
 
 pool.on('error', (err) => {
   logger.error({ err }, 'Unexpected PostgreSQL pool error');
