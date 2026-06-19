@@ -116,8 +116,8 @@ window.switchTab = function(tabId) {
     }
 
     if (tabId === 'recordsTab') {
-        if (global.__corneaCloudMode && global.CorneaSync?.syncNow) {
-            global.CorneaSync.syncNow()
+        if (window.__corneaCloudMode && window.CorneaSync?.syncNow) {
+            window.CorneaSync.syncNow()
                 .then(() => { if (typeof loadRecords === 'function') loadRecords(); })
                 .catch(() => { if (typeof loadRecords === 'function') loadRecords(); });
         } else if (typeof loadRecords === 'function') {
