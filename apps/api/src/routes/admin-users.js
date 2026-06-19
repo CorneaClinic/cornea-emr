@@ -8,6 +8,7 @@ import {
   getClinicUser,
   createClinicUser,
   updateClinicUser,
+  deleteClinicUser,
   getSectionCatalog
 } from '../services/userService.js';
 
@@ -66,6 +67,19 @@ router.patch(
       userId: req.params.id,
       actorUserId: req.user.sub,
       patch: { fullName, role, isActive, emrSections, resetEmrSections }
+    });
+    res.json(result);
+  })
+);
+
+/** DELETE /api/v1/admin/users/:id */
+router.delete(
+  '/:id',
+  asyncHandler(async (req, res) => {
+    const result = await deleteClinicUser({
+      clinicId: req.user.clinicId,
+      userId: req.params.id,
+      actorUserId: req.user.sub
     });
     res.json(result);
   })

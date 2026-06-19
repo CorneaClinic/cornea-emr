@@ -187,3 +187,35 @@ export async function updateClinicUser({ clinicId, userId, actorUserId, patch })
   if (!rows[0]) throw new NotFoundError('User not found');
   return { user: mapUserRow(rows[0]) };
 }
+
+/**
+ * Permanently remove a clinic user. Sessions and related rows cascade or null out via FK rules.
+ * @param {object} params
+ * @param {string} params.clinicId
+ * @param {string} params.userId
+ * @param {string} params.actorUserId
+ */
+export async function deleteClinicUser({ clinicId, userId, actorUserId }) {
+  if (userId === actorUserId) {
+    throw new ForbiddenError('You cannot delete your own account');
+  }
+
+  const existing = await getClinicUser(clinicId, userId);
+
+  if (existing.role === 'admin') {
+    const { rows } = await query(
+      `SELECT COUNT(*)::int AS n FROM users WHERE clinic_id = $1 AND role = 'admin'`,
+      [clinicId]
+    );
+    if (rows[0].n <= 1) {
+      throw new ForbiddenError('Cannot delete the last admin account in this clinic');
+    }
+  }
+
+  const { rowCount } = await query(
+    `DELETE FROM users WHERE clinic_id = $1 AND id = $2`,
+    [clinicId, userId]
+  );
+  if (!rowCount) throw new NotFoundError('User not found');
+  return { success: true, deletedUserId: userId };
+}

@@ -46,6 +46,12 @@
       const status = u.isActive
         ? '<span style="color:var(--success);">Active</span>'
         : '<span style="color:var(--danger);">Inactive</span>';
+      const isSelf = global.__corneaUser?.id === u.id;
+      const deleteBtn = isSelf
+        ? ''
+        : `<button type="button" class="btn-danger btn-sm" data-admin-delete="${escapeHtml(u.id)}" title="Permanently delete this user">
+              <i class="fa-solid fa-trash"></i> Delete
+            </button>`;
       return `
         <tr>
           <td>${escapeHtml(u.fullName)}</td>
@@ -53,16 +59,20 @@
           <td>${escapeHtml(u.roleLabel || u.role)}</td>
           <td>${status}</td>
           <td title="${escapeHtml(sectionSummary(u.emrSections))}">${escapeHtml(overrideNote)}</td>
-          <td class="no-print">
+          <td class="no-print" style="display:flex;gap:6px;flex-wrap:wrap;">
             <button type="button" class="btn-secondary btn-sm" data-admin-edit="${escapeHtml(u.id)}">
               <i class="fa-solid fa-pen"></i> Edit
             </button>
+            ${deleteBtn}
           </td>
         </tr>`;
     }).join('');
 
     body.querySelectorAll('[data-admin-edit]').forEach((btn) => {
       btn.addEventListener('click', () => openEditModal(btn.getAttribute('data-admin-edit')));
+    });
+    body.querySelectorAll('[data-admin-delete]').forEach((btn) => {
+      btn.addEventListener('click', () => deleteUser(btn.getAttribute('data-admin-delete')));
     });
   }
 
@@ -211,6 +221,34 @@
     } catch (err) {
       errEl.textContent = err.message || 'Save failed';
       errEl.style.display = 'block';
+    }
+  }
+
+  async function deleteUser(userId) {
+    const user = users.find((u) => u.id === userId);
+    if (!user) return;
+    if (global.__corneaUser?.id === userId) {
+      alert('You cannot delete your own account.');
+      return;
+    }
+
+    const label = user.fullName || user.email || 'this user';
+    if (!confirm(`Permanently delete ${label}?\n\nTheir cloud sign-in will stop working. Patient records they created remain in the clinic.`)) {
+      return;
+    }
+
+    try {
+      await api(`/api/v1/admin/users/${userId}`, { method: 'DELETE' });
+      users = users.filter((u) => u.id !== userId);
+      renderUserTable();
+      const status = document.getElementById('adminUsersStatus');
+      if (status) status.textContent = `${users.length} user(s)`;
+      if (editingUserId === userId && typeof global.closeEmrModal === 'function') {
+        global.closeEmrModal('adminUserEditModal');
+        editingUserId = null;
+      }
+    } catch (err) {
+      alert(err.message || 'Delete failed');
     }
   }
 
