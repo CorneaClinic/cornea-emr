@@ -797,7 +797,7 @@
             diagnosis: v.diagnosis || '',
             patientId: v.patientId,
             fullName: v.fullName || '',
-            dob: v.dob || '',
+            age: v.age || '',
             sex: v.sex || '',
             phone: v.phone || '',
             address: v.address || '',

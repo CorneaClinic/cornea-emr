@@ -3230,12 +3230,8 @@
                             <input type="text" id="fullName" placeholder="Patient full name" required />
                         </div>
                         <div class="form-group">
-                            <label class="required" for="dob">Date of Birth</label>
-                            <input type="date" id="dob" required />
-                        </div>
-                        <div class="form-group">
-                            <label for="age">Age (auto)</label>
-                            <input type="number" id="age" readonly placeholder="Auto-calculated" />
+                            <label class="required" for="age">Age</label>
+                            <input type="number" id="age" min="0" max="150" placeholder="Years" required />
                         </div>
                         <div class="form-group">
                             <label class="required" id="sexLabel">Sex</label>

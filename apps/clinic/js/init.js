@@ -18,22 +18,7 @@ window.addEventListener('DOMContentLoaded', () => {
         visitDateEl.value = new Date().toISOString().split('T')[0];
     }
 
-    // DOB → Age calculation
-    const dobInput = document.getElementById('dob');
-    const ageInput = document.getElementById('age');
-    if (dobInput && ageInput) {
-        dobInput.addEventListener('change', () => {
-            const dob = new Date(dobInput.value);
-            if (!isNaN(dob.getTime())) {
-                const today = new Date();
-                let age = today.getFullYear() - dob.getFullYear();
-                const m = today.getMonth() - dob.getMonth();
-                if (m < 0 || (m === 0 && today.getDate() < dob.getDate())) age--;
-                ageInput.value = age;
-            }
-        });
-    }
-
+    // DOB removed — age is entered manually on the patient form.
     initDB();
     setTimeout(setupLidAutocomplete, 0);
     setupDiagnosisIcdAutocomplete();

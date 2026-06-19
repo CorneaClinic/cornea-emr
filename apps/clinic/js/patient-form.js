@@ -156,6 +156,16 @@ function collectFormDataObject() {
 function populateFormFromData(data) {
     const form = document.getElementById('patientForm');
     if (!form || !data) return;
+    if (data.dob && (data.age == null || data.age === '')) {
+        const d = new Date(data.dob);
+        if (!isNaN(d.getTime())) {
+            const today = new Date();
+            let derivedAge = today.getFullYear() - d.getFullYear();
+            const m = today.getMonth() - d.getMonth();
+            if (m < 0 || (m === 0 && today.getDate() < d.getDate())) derivedAge--;
+            data.age = derivedAge;
+        }
+    }
     Object.keys(data).forEach(key => {
         if (key === 'currentRecordId' || key === 'currentRecordUuid' || key === 'id') return;
         const el = document.getElementById(key);
@@ -173,8 +183,6 @@ function populateFormFromData(data) {
             if (radio) radio.checked = true;
         }
     });
-    const dobEl = document.getElementById('dob');
-    if (dobEl) dobEl.dispatchEvent(new Event('change'));
     window.loadMedicalAdviceFromJSON(data.medicalAdviceJSON || '[]');
     window.restoreFollowUpUI();
     window.refreshExamFindingHighlights();
@@ -430,7 +438,7 @@ function renderEmrReadOnlyGrid(containerId, fields) {
 // --- Visit History Sidebar ---
 window._patientVisitsCache = [];
 
-const PATIENT_INFO_AUTOFILL_FIELDS = ['fullName', 'dob', 'phone', 'address'];
+const PATIENT_INFO_AUTOFILL_FIELDS = ['fullName', 'age', 'phone', 'address'];
 
 function sortVisitsChronological(visits) {
     return visits.slice().sort((a, b) => {
@@ -466,8 +474,6 @@ function applyPatientInfoFromVisit(record) {
     }
     const visitDateEl = document.getElementById('visitDate');
     if (visitDateEl) visitDateEl.value = new Date().toISOString().split('T')[0];
-    const dobEl = document.getElementById('dob');
-    if (dobEl) dobEl.dispatchEvent(new Event('change'));
 }
 
 function loadPatientVisits(patientId, callback) {

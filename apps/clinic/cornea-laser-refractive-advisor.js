@@ -20,16 +20,7 @@
   }
 
   function getAge() {
-    const age = num(global.document?.getElementById?.('age')?.value);
-    if (age != null) return age;
-    const dob = global.document?.getElementById?.('dob')?.value;
-    if (!dob) return null;
-    const d = new Date(dob);
-    if (isNaN(d.getTime())) return null;
-    const t = new Date();
-    let a = t.getFullYear() - d.getFullYear();
-    if (t.getMonth() < d.getMonth() || (t.getMonth() === d.getMonth() && t.getDate() < d.getDate())) a--;
-    return a;
+    return num(global.document?.getElementById?.('age')?.value);
   }
 
   function analyzeDryEyeRisk(workup) {
