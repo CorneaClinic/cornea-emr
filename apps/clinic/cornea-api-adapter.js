@@ -196,6 +196,9 @@
             <input type="password" id="corneaLoginPassword" autocomplete="current-password" /></div>
           <p id="corneaLoginApiStatus" class="form-hint" style="display:none;margin-top:4px;"></p>
           <p id="corneaLoginError" class="form-hint" style="color:var(--danger,#c62828);display:none;"></p>
+          <p style="margin-top:8px;text-align:center;font-size:0.85rem;">
+            <a href="forgot-password.html" id="corneaForgotPasswordLink">Forgot password?</a>
+          </p>
         </div>
         <div class="emr-modal-footer">
           <button type="button" class="btn-primary" id="corneaLoginSubmitBtn"><i class="fa-solid fa-right-to-bracket"></i> Sign in</button>

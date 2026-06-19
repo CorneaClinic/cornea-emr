@@ -52,6 +52,9 @@ services:
       - key: APP_PUBLIC_URL
         value: https://api.visionemr.net
         scope: RUN_TIME
+      - key: CLINIC_PUBLIC_URL
+        value: https://corneaclinic.visionemr.net
+        scope: RUN_TIME
       - key: DATABASE_URL
         scope: RUN_TIME
         value: ${cornea-db.DATABASE_URL}

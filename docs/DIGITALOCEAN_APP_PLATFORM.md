@@ -35,6 +35,7 @@ DigitalOcean built the **repo root** (`package.json` with only Wrangler). The AP
 | `SECRETS_ENCRYPTION_KEY` | Same as clinic PC (SECRET) |
 | `CORS_ORIGIN` | `https://corneaclinic.visionemr.net,http://127.0.0.1:8080` |
 | `APP_PUBLIC_URL` | `https://api.visionemr.net` |
+| `CLINIC_PUBLIC_URL` | `https://corneaclinic.visionemr.net` (password reset email links) |
 | `AUTH_COOKIE_SECURE` | `true` |
 | `AUTH_EXPOSE_REFRESH_IN_BODY` | `false` |
 

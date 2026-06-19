@@ -57,6 +57,14 @@ if (isProduction && (!corsOrigin || corsOrigin === '*')) {
   throw new Error('CORS_ORIGIN must be an explicit allowlist in production (comma-separated origins)');
 }
 
+function firstCorsOrigin(origins) {
+  const first = String(origins || '').split(',').map((o) => o.trim()).filter(Boolean)[0];
+  return first || '';
+}
+
+const appPublicUrl = optional('APP_PUBLIC_URL', 'http://127.0.0.1:3000');
+const clinicPublicUrl = optional('CLINIC_PUBLIC_URL', '') || firstCorsOrigin(corsOrigin) || appPublicUrl;
+
 const seedAdminPassword = optional('SEED_ADMIN_PASSWORD', isDevelopment ? '' : '');
 if (!isDevelopment && process.argv.some((a) => a.includes('seed-cli'))) {
   // validated at seed runtime
@@ -139,7 +147,8 @@ export const env = Object.freeze({
     refreshCookieName: optional('AUTH_REFRESH_COOKIE_NAME', 'cornea_refresh_token'),
     cookieSecure: optional('AUTH_COOKIE_SECURE', isProduction ? 'true' : 'false') === 'true',
     cookieSameSite: optional('AUTH_COOKIE_SAME_SITE', 'lax'),
-    appPublicUrl: optional('APP_PUBLIC_URL', 'http://127.0.0.1:3000'),
+    appPublicUrl,
+    clinicPublicUrl,
     maxFailedAttempts: parseIntEnv('AUTH_MAX_FAILED_ATTEMPTS', 10),
     lockoutMinutes: parseIntEnv('AUTH_LOCKOUT_MINUTES', 30),
     exposeRefreshTokenInBody: optional('AUTH_EXPOSE_REFRESH_IN_BODY', isDevelopment ? 'true' : 'false') === 'true'
