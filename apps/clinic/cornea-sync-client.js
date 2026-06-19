@@ -460,6 +460,7 @@
       if (!record.sync_status) record.sync_status = 'pending';
       if (record.revision == null) record.revision = 0;
       if (!record.client_mutation_id) record.client_mutation_id = uuid();
+      if (!record.uuid) record.uuid = uuid();
       return record;
     },
 
