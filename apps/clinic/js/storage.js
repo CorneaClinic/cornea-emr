@@ -72,16 +72,14 @@ function initDB() {
 
         request.onsuccess = (event) => {
             window.db = event.target.result;
+            window.__corneaIdbReady = true;
+            if (typeof window.__corneaOnCloudReady === 'function') {
+                window.__corneaOnCloudReady();
+            }
             if (typeof window.setupFieldListeners === 'function') {
                 window.setupFieldListeners();
-            } else if (typeof setupFieldListeners === 'function') {
+            } else             if (typeof setupFieldListeners === 'function') {
                 setupFieldListeners();
-            }
-            if (window.__corneaCloudMode) {
-                window.__corneaIdbReady = true;
-                if (typeof window.__corneaOnCloudReady === 'function') {
-                    window.__corneaOnCloudReady();
-                }
             }
             // Offline auth UI is initialized by initAfterCloudCheck in Cornea.html
         };

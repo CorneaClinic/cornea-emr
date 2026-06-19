@@ -515,20 +515,50 @@
       });
     },
 
+    async findLocalIdByUuid(storeName, uuid) {
+      if (!uuid || !global.db) return null;
+      const store = tx([storeName]).objectStore(storeName);
+      const all = await promisifyRequest(store.getAll());
+      const hit = all.find((r) => r.uuid === uuid);
+      return hit?.id ?? null;
+    },
+
     async applyServerVisit(data) {
       if (!data) return;
-      const localId = data.id ?? data.localId;
-      if (await this.hasLocalEdits(STORE_PATIENTS, typeof localId === 'number' ? localId : data.id)) return;
+      const serverUuid = data.uuid || data.entityId;
+      let localId = serverUuid ? await this.findLocalIdByUuid(STORE_PATIENTS, serverUuid) : null;
+
+      if (localId == null) {
+        const legacyId = typeof data.id === 'number' ? data.id : (
+          data.localId != null ? Number(data.localId) : null
+        );
+        if (legacyId != null && !Number.isNaN(legacyId)) {
+          const readStore = tx([STORE_PATIENTS]).objectStore(STORE_PATIENTS);
+          const existing = await promisifyRequest(readStore.get(legacyId));
+          if (!existing || !existing.uuid || !serverUuid || existing.uuid === serverUuid) {
+            localId = legacyId;
+          }
+        }
+      }
+
+      if (localId != null && await this.hasLocalEdits(STORE_PATIENTS, localId)) return;
+
       const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
       const record = {
         ...data,
-        id: typeof localId === 'number' ? localId : data.id,
-        uuid: data.uuid || data.entityId,
+        uuid: serverUuid,
         revision: data.revision ?? 0,
         sync_status: 'synced',
         updated_at: data.updated_at || data.lastModified
       };
-      await promisifyRequest(store.put(record));
+
+      if (localId != null) {
+        record.id = localId;
+        await promisifyRequest(store.put(record));
+      } else {
+        delete record.id;
+        await promisifyRequest(store.put(record));
+      }
     },
 
     /**
@@ -554,25 +584,52 @@
       }
 
       if (change.entityType === 'kp_patient' && change.data) {
-        if (await this.hasLocalEdits(STORE_KP_PATIENTS, change.data.id)) return;
+        const serverUuid = change.data.uuid || change.entityId;
+        let localId = serverUuid
+          ? await this.findLocalIdByUuid(STORE_KP_PATIENTS, serverUuid)
+          : change.data.id;
+        if (localId != null && await this.hasLocalEdits(STORE_KP_PATIENTS, localId)) return;
         const store = tx([STORE_KP_PATIENTS], 'readwrite').objectStore(STORE_KP_PATIENTS);
         const record = { ...change.data, sync_status: 'synced', revision: change.revision ?? 0 };
-        await promisifyRequest(store.put(record));
+        if (localId != null) {
+          record.id = localId;
+          await promisifyRequest(store.put(record));
+        } else {
+          delete record.id;
+          await promisifyRequest(store.put(record));
+        }
         return;
       }
 
       if (change.entityType === 'kp_tissue' && change.data) {
-        if (await this.hasLocalEdits(STORE_KP_TISSUES, change.data.id)) return;
+        const serverUuid = change.data.uuid || change.entityId;
+        let localId = serverUuid
+          ? await this.findLocalIdByUuid(STORE_KP_TISSUES, serverUuid)
+          : change.data.id;
+        if (localId != null && await this.hasLocalEdits(STORE_KP_TISSUES, localId)) return;
         const store = tx([STORE_KP_TISSUES], 'readwrite').objectStore(STORE_KP_TISSUES);
         const record = { ...change.data, sync_status: 'synced', revision: change.revision ?? 0 };
-        await promisifyRequest(store.put(record));
+        if (localId != null) {
+          record.id = localId;
+          await promisifyRequest(store.put(record));
+        } else {
+          delete record.id;
+          await promisifyRequest(store.put(record));
+        }
       }
     },
 
     async applyDeletion(deleted) {
-      if (deleted.entityType === 'visit' && deleted.localId != null) {
-        const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
-        await promisifyRequest(store.delete(deleted.localId));
+      if (deleted.entityType === 'visit') {
+        let localId = deleted.localId != null ? deleted.localId : null;
+        if (deleted.entityId) {
+          const byUuid = await this.findLocalIdByUuid(STORE_PATIENTS, deleted.entityId);
+          if (byUuid != null) localId = byUuid;
+        }
+        if (localId != null) {
+          const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
+          await promisifyRequest(store.delete(localId));
+        }
       }
     },
 
@@ -851,12 +908,26 @@
           el.title = 'Click to resolve sync conflicts';
           el.onclick = () => this.showConflictPanel();
           el.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${stats.conflicts} conflict(s)`;
-        } else if (stats.pending > 0) {
+        } else         if (stats.pending > 0) {
           el.style.background = '#e3f2fd';
           el.style.color = '#1565c0';
-          el.style.cursor = 'default';
-          el.onclick = null;
+          el.style.cursor = 'pointer';
+          el.title = 'Click to sync now';
+          el.onclick = () => this.syncAll().catch(() => {});
           el.innerHTML = `<i class="fa-solid fa-rotate"></i> ${stats.pending} pending`;
+        } else if (!this.api) {
+          el.style.background = '#fff3e0';
+          el.style.color = '#e65100';
+          el.style.cursor = 'pointer';
+          el.title = 'Cloud sync not started — click to retry';
+          el.onclick = () => {
+            if (global.CorneaApi?.isEnabled?.() && global.db) {
+              global.CorneaSync?.init?.(global.CorneaApi.request.bind(global.CorneaApi));
+              global.CorneaSync?.startLongPoll?.();
+              this.syncAll().catch(() => {});
+            }
+          };
+          el.innerHTML = '<i class="fa-solid fa-cloud"></i> Sync starting…';
         } else {
           el.style.background = '#e8f5e9';
           el.style.color = '#2e7d32';

@@ -441,18 +441,33 @@
   }
 
   async function bootstrapCloudUi(self) {
-    if (global.CorneaSync) {
-      await global.CorneaSync.migrateExistingRecords();
+    if (!global.db || !global.CorneaSync) return;
+    if (global.CorneaSync._bootstrapped) {
       global.CorneaSync.onInboundChanges = (summary) => self.handleInboundSyncChanges(summary);
-      global.CorneaSync.init(api);
-      global.CorneaSync.startLongPoll();
-      await global.CorneaSync.syncAll();
+      if (!global.CorneaSync.longPollActive) global.CorneaSync.startLongPoll();
+      await global.CorneaSync.syncAll().catch(() => {});
+      return;
     }
+    global.CorneaSync._bootstrapped = true;
+    await global.CorneaSync.migrateExistingRecords();
+    global.CorneaSync.onInboundChanges = (summary) => self.handleInboundSyncChanges(summary);
+    global.CorneaSync.init(api);
+    global.CorneaSync.startLongPoll();
+    await global.CorneaSync.syncAll();
     await self.refreshRecordsList();
     if (typeof global.updateDashboardStats === 'function') {
       global.updateDashboardStats();
     }
     updateCloudHeader(true);
+  }
+
+  async function ensureCloudBootstrap(self) {
+    if (global.db) global.__corneaIdbReady = true;
+    if (global.__corneaIdbReady && global.db) {
+      await bootstrapCloudUi(self);
+      return;
+    }
+    global.__corneaOnCloudReady = () => bootstrapCloudUi(self);
   }
 
   function bindCloudHeaderActions(wrap) {
@@ -534,11 +549,7 @@
           this.patchGlobals();
           showCloudBadge(true);
           await promptPasswordChangeIfNeeded(me.user);
-          if (global.__corneaIdbReady) {
-            await bootstrapCloudUi(this);
-          } else {
-            global.__corneaOnCloudReady = () => bootstrapCloudUi(this);
-          }
+          await ensureCloudBootstrap(this);
           console.info('[CorneaApi] Restored cloud session:', url);
           return true;
         } catch (_) {
@@ -593,11 +604,7 @@
         this.patchGlobals();
         showCloudBadge(true);
 
-        if (global.__corneaIdbReady) {
-          await bootstrapCloudUi(this);
-        } else {
-          global.__corneaOnCloudReady = () => bootstrapCloudUi(this);
-        }
+        await ensureCloudBootstrap(this);
 
         if (typeof global.updateDiagnosisIcdStatusMessage === 'function') {
           global.updateDiagnosisIcdStatusMessage();
