@@ -738,11 +738,21 @@
           const uuidEl = document.getElementById('currentRecordUuid');
           if (uuidEl) uuidEl.value = data.uuid || '';
           global.populateFormFromData(data);
-          const panel = target === 'records' ? 'recordReadOnlyContent' : 'patientReadOnlyContent';
-          global.renderPatientReadOnly(data, panel);
-          global.updatePatientReadOnlyToolbar(true);
-          if (target === 'records') global.switchTab('recordsTab');
-          else global.switchTab('formTab');
+          if (typeof global.refreshPatientVisitHistory === 'function') {
+            await global.refreshPatientVisitHistory();
+          }
+          if (target === 'records') {
+            const roPanel = document.getElementById('recordReadOnlyPanel');
+            const title = document.getElementById('recordReadOnlyTitle');
+            if (roPanel) roPanel.hidden = false;
+            if (title) title.textContent = (data.fullName || 'Patient') + ' · ' + (data.visitDate || '');
+            global.renderPatientReadOnly(data, 'recordReadOnlyContent');
+            global.switchTab('recordsTab');
+          } else {
+            global.renderPatientReadOnly(data, 'patientReadOnlyContent');
+            global.updatePatientReadOnlyToolbar(true);
+            global.switchTab('formTab');
+          }
         } catch (e) {
           alert('Could not load record: ' + e.message);
         }
