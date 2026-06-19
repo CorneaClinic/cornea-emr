@@ -115,7 +115,15 @@ window.switchTab = function(tabId) {
         document.getElementById('pageSubtitle').textContent = meta.subtitle;
     }
 
-    if (tabId === 'recordsTab')  loadRecords();
+    if (tabId === 'recordsTab') {
+        if (global.__corneaCloudMode && global.CorneaSync?.syncNow) {
+            global.CorneaSync.syncNow()
+                .then(() => { if (typeof loadRecords === 'function') loadRecords(); })
+                .catch(() => { if (typeof loadRecords === 'function') loadRecords(); });
+        } else if (typeof loadRecords === 'function') {
+            loadRecords();
+        }
+    }
     if (tabId === 'dashboardTab') updateDashboardStats();
     if (tabId === 'flowTab' && window.CorneaPatientFlow) {
         window.CorneaPatientFlow.initFlowTab();

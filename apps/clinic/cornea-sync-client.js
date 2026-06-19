@@ -71,7 +71,8 @@
 
     init(apiFn) {
       this.api = apiFn;
-      if (this.channel) {
+      if (this.channel && !this._channelBound) {
+        this._channelBound = true;
         this.channel.onmessage = (event) => {
           if (event.data?.type === 'queue-changed') {
             this.scheduleDrain();
@@ -88,8 +89,30 @@
         });
         window.addEventListener('focus', () => this.scheduleDrain(true));
       }
-      global.addEventListener('online', () => this.scheduleDrain(true));
+      if (!this._onlineBound) {
+        this._onlineBound = true;
+        global.addEventListener('online', () => this.scheduleDrain(true));
+      }
       this.startInterval();
+    },
+
+    /** Pull then push; returns queue stats for UI feedback. */
+    async syncNow() {
+      if (!this.api || !global.db) {
+        return { ok: false, reason: 'not_initialized', stats: { pending: 0, failed: 0, conflicts: 0 } };
+      }
+      try {
+        const pulled = await this.pull();
+        await this.drainQueue();
+        const stats = await this.getQueueStats();
+        return {
+          ok: stats.pending === 0 && stats.failed === 0,
+          pulled,
+          stats
+        };
+      } catch (err) {
+        return { ok: false, error: err.message, stats: await this.getQueueStats().catch(() => ({})) };
+      }
     },
 
     startLongPoll() {
@@ -330,6 +353,20 @@
       if (!record) return;
       record.sync_status = 'conflict';
       await promisifyRequest(store.put(record));
+    },
+
+    notifyPushFailure(message) {
+      const msg = String(message || 'Could not upload changes to the cloud server.');
+      console.warn('[CorneaSync]', msg);
+
+      let toast = document.getElementById('corneaSyncPushToast');
+      if (toast) toast.remove();
+      toast = document.createElement('div');
+      toast.id = 'corneaSyncPushToast';
+      toast.style.cssText = 'position:fixed;bottom:24px;right:24px;z-index:10001;background:#c62828;color:#fff;padding:14px 18px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.3);font-size:0.9rem;max-width:360px;';
+      toast.innerHTML = `<i class="fa-solid fa-cloud-exclamation"></i> <span>${this.escapeHtml(msg)}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 12000);
     },
 
     notifyConflict(count) {
@@ -732,7 +769,12 @@
             body: JSON.stringify({ deviceId: getDeviceId(), mutations })
           });
 
-          for (const result of data.results || []) {
+          const results = data?.results || [];
+          if (!results.length && batch.length) {
+            await this.log('error', 'Push returned no results', { batchSize: batch.length });
+          }
+
+          for (const result of results) {
             const queueItem = batch.find((b) => b.mutation_id === result.mutationId);
             if (!queueItem) continue;
 
@@ -765,6 +807,7 @@
                   mutationId: result.mutationId,
                   error: result.error
                 });
+                this.notifyPushFailure(result.error || 'Push failed');
               }
             }
           }
@@ -778,6 +821,7 @@
         }
       } catch (err) {
         await this.log('error', 'Queue drain failed', { error: err.message });
+        this.notifyPushFailure(err.message);
         const backoff = BASE_RETRY_MS * 2;
         setTimeout(() => this.scheduleDrain(true), backoff);
       } finally {

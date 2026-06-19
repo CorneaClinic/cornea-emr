@@ -463,11 +463,20 @@
 
   async function ensureCloudBootstrap(self) {
     if (global.db) global.__corneaIdbReady = true;
+    bindSyncClient();
     if (global.__corneaIdbReady && global.db) {
       await bootstrapCloudUi(self);
       return;
     }
     global.__corneaOnCloudReady = () => bootstrapCloudUi(self);
+  }
+
+  function bindSyncClient() {
+    if (!global.CorneaSync || !token) return;
+    global.CorneaSync.init(api);
+    if (global.db && !global.CorneaSync.longPollActive) {
+      global.CorneaSync.startLongPoll();
+    }
   }
 
   function bindCloudHeaderActions(wrap) {
@@ -625,6 +634,7 @@
     patchGlobals() {
       const self = this;
       const sync = () => global.CorneaSync;
+      bindSyncClient();
 
       global.saveToDatabase = async function () {
         const form = document.getElementById('patientForm');
@@ -670,7 +680,18 @@
           global.refreshPatientVisitHistory();
           if (global.CorneaPatientFlow) global.CorneaPatientFlow.refresh();
           global.switchTab('formTab');
-          sync().scheduleDrain(true);
+
+          const syncResult = await sync().syncNow();
+          await self.refreshRecordsList();
+          if (!syncResult.ok) {
+            const pending = syncResult.stats?.pending || 0;
+            const err = syncResult.error || syncResult.reason || 'Sync incomplete';
+            alert(
+              pending > 0
+                ? `Record saved on this device but not uploaded to the cloud yet (${pending} pending). ${err}`
+                : `Record saved but cloud sync had a problem: ${err}`
+            );
+          }
           if (saved.uuid && global.CorneaVisitMedia) {
             global.CorneaVisitMedia.flushPendingUploads(saved.uuid).catch((e) => {
               console.warn('[CorneaVisitMedia]', e.message);
@@ -771,7 +792,7 @@
         }
 
         if (global.navigator.onLine !== false && sync()) {
-          sync().pull().catch(() => {});
+          sync().syncNow().catch(() => {});
         }
       };
 
@@ -813,7 +834,7 @@
       };
 
       global.loadRecords = function () {
-        self.refreshRecordsList().catch((e) => console.warn('[CorneaApi] loadRecords failed', e));
+        self.refreshRecordsListWithSync().catch((e) => console.warn('[CorneaApi] loadRecords failed', e));
       };
 
       const originalSaveKpPatient = global.saveKpPatient;
@@ -876,6 +897,13 @@
         await global.initKeratoplastyTab();
         sync().scheduleDrain(true);
       };
+    },
+
+    async refreshRecordsListWithSync() {
+      if (global.__corneaCloudMode && global.CorneaSync?.api) {
+        await global.CorneaSync.syncNow().catch((e) => console.warn('[CorneaSync]', e.message));
+      }
+      await this.refreshRecordsList();
     },
 
     async refreshRecordsList() {
