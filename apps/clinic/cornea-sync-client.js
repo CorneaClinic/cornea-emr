@@ -96,17 +96,23 @@
       this.startInterval();
     },
 
-    /** Pull then push; returns queue stats for UI feedback. */
-    async syncNow() {
+    /** Pull then push (or push first when saving). Returns queue stats for UI feedback. */
+    async syncNow(opts = {}) {
       if (!this.api || !global.db) {
         return { ok: false, reason: 'not_initialized', stats: { pending: 0, failed: 0, conflicts: 0 } };
       }
       try {
-        const pulled = await this.pull();
-        await this.drainQueue();
+        let pulled = null;
+        if (opts.pushFirst) {
+          await this.drainQueue();
+          pulled = await this.pull();
+        } else {
+          pulled = await this.pull();
+          await this.drainQueue();
+        }
         const stats = await this.getQueueStats();
         return {
-          ok: stats.pending === 0 && stats.failed === 0,
+          ok: stats.pending === 0 && stats.failed === 0 && stats.conflicts === 0,
           pulled,
           stats
         };
@@ -261,6 +267,7 @@
         if (existing) {
           existing.payload = entry.payload;
           existing.entity_id = entry.entity_id || existing.entity_id;
+          existing.base_revision = entry.base_revision ?? existing.base_revision;
           existing.created_at = entry.created_at;
           await promisifyRequest(store.put(existing));
           this.scheduleDrain(true);
@@ -599,17 +606,37 @@
       }
     },
 
+    entityTypeForStore(storeName) {
+      if (storeName === STORE_PATIENTS) return 'visit';
+      if (storeName === STORE_KP_PATIENTS) return 'kp_patient';
+      if (storeName === STORE_KP_TISSUES) return 'kp_tissue';
+      return null;
+    },
+
+    async hasPendingQueueFor(entityType, localId) {
+      if (localId == null) return false;
+      const store = tx([STORE_SYNC_QUEUE]).objectStore(STORE_SYNC_QUEUE);
+      const all = await promisifyRequest(store.getAll());
+      return all.some((i) =>
+        (i.status === 'pending' || i.status === 'error') &&
+        i.entity_type === entityType &&
+        i.local_id === localId
+      );
+    },
+
     /**
-     * True when the local copy has unsent edits (pending/conflict). Inbound
-     * pull changes must not overwrite them; the push will surface a proper
-     * conflict the user can resolve.
+     * True when the local copy has unsent queue mutations or an unresolved conflict.
+     * Inbound pull changes must not overwrite queued edits.
      */
     async hasLocalEdits(storeName, localId) {
       if (localId == null) return false;
       try {
         const store = tx([storeName]).objectStore(storeName);
         const existing = await promisifyRequest(store.get(localId));
-        return !!existing && (existing.sync_status === 'pending' || existing.sync_status === 'conflict');
+        if (existing?.sync_status === 'conflict') return true;
+        const entityType = this.entityTypeForStore(storeName);
+        if (entityType) return await this.hasPendingQueueFor(entityType, localId);
+        return false;
       } catch (_) {
         return false;
       }
@@ -754,6 +781,18 @@
 
         for (let i = 0; i < pending.length; i += MAX_BATCH) {
           const batch = pending.slice(i, i + MAX_BATCH);
+
+          for (const item of batch) {
+            if (item.operation !== 'upsert' || item.local_id == null) continue;
+            const storeName = this.storeForEntity(item.entity_type);
+            if (!storeName) continue;
+            const record = await promisifyRequest(
+              tx([storeName]).objectStore(storeName).get(item.local_id)
+            );
+            if (record?.revision != null) item.base_revision = record.revision;
+            if (record?.uuid) item.entity_id = record.uuid;
+          }
+
           const mutations = batch.map((item) => ({
             mutationId: item.mutation_id,
             entityType: item.entity_type,
@@ -874,28 +913,43 @@
       }
     },
 
+    async rebaseMigrationConflicts() {
+      const conflicts = await this.getConflicts();
+      for (const item of conflicts) {
+        if (item.base_revision != null && Number(item.base_revision) !== 0) continue;
+        const serverRevision = item.conflict?.serverRevision ?? item.conflict?.details?.serverRevision;
+        if (serverRevision == null) continue;
+        await this.resolveConflict(item.mutation_id, 'local');
+      }
+    },
+
     async migrateExistingRecords() {
       if (!global.db) return;
 
       const patientsStore = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
       const patients = await promisifyRequest(patientsStore.getAll());
       for (const record of patients) {
-        if (!record.sync_status) {
-          record.sync_status = record.uuid ? 'pending' : 'pending_upload';
-          record.revision = record.revision ?? 0;
-          record.client_mutation_id = record.client_mutation_id || uuid();
-          await promisifyRequest(patientsStore.put(record));
+        if (record.sync_status) continue;
 
-          if (!record.uuid) {
-            await this.enqueue({
-              entityType: 'visit',
-              operation: 'upsert',
-              localId: record.id,
-              baseRevision: 0,
-              payload: { ...record }
-            });
-          }
+        record.revision = record.revision ?? 0;
+        record.client_mutation_id = record.client_mutation_id || uuid();
+
+        if (record.uuid) {
+          // Already linked to the cloud — pull will refresh revision; do not blind-push.
+          record.sync_status = 'synced';
+          await promisifyRequest(patientsStore.put(record));
+          continue;
         }
+
+        record.sync_status = 'pending_upload';
+        await promisifyRequest(patientsStore.put(record));
+        await this.enqueue({
+          entityType: 'visit',
+          operation: 'upsert',
+          localId: record.id,
+          baseRevision: record.revision,
+          payload: { ...record }
+        });
       }
 
       for (const [storeName, entityType] of [
@@ -905,21 +959,26 @@
         const store = tx([storeName], 'readwrite').objectStore(storeName);
         const rows = await promisifyRequest(store.getAll());
         for (const record of rows) {
-          if (!record.sync_status) {
-            record.sync_status = record.uuid ? 'pending' : 'pending_upload';
-            record.revision = record.revision ?? 0;
-            record.client_mutation_id = record.client_mutation_id || uuid();
+          if (record.sync_status) continue;
+
+          record.revision = record.revision ?? 0;
+          record.client_mutation_id = record.client_mutation_id || uuid();
+
+          if (record.uuid) {
+            record.sync_status = 'synced';
             await promisifyRequest(store.put(record));
-            if (!record.uuid) {
-              await this.enqueue({
-                entityType,
-                operation: 'upsert',
-                localId: record.id,
-                baseRevision: 0,
-                payload: { ...record }
-              });
-            }
+            continue;
           }
+
+          record.sync_status = 'pending_upload';
+          await promisifyRequest(store.put(record));
+          await this.enqueue({
+            entityType,
+            operation: 'upsert',
+            localId: record.id,
+            baseRevision: record.revision,
+            payload: { ...record }
+          });
         }
       }
 

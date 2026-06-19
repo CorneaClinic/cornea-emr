@@ -449,11 +449,14 @@
       return;
     }
     global.CorneaSync._bootstrapped = true;
-    await global.CorneaSync.migrateExistingRecords();
     global.CorneaSync.onInboundChanges = (summary) => self.handleInboundSyncChanges(summary);
     global.CorneaSync.init(api);
     global.CorneaSync.startLongPoll();
-    await global.CorneaSync.syncAll();
+    await global.CorneaSync.pull();
+    await global.CorneaSync.migrateExistingRecords();
+    await global.CorneaSync.drainQueue();
+    await global.CorneaSync.rebaseMigrationConflicts();
+    await global.CorneaSync.drainQueue();
     await self.refreshRecordsList();
     if (typeof global.updateDashboardStats === 'function') {
       global.updateDashboardStats();
@@ -681,16 +684,24 @@
           if (global.CorneaPatientFlow) global.CorneaPatientFlow.refresh();
           global.switchTab('formTab');
 
-          const syncResult = await sync().syncNow();
+          const syncResult = await sync().syncNow({ pushFirst: true });
           await self.refreshRecordsList();
           if (!syncResult.ok) {
             const pending = syncResult.stats?.pending || 0;
+            const conflicts = syncResult.stats?.conflicts || 0;
             const err = syncResult.error || syncResult.reason || 'Sync incomplete';
-            alert(
-              pending > 0
-                ? `Record saved on this device but not uploaded to the cloud yet (${pending} pending). ${err}`
-                : `Record saved but cloud sync had a problem: ${err}`
-            );
+            if (conflicts > 0) {
+              alert(
+                `Record saved locally but conflicts with the cloud copy (${conflicts}). ` +
+                'Use the conflict dialog to choose which version to keep.'
+              );
+            } else {
+              alert(
+                pending > 0
+                  ? `Record saved on this device but not uploaded to the cloud yet (${pending} pending). ${err}`
+                  : `Record saved but cloud sync had a problem: ${err}`
+              );
+            }
           }
           if (saved.uuid && global.CorneaVisitMedia) {
             global.CorneaVisitMedia.flushPendingUploads(saved.uuid).catch((e) => {
