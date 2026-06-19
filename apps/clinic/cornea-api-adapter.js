@@ -148,6 +148,10 @@
         await api('/api/v1/auth/logout', { method: 'POST', body: '{}' });
       }
     } catch (_) { /* ignore */ }
+    if (global.CorneaSync) {
+      global.CorneaSync.stopLongPoll();
+      global.CorneaSync.onInboundChanges = null;
+    }
     token = null;
     localStorage.removeItem(STORAGE_TOKEN);
     global.__corneaCloudMode = false;
@@ -439,7 +443,9 @@
   async function bootstrapCloudUi(self) {
     if (global.CorneaSync) {
       await global.CorneaSync.migrateExistingRecords();
+      global.CorneaSync.onInboundChanges = (summary) => self.handleInboundSyncChanges(summary);
       global.CorneaSync.init(api);
+      global.CorneaSync.startLongPoll();
       await global.CorneaSync.syncAll();
     }
     await self.refreshRecordsList();
@@ -893,6 +899,54 @@
       }).join('') : '<tr><td colspan="5"><div class="empty-state">No records found.</div></td></tr>';
 
       if (global.CorneaSync) global.CorneaSync.updateSyncBadge();
+    },
+
+    handleInboundSyncChanges(summary) {
+      if (!summary || (summary.applied === 0 && summary.deleted === 0)) return;
+
+      if (typeof global.loadRecords === 'function') global.loadRecords();
+      if (typeof global.updateDashboardStats === 'function') {
+        global.updateDashboardStats();
+      }
+      if (summary.entityTypes?.some((t) => t === 'kp_patient' || t === 'kp_tissue')) {
+        if (typeof global.initKeratoplastyTab === 'function') {
+          global.initKeratoplastyTab().catch(() => {});
+        }
+      }
+      if (typeof global.refreshPatientVisitHistory === 'function') {
+        global.refreshPatientVisitHistory();
+      }
+      if (global.CorneaPatientFlow) global.CorneaPatientFlow.refresh();
+
+      const currentId = global._currentViewRecordId;
+      if (currentId != null && summary.entityTypes?.includes('visit')) {
+        const recordsTab = document.getElementById('recordsTab');
+        const onRecords = recordsTab?.classList.contains('active');
+        if (typeof global.viewRecordReadOnly === 'function') {
+          global.viewRecordReadOnly(currentId, onRecords ? 'records' : undefined).catch(() => {});
+        }
+      }
+
+      this.showRemoteUpdateToast(summary);
+    },
+
+    showRemoteUpdateToast(summary) {
+      const count = (summary.applied || 0) + (summary.deleted || 0);
+      if (count < 1) return;
+
+      let toast = document.getElementById('corneaSyncRemoteToast');
+      if (toast) toast.remove();
+
+      const label = count === 1
+        ? '1 record updated from another device'
+        : `${count} records updated from another device`;
+
+      toast = document.createElement('div');
+      toast.id = 'corneaSyncRemoteToast';
+      toast.style.cssText = 'position:fixed;bottom:24px;left:24px;z-index:10001;background:#1565c0;color:#fff;padding:12px 16px;border-radius:10px;box-shadow:0 8px 24px rgba(0,0,0,0.25);font-size:0.88rem;max-width:320px;display:flex;gap:10px;align-items:center;';
+      toast.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i><span>${escapeHtml(label)}</span>`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 6000);
     }
   };
 

@@ -19,7 +19,10 @@
   const MAX_BATCH = 25;
   const MAX_ATTEMPTS = 8;
   const BASE_RETRY_MS = 2000;
-  const SYNC_INTERVAL_MS = 30000;
+  const SYNC_INTERVAL_MS = 12000;
+  const SYNC_INTERVAL_HIDDEN_MS = 45000;
+  const LONG_POLL_TIMEOUT_MS = 22000;
+  const LONG_POLL_RETRY_MS = 1500;
 
   function uuid() {
     if (global.crypto?.randomUUID) return global.crypto.randomUUID();
@@ -55,12 +58,15 @@
     STORE_SYNC_META,
     STORE_SYNC_LOGS,
 
-    /** @type {((path: string, options?: object) => Promise<any>) | null} */
+    /** @type {((summary: { applied: number, deleted: number, entityTypes: string[] }) => void) | null} */
+    onInboundChanges: null,
     api: null,
     draining: false,
     pullInProgress: false,
     retryTimer: null,
     intervalTimer: null,
+    longPollActive: false,
+    longPollTimer: null,
     channel: typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('cornea-sync') : null,
 
     init(apiFn) {
@@ -70,19 +76,73 @@
           if (event.data?.type === 'queue-changed') {
             this.scheduleDrain();
           }
+          if (event.data?.type === 'remote-changes' && typeof this.onInboundChanges === 'function') {
+            this.onInboundChanges(event.data.summary);
+          }
         };
+      }
+      if (!this._visibilityBound) {
+        this._visibilityBound = true;
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden) this.scheduleDrain(true);
+        });
+        window.addEventListener('focus', () => this.scheduleDrain(true));
       }
       global.addEventListener('online', () => this.scheduleDrain(true));
       this.startInterval();
     },
 
+    startLongPoll() {
+      if (this.longPollActive || !this.api) return;
+      this.longPollActive = true;
+      this.runLongPollOnce();
+    },
+
+    stopLongPoll() {
+      this.longPollActive = false;
+      if (this.longPollTimer) {
+        clearTimeout(this.longPollTimer);
+        this.longPollTimer = null;
+      }
+    },
+
+    async runLongPollOnce() {
+      if (!this.longPollActive || !this.api) return;
+
+      if (document.hidden || global.navigator.onLine === false) {
+        this.longPollTimer = setTimeout(() => this.runLongPollOnce(), 5000);
+        return;
+      }
+
+      try {
+        const cursor = (await this.getMeta(META_PULL_CURSOR))?.value || '0';
+        const { data } = await this.api(
+          `/api/v1/sync/wait?cursor=${encodeURIComponent(cursor)}&timeoutMs=${LONG_POLL_TIMEOUT_MS}&deviceId=${encodeURIComponent(getDeviceId())}`,
+          { headers: { 'X-Device-Id': getDeviceId() } }
+        );
+        if (data?.hasChanges) {
+          await this.pull();
+        }
+      } catch (_) {
+        this.longPollTimer = setTimeout(() => this.runLongPollOnce(), LONG_POLL_RETRY_MS);
+        return;
+      }
+
+      if (this.longPollActive) {
+        this.longPollTimer = setTimeout(() => this.runLongPollOnce(), 200);
+      }
+    },
+
     startInterval() {
       if (this.intervalTimer) return;
-      this.intervalTimer = setInterval(() => {
+      const tick = () => {
         if (global.navigator.onLine !== false) {
           this.syncAll().catch(() => {});
         }
-      }, SYNC_INTERVAL_MS);
+        const delay = document.hidden ? SYNC_INTERVAL_HIDDEN_MS : SYNC_INTERVAL_MS;
+        this.intervalTimer = setTimeout(tick, delay);
+      };
+      this.intervalTimer = setTimeout(tick, SYNC_INTERVAL_MS);
     },
 
     scheduleDrain(immediate = false) {
@@ -516,9 +576,22 @@
       }
     },
 
+    notifyInboundChanges(summary) {
+      if (this.channel) {
+        this.channel.postMessage({ type: 'remote-changes', summary });
+      }
+      if (typeof this.onInboundChanges === 'function') {
+        this.onInboundChanges(summary);
+      }
+    },
+
     async pull() {
-      if (!this.api || this.pullInProgress || global.navigator.onLine === false) return;
+      if (!this.api || this.pullInProgress || global.navigator.onLine === false) return { applied: 0, deleted: 0, entityTypes: [] };
       this.pullInProgress = true;
+
+      let applied = 0;
+      let deleted = 0;
+      const entityTypes = new Set();
 
       try {
         let cursor = (await this.getMeta(META_PULL_CURSOR))?.value || '0';
@@ -533,9 +606,13 @@
 
           for (const change of data.changes || []) {
             await this.applyInboundChange(change);
+            applied++;
+            if (change.entityType) entityTypes.add(change.entityType);
           }
           for (const tombstone of data.deleted || []) {
             await this.applyDeletion(tombstone);
+            deleted++;
+            entityTypes.add('visit');
           }
 
           cursor = data.cursor || cursor;
@@ -546,7 +623,17 @@
         await this.setMeta(META_PULL_CURSOR, cursor);
         await this.setMeta(META_LAST_SYNC, new Date().toISOString());
         await this.setMeta(META_DEVICE_ID, getDeviceId());
-        await this.log('info', 'Pull completed', { cursor });
+        await this.log('info', 'Pull completed', { cursor, applied, deleted });
+
+        if (applied > 0 || deleted > 0) {
+          this.notifyInboundChanges({
+            applied,
+            deleted,
+            entityTypes: [...entityTypes]
+          });
+        }
+
+        return { applied, deleted, entityTypes: [...entityTypes] };
       } catch (err) {
         await this.log('error', 'Pull failed', { error: err.message });
         throw err;
@@ -561,6 +648,7 @@
       this.draining = true;
 
       let newConflicts = 0;
+      let pushedOk = 0;
 
       try {
         const pending = await this.getPendingQueue();
@@ -592,6 +680,7 @@
             if (!queueItem) continue;
 
             if (result.status === 'ok') {
+              pushedOk++;
               await this.removeQueueItem(result.mutationId);
               await this.applyPushSuccess(queueItem, result);
               await this.log('info', `Synced ${queueItem.entity_type}`, {
@@ -627,6 +716,8 @@
         await this.setMeta(META_LAST_SYNC, new Date().toISOString());
         if (newConflicts > 0) {
           this.notifyConflict(newConflicts);
+        } else if (pushedOk > 0) {
+          await this.pull();
         }
       } catch (err) {
         await this.log('error', 'Queue drain failed', { error: err.message });

@@ -936,6 +936,39 @@ export async function pullChanges(req, queryParams) {
   };
 }
 
+const WAIT_POLL_MS = 1500;
+const WAIT_TIMEOUT_MAX_MS = 30000;
+const WAIT_TIMEOUT_MIN_MS = 2000;
+
+/**
+ * Long-poll helper: blocks until another device pushes changes after `cursor`,
+ * or until timeout. Clients call pull() when hasChanges is true.
+ * @param {import('express').Request} req
+ * @param {Record<string, unknown>} queryParams
+ */
+export async function waitForChanges(req, queryParams) {
+  const clinicId = req.user.clinicId;
+  const cursor = String(queryParams.cursor || '0');
+  const timeoutMs = Math.min(
+    WAIT_TIMEOUT_MAX_MS,
+    Math.max(
+      WAIT_TIMEOUT_MIN_MS,
+      parseInt(String(queryParams.timeoutMs || 25000), 10) || 25000
+    )
+  );
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const { changes, deleted } = await collectChangesSince(clinicId, cursor, 1);
+    if (changes.length > 0 || deleted.length > 0) {
+      return { hasChanges: true, serverTime: new Date().toISOString() };
+    }
+    await new Promise((resolve) => setTimeout(resolve, WAIT_POLL_MS));
+  }
+
+  return { hasChanges: false, serverTime: new Date().toISOString() };
+}
+
 /**
  * @param {string} clinicId
  * @param {string} userId

@@ -6,6 +6,7 @@ import { PERMISSIONS } from '../core/permissions.js';
 import {
   pushMutations,
   pullChanges,
+  waitForChanges,
   getSyncStatus,
   listSyncLogs,
   resolveConflict
@@ -29,6 +30,16 @@ router.get(
   requireAnyPermission(PERMISSIONS.VISITS_READ, PERMISSIONS.KP_READ),
   asyncHandler(async (req, res) => {
     const result = await pullChanges(req, req.query);
+    res.json({ data: result });
+  })
+);
+
+router.get(
+  '/wait',
+  authenticate,
+  requireAnyPermission(PERMISSIONS.VISITS_READ, PERMISSIONS.KP_READ),
+  asyncHandler(async (req, res) => {
+    const result = await waitForChanges(req, req.query);
     res.json({ data: result });
   })
 );
