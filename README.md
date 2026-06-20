@@ -94,7 +94,17 @@ docker compose exec api node src/db/migrate-cli.js
 
 ### Backups
 
-A daily backup of the database runs via the Windows scheduled task `CorneaEMR-DailyBackup` (1:00 PM, runs when the machine is on). Dumps are written to `backups/` (last 30 kept).
+Full guide: **[docs/BACKUP_RECOVERY.md](docs/BACKUP_RECOVERY.md)** (local + cloud production, restore, drill).
+
+One-time setup:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\setup-backup.ps1 -RunBackupNow
+```
+
+A daily backup of the **local** database runs via the Windows scheduled task `CorneaEMR-DailyBackup` (1:00 PM). Dumps are written to `backups/` (last 30 kept).
+
+**Production (cloud) backup:** create `apps/api/.env.production` from `.env.production.example` (DigitalOcean connection string), then run `scripts\backup-production.ps1`. Setup registers `CorneaEMR-ProductionBackup` at 2:00 AM.
 
 **Off-site copies:** set `offsiteDir` in `scripts/backup-config.json` (e.g. a USB drive, network share, or OneDrive folder). Every dump is then AES-256 encrypted and copied there automatically. The key lives in `backup-encryption.key` (repo root, gitignored) — **keep a copy of this key somewhere safe** (password manager, printout, USB kept elsewhere); off-site backups cannot be decrypted without it.
 

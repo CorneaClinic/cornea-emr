@@ -8,13 +8,24 @@
 # printout) - off-site backups cannot be decrypted without it.
 #
 # Run manually:        powershell -ExecutionPolicy Bypass -File backup-db.ps1
+# Production (cloud):   powershell -ExecutionPolicy Bypass -File backup-production.ps1
 # Restore a backup:    powershell -ExecutionPolicy Bypass -File restore-backup.ps1 <file>
+
+param(
+    [string]$EnvFile = '',
+    [string]$OutputSubdir = ''
+)
 
 $ErrorActionPreference = 'Stop'
 
 $RepoRoot   = Split-Path -Parent $PSScriptRoot
-$EnvFile    = Join-Path $RepoRoot 'apps\api\.env'
+if (-not $EnvFile) {
+    $EnvFile = Join-Path $RepoRoot 'apps\api\.env'
+}
 $BackupDir  = Join-Path $RepoRoot 'backups'
+if ($OutputSubdir) {
+    $BackupDir = Join-Path $BackupDir $OutputSubdir
+}
 $LogFile    = Join-Path $BackupDir 'backup.log'
 $ConfigFile = Join-Path $PSScriptRoot 'backup-config.json'
 $KeyFile    = Join-Path $RepoRoot 'backup-encryption.key'
@@ -29,7 +40,7 @@ function Write-Log($message) {
 }
 
 if (-not (Test-Path $BackupDir)) {
-    New-Item -ItemType Directory -Path $BackupDir | Out-Null
+    New-Item -ItemType Directory -Path $BackupDir -Force | Out-Null
 }
 
 # --- Locate pg_dump (newest installed version first) ---
@@ -61,7 +72,10 @@ if (-not $dbUrlLine) {
     Write-Log 'ERROR: DATABASE_URL not set in .env.'
     exit 1
 }
-$dbUrl = ($dbUrlLine -split '=', 2)[1].Trim()
+$dbUrlRaw = ($dbUrlLine -split '=', 2)[1].Trim()
+$useSsl = $dbUrlRaw -match 'sslmode=(require|verify-full|verify-ca|prefer)' `
+    -or $dbUrlRaw -match '@[^/@]+ondigitalocean\.com'
+$dbUrl = ($dbUrlRaw -split '\?')[0]
 
 if ($dbUrl -notmatch '^postgres(ql)?://(?<user>[^:@/]+)(:(?<pass>[^@/]*))?@(?<dbhost>[^:/]+)(:(?<port>\d+))?/(?<db>[^?]+)') {
     Write-Log 'ERROR: could not parse DATABASE_URL.'
@@ -78,6 +92,9 @@ $stamp   = Get-Date -Format 'yyyy-MM-dd_HHmmss'
 $outFile = Join-Path $BackupDir "${DbName}_${stamp}.dump"
 
 $env:PGPASSWORD = $DbPass
+if ($useSsl -or $DbHost -notmatch '^(127\.0\.0\.1|localhost)$') {
+    $env:PGSSLMODE = 'require'
+}
 try {
     & $PgDump -h $DbHost -p $DbPort -U $DbUser -d $DbName -Fc -f $outFile
     if ($LASTEXITCODE -ne 0) { throw "pg_dump exited with code $LASTEXITCODE" }
@@ -90,6 +107,7 @@ try {
     exit 1
 } finally {
     Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
+    Remove-Item Env:\PGSSLMODE -ErrorAction SilentlyContinue
 }
 
 # --- Prune old backups (keep newest $KeepCount) ---
@@ -147,6 +165,9 @@ if (Test-Path $ConfigFile) {
 }
 
 if ($offsiteDir) {
+    if ($OutputSubdir) {
+        $offsiteDir = Join-Path $offsiteDir $OutputSubdir
+    }
     try {
         if (-not (Test-Path $offsiteDir)) {
             New-Item -ItemType Directory -Path $offsiteDir -Force | Out-Null

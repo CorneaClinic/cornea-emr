@@ -14,13 +14,16 @@
 param(
     [Parameter(Mandatory = $true)]
     [string]$BackupFile,
+    [string]$EnvFile = '',
     [switch]$DecryptOnly
 )
 
 $ErrorActionPreference = 'Stop'
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$EnvFile  = Join-Path $RepoRoot 'apps\api\.env'
+if (-not $EnvFile) {
+    $EnvFile = Join-Path $RepoRoot 'apps\api\.env'
+}
 $KeyFile  = Join-Path $RepoRoot 'backup-encryption.key'
 
 if (-not (Test-Path $BackupFile)) {

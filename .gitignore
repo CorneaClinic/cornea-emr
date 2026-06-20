@@ -4,6 +4,8 @@
 .env.*.local
 apps/api/.env
 apps/api/.env.local
+apps/api/.env.production
+apps/api/digitalocean-upload.env
 
 # Dependencies & runtime
 node_modules/
