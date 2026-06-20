@@ -7,6 +7,8 @@ export const EMR_SECTIONS = Object.freeze([
   'dashboard',
   'patient_form',
   'records',
+  'audit_trail',
+  'patient_flow',
   'keratoplasty',
   'database',
   'user_admin'
@@ -18,6 +20,8 @@ export const EMR_SECTION_LABELS = Object.freeze({
   dashboard: 'Dashboard',
   patient_form: 'Patient Form (clinical visit)',
   records: 'Patient Records',
+  audit_trail: 'Audit Trail (who changed records)',
+  patient_flow: 'Patient Flow (clinic stations)',
   keratoplasty: 'Keratoplasty Register',
   database: 'Database & export/import',
   user_admin: 'User & section access (admin)'
@@ -29,6 +33,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     dashboard: true,
     patient_form: true,
     records: true,
+    audit_trail: true,
+    patient_flow: true,
     keratoplasty: true,
     database: true,
     user_admin: true
@@ -37,6 +43,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     dashboard: true,
     patient_form: true,
     records: true,
+    audit_trail: true,
+    patient_flow: true,
     keratoplasty: true,
     database: false,
     user_admin: false
@@ -45,6 +53,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     dashboard: true,
     patient_form: true,
     records: true,
+    audit_trail: true,
+    patient_flow: true,
     keratoplasty: true,
     database: false,
     user_admin: false
@@ -53,6 +63,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     dashboard: true,
     patient_form: true,
     records: true,
+    audit_trail: true,
+    patient_flow: true,
     keratoplasty: true,
     database: false,
     user_admin: false
@@ -61,6 +73,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     dashboard: true,
     patient_form: true,
     records: true,
+    audit_trail: true,
+    patient_flow: true,
     keratoplasty: false,
     database: false,
     user_admin: false
@@ -69,6 +83,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     dashboard: true,
     patient_form: true,
     records: true,
+    audit_trail: true,
+    patient_flow: true,
     keratoplasty: false,
     database: false,
     user_admin: false
@@ -77,6 +93,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     dashboard: true,
     patient_form: false,
     records: true,
+    audit_trail: true,
+    patient_flow: true,
     keratoplasty: false,
     database: false,
     user_admin: false

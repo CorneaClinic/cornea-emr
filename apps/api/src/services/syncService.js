@@ -568,6 +568,22 @@ export async function pushMutations(req, body) {
       );
 
       results.push(resultPayload);
+
+      if (raw.entityType === 'visit' && outcome.entityId && raw.operation !== 'delete') {
+        const payload = raw.payload && typeof raw.payload === 'object' ? raw.payload : {};
+        const action = Number(outcome.revision) <= 1 ? 'create' : 'update';
+        await auditMutation(req, 'visit', String(outcome.entityId), action, {
+          patientId: payload.patientId ?? null,
+          fullName: payload.fullName ?? null,
+          visitDate: payload.visitDate ?? null,
+          localId: raw.localId ?? null,
+          operation: raw.operation
+        });
+      } else if (raw.entityType === 'visit' && raw.operation === 'delete' && outcome.entityId) {
+        await auditMutation(req, 'visit', String(outcome.entityId), 'delete', {
+          localId: raw.localId ?? null
+        });
+      }
     } catch (err) {
       if (err instanceof ConflictError) {
         const conflictResult = {

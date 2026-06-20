@@ -10,6 +10,7 @@ var PAGE_META = {
     dashboardTab: { title: 'Dashboard', subtitle: 'Overview & recent activity' },
     formTab:      { title: 'Patient Form', subtitle: 'Read-only visit record · use Edit to modify' },
     recordsTab:   { title: 'Patient Records', subtitle: 'All stored patient visits' },
+    auditTrailTab:{ title: 'Audit Trail', subtitle: 'Who changed which patient records' },
     flowTab:      { title: 'Patient Flow', subtitle: 'Today\'s patients by clinic station' },
     databaseTab:  { title: 'Database Management', subtitle: 'Export, import & manage local data' },
     keratoplastyTab: { title: 'Keratoplasty Register', subtitle: 'Patient register, tissue inventory & matching' }
@@ -124,6 +125,9 @@ window.switchTab = function(tabId) {
             loadRecords();
         }
     }
+    if (tabId === 'auditTrailTab' && window.CorneaAudit?.renderViewer) {
+        window.CorneaAudit.renderViewer();
+    }
     if (tabId === 'dashboardTab') updateDashboardStats();
     if (tabId === 'flowTab' && window.CorneaPatientFlow) {
         window.CorneaPatientFlow.initFlowTab();
@@ -147,7 +151,6 @@ window.switchTab = function(tabId) {
         renderIcdReadOnlyView();
         if (window.CorneaAdminUsers?.refresh) window.CorneaAdminUsers.refresh();
         if (window.CorneaOfflineAuth?.renderOfflineUsersAdmin) window.CorneaOfflineAuth.renderOfflineUsersAdmin();
-        if (window.CorneaAudit?.renderViewer) window.CorneaAudit.renderViewer();
     }
     if (tabId === 'keratoplastyTab') {
         initKeratoplastyTab();

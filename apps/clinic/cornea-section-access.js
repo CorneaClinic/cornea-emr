@@ -9,6 +9,7 @@
     dashboardTab: 'dashboard',
     formTab: 'patient_form',
     recordsTab: 'records',
+    auditTrailTab: 'audit_trail',
     flowTab: 'patient_flow',
     keratoplastyTab: 'keratoplasty',
     databaseTab: 'database'

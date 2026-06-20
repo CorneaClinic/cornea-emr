@@ -42,27 +42,27 @@
 
   const ROLE_SECTIONS = Object.freeze({
     administrator: {
-      dashboard: true, patient_form: true, records: true, patient_flow: true,
+      dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
       keratoplasty: true, database: true, user_admin: true
     },
     consultant: {
-      dashboard: true, patient_form: true, records: true, patient_flow: true,
+      dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
       keratoplasty: true, database: false, user_admin: false
     },
     resident: {
-      dashboard: true, patient_form: true, records: true, patient_flow: true,
+      dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
       keratoplasty: true, database: false, user_admin: false
     },
     nurse: {
-      dashboard: true, patient_form: true, records: true, patient_flow: true,
+      dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
       keratoplasty: false, database: false, user_admin: false
     },
     technician: {
-      dashboard: true, patient_form: true, records: true, patient_flow: true,
+      dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
       keratoplasty: false, database: false, user_admin: false
     },
     receptionist: {
-      dashboard: true, patient_form: false, records: true, patient_flow: true,
+      dashboard: true, patient_form: false, records: true, audit_trail: true, patient_flow: true,
       keratoplasty: false, database: false, user_admin: false
     }
   });

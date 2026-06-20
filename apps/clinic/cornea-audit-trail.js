@@ -76,10 +76,9 @@
 
   function canViewAudit() {
     if (global.__corneaCloudMode) {
-      return global.__corneaUser?.role === 'admin';
+      return !!global.CorneaApi?.isEnabled?.();
     }
-    const user = global.CorneaOfflineAuth?.getCurrentUser?.();
-    return !user || user.role === 'administrator';
+    return !!global.CorneaOfflineAuth?.isAuthenticated?.();
   }
 
   function ensureAuditStore(db) {
@@ -173,10 +172,15 @@
         const apiAction = filters.action === 'edit' ? 'update' : filters.action;
         params.set('action', apiAction);
       }
+      if (filters.userName) params.set('userName', filters.userName);
+      if (filters.patient) params.set('patient', filters.patient);
+      if (filters.dateFrom) params.set('dateFrom', filters.dateFrom);
+      if (filters.dateTo) params.set('dateTo', filters.dateTo);
       if (filters.limit) params.set('limit', String(filters.limit));
+      params.set('clinicalOnly', 'true');
       const qs = params.toString();
       const data = await global.CorneaApi.request(
-        `/api/v1/admin/audit-logs${qs ? `?${qs}` : ''}`
+        `/api/v1/audit-logs${qs ? `?${qs}` : ''}`
       );
       return (data.logs || []).map((row) => ({
         id: row.id,
@@ -223,11 +227,10 @@
   }
 
   async function listLogs(filters = {}) {
+    const cloud = global.__corneaCloudMode ? await fetchCloudLogs(filters) : [];
+    if (cloud.length) return cloud.slice(0, filters.limit || 500);
     const local = await listLocalLogs(filters);
-    const cloud = canViewAudit() ? await fetchCloudLogs(filters) : [];
-    const merged = [...local.map((r) => ({ ...r, source: 'local' })), ...cloud];
-    merged.sort((a, b) => (b.timestamp || '').localeCompare(a.timestamp || ''));
-    return merged.slice(0, filters.limit || 500);
+    return local.slice(0, filters.limit || 500);
   }
 
   function formatValuePreview(value) {
@@ -248,7 +251,7 @@
     if (!body) return;
 
     if (!canViewAudit()) {
-      body.innerHTML = '<tr><td colspan="7"><div class="empty-state">Audit logs are available to administrators only.</div></td></tr>';
+      body.innerHTML = '<tr><td colspan="7"><div class="empty-state">Sign in to view the audit trail.</div></td></tr>';
       return;
     }
 
@@ -287,7 +290,7 @@
               <i class="fa-solid fa-eye"></i> Values
             </button>
           </td>
-          <td style="font-size:0.75rem;color:var(--text-secondary);">${escapeHtml(row.source || 'local')}</td>
+          <td style="font-size:0.75rem;color:var(--text-secondary);">${escapeHtml(row.source || (global.__corneaCloudMode ? 'cloud' : 'local'))}</td>
         </tr>
         <tr id="${detailId}" class="audit-detail-row">
           <td colspan="7">

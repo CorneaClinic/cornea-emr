@@ -9,6 +9,8 @@ import cornealTissuesRouter from './corneal-tissues.js';
 import syncRouter from './sync.js';
 import migrationRouter from './migration.js';
 import adminUsersRouter from './admin-users.js';
+import adminAuditLogsRouter from './admin-audit-logs.js';
+import auditLogsRouter from './audit-logs.js';
 import mediaRouter from './media.js';
 import drawingRouter from './drawing.js';
 import icdRouter from './icd.js';
@@ -51,5 +53,7 @@ router.use('/sync', syncRouter);
 router.use('/icd', icdRouter);
 router.use('/admin/migration', migrationRouter);
 router.use('/admin/users', adminUsersRouter);
+router.use('/admin/audit-logs', adminAuditLogsRouter);
+router.use('/audit-logs', auditLogsRouter);
 
 export default router;

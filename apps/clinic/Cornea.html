@@ -3018,6 +3018,9 @@
         <button type="button" class="nav-item" onclick="switchTab('recordsTab')" data-tab="recordsTab" data-emr-section="records" id="nav-recordsTab" aria-controls="recordsTab">
             <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Patient Records
         </button>
+        <button type="button" class="nav-item" onclick="switchTab('auditTrailTab')" data-tab="auditTrailTab" data-emr-section="audit_trail" id="nav-auditTrailTab" aria-controls="auditTrailTab">
+            <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i> Audit Trail
+        </button>
         <button type="button" class="nav-item" onclick="switchTab('flowTab')" data-tab="flowTab" data-emr-section="patient_flow" id="nav-flowTab" aria-controls="flowTab">
             <i class="fa-solid fa-route" aria-hidden="true"></i> Patient Flow
         </button>
@@ -4228,6 +4231,73 @@
             </div>
         </div>
 
+        <!-- ===== AUDIT TRAIL TAB ===== -->
+        <div id="auditTrailTab" class="tab-content" role="tabpanel" aria-labelledby="nav-auditTrailTab" aria-hidden="true">
+            <div class="card no-print section-theme-audit" id="auditLogPanel" data-emr-section="audit_trail">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon slate"><i class="fa-solid fa-clipboard-list"></i></div>
+                        <span class="card-title">Audit Trail</span>
+                    </div>
+                    <button type="button" class="btn-secondary btn-sm" id="auditLogRefreshBtn">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">
+                        Read-only log of who created or changed patient records. Entries cannot be edited or deleted.
+                    </p>
+                    <div class="db-actions-grid" style="margin-bottom:14px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
+                        <div class="form-group" style="margin:0;">
+                            <label for="auditFilterAction">Action</label>
+                            <select id="auditFilterAction">
+                                <option value="">All</option>
+                                <option value="create">Create</option>
+                                <option value="edit">Edit</option>
+                                <option value="delete">Delete</option>
+                                <option value="restore">Restore</option>
+                                <option value="export">Export</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label for="auditFilterUser">User</label>
+                            <input type="text" id="auditFilterUser" placeholder="Filter by user" />
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label for="auditFilterPatient">Patient</label>
+                            <input type="text" id="auditFilterPatient" placeholder="ID or name" />
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label for="auditFilterDateFrom">From</label>
+                            <input type="date" id="auditFilterDateFrom" />
+                        </div>
+                        <div class="form-group" style="margin:0;">
+                            <label for="auditFilterDateTo">To</label>
+                            <input type="date" id="auditFilterDateTo" />
+                        </div>
+                    </div>
+                    <div class="table-scroll">
+                        <table class="recent-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Time</th>
+                                    <th>User</th>
+                                    <th>Patient</th>
+                                    <th>Action</th>
+                                    <th class="no-print">Values</th>
+                                    <th>Source</th>
+                                </tr>
+                            </thead>
+                            <tbody id="auditLogTableBody">
+                                <tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading audit trail…</p></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ===== DATABASE TAB ===== -->
         <div id="databaseTab" class="tab-content" role="tabpanel" aria-labelledby="nav-databaseTab" aria-hidden="true">
             <div class="alert alert-info no-print">
@@ -4380,70 +4450,6 @@
                             </thead>
                             <tbody id="offlineUsersTableBody">
                                 <tr><td colspan="6"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading users…</p></div></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-
-            <div class="card mt-4 no-print section-theme-audit" id="auditLogPanel" data-emr-section="user_admin">
-                <div class="card-header">
-                    <div class="card-header-left">
-                        <div class="card-icon slate"><i class="fa-solid fa-clipboard-list"></i></div>
-                        <span class="card-title">Audit Trail</span>
-                    </div>
-                    <button type="button" class="btn-secondary btn-sm" id="auditLogRefreshBtn">
-                        <i class="fa-solid fa-rotate"></i> Refresh
-                    </button>
-                </div>
-                <div class="card-body">
-                    <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;line-height:1.5;">
-                        Permanent, read-only log of patient record actions. Entries cannot be edited or deleted.
-                    </p>
-                    <div class="db-actions-grid" style="margin-bottom:14px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
-                        <div class="form-group" style="margin:0;">
-                            <label for="auditFilterAction">Action</label>
-                            <select id="auditFilterAction">
-                                <option value="">All</option>
-                                <option value="create">Create</option>
-                                <option value="edit">Edit</option>
-                                <option value="delete">Delete</option>
-                                <option value="restore">Restore</option>
-                                <option value="export">Export</option>
-                            </select>
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label for="auditFilterUser">User</label>
-                            <input type="text" id="auditFilterUser" placeholder="Filter by user" />
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label for="auditFilterPatient">Patient</label>
-                            <input type="text" id="auditFilterPatient" placeholder="ID or name" />
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label for="auditFilterDateFrom">From</label>
-                            <input type="date" id="auditFilterDateFrom" />
-                        </div>
-                        <div class="form-group" style="margin:0;">
-                            <label for="auditFilterDateTo">To</label>
-                            <input type="date" id="auditFilterDateTo" />
-                        </div>
-                    </div>
-                    <div class="table-scroll">
-                        <table class="recent-table">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Time</th>
-                                    <th>User</th>
-                                    <th>Patient</th>
-                                    <th>Action</th>
-                                    <th class="no-print">Values</th>
-                                    <th>Source</th>
-                                </tr>
-                            </thead>
-                            <tbody id="auditLogTableBody">
-                                <tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading audit trail…</p></div></td></tr>
                             </tbody>
                         </table>
                     </div>
