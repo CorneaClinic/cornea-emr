@@ -172,21 +172,32 @@ export const env = Object.freeze({
     encryptionKey: secretsEncryptionKey
   }),
   media: Object.freeze({
+    storageProvider: optional('MEDIA_STORAGE_PROVIDER', 'local').toLowerCase(),
     storagePath: optional('MEDIA_STORAGE_PATH', join(process.cwd(), 'data', 'media')),
     maxFileBytes: parseIntEnv('MEDIA_MAX_FILE_BYTES', 25 * 1024 * 1024),
-    categories: Object.freeze([
-      'slit_lamp',
-      'corneal_topography',
-      'as_oct',
-      'donor_cornea',
-      'anterior_drawing'
-    ]),
+    maxVideoBytes: parseIntEnv('MEDIA_MAX_VIDEO_BYTES', 100 * 1024 * 1024),
+    signedUrlTtlSeconds: parseIntEnv('MEDIA_SIGNED_URL_TTL_SECONDS', 900),
+    virusScanHookUrl: optional('MEDIA_VIRUS_SCAN_HOOK_URL', ''),
+    categories: Object.freeze(
+      optional(
+        'MEDIA_CATEGORIES',
+        'slit_lamp,corneal_topography,topography,tomography,as_oct,specular,confocal,anterior_drawing,corneal_drawing,operative_photo,video,pdf_report,donor_cornea,referral,teaching_case,research,other'
+      ).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
+    ),
     allowedMimeTypes: Object.freeze(
       optional(
         'MEDIA_ALLOWED_MIME_TYPES',
-        'image/png,image/jpeg,image/webp,image/svg+xml,application/pdf'
+        'image/png,image/jpeg,image/webp,image/svg+xml,image/tiff,application/pdf,video/mp4,video/webm'
       ).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
-    )
+    ),
+    s3: Object.freeze({
+      bucket: optional('MEDIA_S3_BUCKET', ''),
+      region: optional('MEDIA_S3_REGION', 'auto'),
+      endpoint: optional('MEDIA_S3_ENDPOINT', ''),
+      accessKeyId: optional('MEDIA_S3_ACCESS_KEY_ID', ''),
+      secretAccessKey: optional('MEDIA_S3_SECRET_ACCESS_KEY', ''),
+      forcePathStyle: optional('MEDIA_S3_FORCE_PATH_STYLE', 'true') === 'true'
+    })
   }),
   smtp: Object.freeze({
     host: optional('SMTP_HOST', ''),

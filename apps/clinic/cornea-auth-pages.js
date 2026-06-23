@@ -5,7 +5,7 @@
   'use strict';
 
   const STORAGE_BASE = 'corneaEmr_apiBase';
-  const DEFAULT_API_BASE = 'https://api.visionemr.net';
+  const DEFAULT_API_BASE = 'https://corneaclinic-2zfpt.ondigitalocean.app';
 
   function getApiBase() {
     return (localStorage.getItem(STORAGE_BASE) || DEFAULT_API_BASE).replace(/\/$/, '');

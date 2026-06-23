@@ -990,6 +990,38 @@
         cursor: default;
     }
 
+    /* Clinical Media Library */
+    .clinical-media-toolbar {
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 16px;
+    }
+    .clinical-media-toolbar .form-group { margin: 0; min-width: 160px; }
+    .clinical-media-table-wrap { overflow-x: auto; }
+    .clinical-media-actions { white-space: nowrap; display: flex; gap: 4px; flex-wrap: wrap; }
+    .clinical-media-empty, .clinical-media-hint {
+        text-align: center; color: var(--text-muted); padding: 24px 12px; font-size: 0.85rem;
+    }
+    .clinical-media-timeline { display: flex; flex-direction: column; gap: 10px; max-height: 420px; overflow-y: auto; }
+    .clinical-media-timeline-item {
+        display: grid; grid-template-columns: 90px 1fr; gap: 12px; padding: 10px;
+        border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+    }
+    .clinical-media-timeline-date { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); }
+    .clinical-media-timeline-file { font-size: 0.72rem; color: var(--text-muted); margin-top: 4px; }
+    .clinical-media-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 16px; }
+    .clinical-media-compare img { max-width: 100%; max-height: 280px; object-fit: contain; border: 1px solid var(--border); border-radius: 6px; }
+    .clinical-media-stats { list-style: none; padding: 0; margin: 0; font-size: 0.85rem; line-height: 1.8; }
+    #clinicalMediaViewerModal .clinical-media-viewer-canvas {
+        min-height: 360px; display: flex; align-items: center; justify-content: center;
+        overflow: auto; background: #111; border-radius: 8px;
+    }
+    #clinicalMediaViewerModal .clinical-media-viewer-canvas img { max-width: 100%; max-height: 70vh; transition: transform 0.15s; }
+    #clinicalMediaViewerModal .clinical-media-viewer-canvas iframe { width: 100%; height: 70vh; border: 0; }
+    .clinical-media-viewer-tools { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 10px; }
+    @media (max-width: 768px) {
+        .clinical-media-compare { grid-template-columns: 1fr; }
+        .clinical-media-timeline-item { grid-template-columns: 1fr; }
+    }
+
     /* Contact Lens module */
     .cl-subnav {
         display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;
@@ -3027,6 +3059,12 @@
         <button type="button" class="nav-item" onclick="switchTab('keratoplastyTab')" data-tab="keratoplastyTab" data-emr-section="keratoplasty" id="nav-keratoplastyTab" aria-controls="keratoplastyTab">
             <i class="fa-solid fa-hand-holding-medical" aria-hidden="true"></i> Keratoplasty
         </button>
+        <button type="button" class="nav-item" onclick="switchTab('kcRegistryTab')" data-tab="kcRegistryTab" data-emr-section="kc_registry" id="nav-kcRegistryTab" aria-controls="kcRegistryTab">
+            <i class="fa-solid fa-chart-line" aria-hidden="true"></i> KC &amp; CXL
+        </button>
+        <button type="button" class="nav-item" onclick="switchTab('clinicalMediaTab')" data-tab="clinicalMediaTab" data-emr-section="clinical_media" id="nav-clinicalMediaTab" aria-controls="clinicalMediaTab">
+            <i class="fa-solid fa-images" aria-hidden="true"></i> Clinical Media
+        </button>
         <button type="button" class="nav-item" onclick="switchTab('databaseTab')" data-tab="databaseTab" data-emr-section="database" id="nav-databaseTab" aria-controls="databaseTab">
             <i class="fa-solid fa-database" aria-hidden="true"></i> Database
         </button>
@@ -4055,9 +4093,19 @@
                             <label for="visitMediaCategory">Type</label>
                             <select id="visitMediaCategory">
                                 <option value="slit_lamp">Slit Lamp Photo</option>
-                                <option value="corneal_topography">Corneal Topography</option>
+                                <option value="topography">Topography (Pentacam)</option>
+                                <option value="tomography">Tomography (Orbscan/Sirius)</option>
+                                <option value="corneal_topography">Corneal Topography (legacy)</option>
                                 <option value="as_oct">AS-OCT Scan</option>
+                                <option value="specular">Specular Microscopy</option>
+                                <option value="confocal">Confocal Microscopy</option>
+                                <option value="corneal_drawing">Corneal Drawing</option>
+                                <option value="operative_photo">Operative Photo</option>
+                                <option value="video">Surgical Video</option>
+                                <option value="pdf_report">PDF Report</option>
                                 <option value="document">Clinical Document (PDF)</option>
+                                <option value="referral">Referral Letter</option>
+                                <option value="other">Other</option>
                             </select>
                         </div>
                         <div class="form-group">
@@ -4075,7 +4123,7 @@
                         </div>
                         <div class="form-group visit-media-file-wrap">
                             <label for="visitMediaFileInput">File</label>
-                            <input type="file" id="visitMediaFileInput" accept="image/*" multiple
+                            <input type="file" id="visitMediaFileInput" accept="image/*,application/pdf,video/mp4,video/webm" multiple
                                 onchange="CorneaVisitMedia.addFiles(this.files)" />
                         </div>
                     </div>
@@ -4294,6 +4342,71 @@
                             </tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== CLINICAL MEDIA TAB ===== -->
+        <div id="clinicalMediaTab" class="tab-content" role="tabpanel" aria-labelledby="nav-clinicalMediaTab" aria-hidden="true">
+            <div class="alert alert-info no-print">
+                <i class="fa-solid fa-circle-info"></i>
+                <span>Centralized clinical media library — slit lamp, topography, OCT, operative photos, PDF reports, and videos. Requires cloud sign-in for search and timeline; uploads from Patient Form sync in the background.</span>
+            </div>
+
+            <div class="card section-theme-clinical-media" id="section-clinical-media">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon cyan"><i class="fa-solid fa-images"></i></div>
+                        <span class="card-title">Clinical Media Library</span>
+                    </div>
+                    <button type="button" class="btn-secondary btn-sm" id="clinicalMediaRefreshBtn">
+                        <i class="fa-solid fa-rotate"></i> Refresh
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div class="clinical-media-toolbar no-print">
+                        <div class="form-group">
+                            <label for="clinicalMediaSearch">Search</label>
+                            <input type="search" id="clinicalMediaSearch" placeholder="Patient, filename, diagnosis…" />
+                        </div>
+                        <div class="form-group">
+                            <label for="clinicalMediaCategoryFilter">Category</label>
+                            <select id="clinicalMediaCategoryFilter">
+                                <option value="">All categories</option>
+                            </select>
+                        </div>
+                        <span id="clinicalMediaLibraryMeta" class="form-hint" style="margin-left:auto;"></span>
+                    </div>
+                    <div class="clinical-media-table-wrap">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Category</th>
+                                    <th>File</th>
+                                    <th>Patient</th>
+                                    <th>Diagnosis</th>
+                                    <th>Size</th>
+                                    <th class="no-print">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clinicalMediaLibraryBody">
+                                <tr><td colspan="7" class="clinical-media-empty">Sign in to cloud to load media library.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <h3 class="mt-4" style="font-size:0.95rem;">Patient Cornea Timeline</h3>
+                    <p class="form-hint">Uses Patient ID from the active visit form.</p>
+                    <div id="clinicalMediaTimeline" class="clinical-media-timeline"></div>
+
+                    <h3 class="mt-4" style="font-size:0.95rem;">Before / After Comparison</h3>
+                    <div id="clinicalMediaComparePanel" class="clinical-media-compare">
+                        <p class="clinical-media-hint">Select A and B from the library table to compare visits.</p>
+                    </div>
+
+                    <h3 class="mt-4" style="font-size:0.95rem;">Administrator — Storage &amp; Integrity</h3>
+                    <div id="clinicalMediaAdminStats" class="clinical-media-hint">Sign in as admin to view storage stats.</div>
                 </div>
             </div>
         </div>
@@ -4661,6 +4774,86 @@
             </div>
         </div>
 
+        <!-- ===== KC & CXL REGISTRY TAB ===== -->
+        <div id="kcRegistryTab" class="tab-content" role="tabpanel" aria-labelledby="nav-kcRegistryTab" aria-hidden="true">
+            <div class="kp-subnav no-print" role="tablist" aria-label="KC registry sections">
+                <button type="button" class="kp-subnav-btn active kc-subnav-btn" data-kc-panel="kcOverviewPanel" onclick="switchKcPanel('kcOverviewPanel')">
+                    <i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Overview
+                </button>
+                <button type="button" class="kp-subnav-btn kc-subnav-btn" data-kc-panel="kcPatientsPanel" onclick="switchKcPanel('kcPatientsPanel')">
+                    <i class="fa-solid fa-users" aria-hidden="true"></i> Patient Register
+                </button>
+            </div>
+            <div id="kcOverviewPanel" class="kp-panel kc-panel active">
+                <div class="kp-stats-grid" id="kcStatsGrid">
+                    <div class="kp-stat"><div class="val" id="kcStatTotal">0</div><div class="lbl">Enrolled</div></div>
+                    <div class="kp-stat"><div class="val" id="kcStatActive">0</div><div class="lbl">Active</div></div>
+                    <div class="kp-stat"><div class="val" id="kcStatWatch">0</div><div class="lbl">Watch</div></div>
+                    <div class="kp-stat"><div class="val" id="kcStatPostCxl">0</div><div class="lbl">Post-CXL</div></div>
+                    <div class="kp-stat"><div class="val" id="kcStatProgression">0</div><div class="lbl">Progression flags</div></div>
+                    <div class="kp-stat"><div class="val" id="kcStatCxl">0</div><div class="lbl">CXL procedures</div></div>
+                </div>
+                <p class="form-hint" style="margin-top:16px;">Longitudinal keratoconus programme — serial topography (Kmax/Kmean), CXL protocol tracking, progression flags, and links to scleral lens and laser modules.</p>
+            </div>
+            <div id="kcPatientsPanel" class="kp-panel kc-panel">
+                <div class="card section-theme-kp-patients">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon purple"><i class="fa-solid fa-eye"></i></div>
+                            <span class="card-title">Keratoconus &amp; CXL Patients</span>
+                        </div>
+                        <div class="emr-toolbar-actions no-print">
+                            <button type="button" class="btn-primary btn-sm" onclick="openKcPatientModal('new')"><i class="fa-solid fa-plus"></i> Enrol patient</button>
+                            <button type="button" class="btn-secondary btn-sm" onclick="exportKcPatientsCsv()"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+                        </div>
+                        <div class="search-box no-print" style="max-width:220px;">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="kcPatientSearch" placeholder="Search…" onkeyup="filterKcPatientsTable()">
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div id="kcPatientDetailPanel" class="emr-readonly-shell mb-4" hidden>
+                            <div class="emr-toolbar">
+                                <div class="emr-toolbar-title" id="kcPatientDetailTitle">Patient Detail</div>
+                                <div class="emr-toolbar-actions no-print">
+                                    <button type="button" class="btn-secondary btn-sm" onclick="openKcPatientModal('edit')"><i class="fa-solid fa-pen"></i> Edit</button>
+                                    <button type="button" class="btn-primary btn-sm" onclick="openKcTopoModal('new')"><i class="fa-solid fa-chart-area"></i> Add topography</button>
+                                    <button type="button" class="btn-primary btn-sm" onclick="openKcCxlModal('new')"><i class="fa-solid fa-sun"></i> Record CXL</button>
+                                </div>
+                            </div>
+                            <div id="kcProgressionSummary" class="form-hint" style="margin:12px 0;padding:10px;background:#f5f8fc;border-radius:8px;"></div>
+                            <div id="kcModuleLinks" class="emr-toolbar-actions no-print" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;"></div>
+                            <h4 style="margin:16px 0 8px;">Topography timeline</h4>
+                            <div class="table-scroll">
+                                <table class="records-table">
+                                    <thead><tr><th>Date</th><th>Eye</th><th>Device</th><th>Kmax</th><th>Kmean</th><th>Pachy min</th><th>BAD-D</th><th>Progression</th><th class="no-print">Actions</th></tr></thead>
+                                    <tbody id="kcTopoTimelineBody"></tbody>
+                                </table>
+                            </div>
+                            <h4 style="margin:20px 0 8px;">CXL procedures</h4>
+                            <div class="table-scroll">
+                                <table class="records-table">
+                                    <thead><tr><th>Date</th><th>Eye</th><th>Protocol</th><th>Epithelium</th><th>UV (J/cm²)</th><th>Outcome</th><th class="no-print">Actions</th></tr></thead>
+                                    <tbody id="kcCxlTimelineBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="kp-filters no-print">
+                            <div class="form-group"><label>Status</label>
+                                <select id="kcFilterStatus" onchange="filterKcPatientsTable()"><option value="">All</option><option>Active</option><option>Watch</option><option>Post-CXL</option><option>Transplant listed</option><option>Discharged</option></select>
+                            </div>
+                        </div>
+                        <div class="table-scroll">
+                            <table class="records-table">
+                                <thead><tr><th>ID</th><th>Name</th><th>Diagnosis</th><th>Eyes</th><th>Stage</th><th>Status</th><th>Progression</th><th>Index</th><th class="no-print">Actions</th></tr></thead>
+                                <tbody id="kcPatientsBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </main><!-- end .page-content -->
 </div><!-- end .main-wrapper -->
 
@@ -4778,6 +4971,113 @@
         <div class="emr-modal-footer">
             <button type="button" class="btn-secondary" onclick="closeEmrModal('kpTissueModal')">Cancel</button>
             <button type="button" class="btn-primary" onclick="saveKpTissue()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="kcPatientModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="kcPatientModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="kcPatientModalTitle"><i class="fa-solid fa-eye"></i> KC Registry Patient</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('kcPatientModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="kcRecordId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label for="kcRegistryId">Registry ID</label><input type="text" id="kcRegistryId" readonly /></div>
+                <div class="form-group"><label class="required" for="kcFullName">Full Name</label><input type="text" id="kcFullName" required /></div>
+                <div class="form-group"><label for="kcAge">Age</label><input type="number" id="kcAge" min="0" max="120" /></div>
+                <div class="form-group"><label for="kcGender">Gender</label><select id="kcGender"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select></div>
+                <div class="form-group"><label for="kcPhone">Phone</label><input type="tel" id="kcPhone" /></div>
+                <div class="form-group"><label for="kcEmrPatientMrn">EMR Patient ID</label><input type="text" id="kcEmrPatientMrn" placeholder="Links to Patient Records" /></div>
+                <div class="form-group"><label for="kcEyeInvolvement">Eye involvement</label><select id="kcEyeInvolvement"><option value="">—</option><option>OD</option><option>OS</option><option>OU</option></select></div>
+                <div class="form-group"><label for="kcDiagnosis">Diagnosis</label><select id="kcDiagnosis"><option>Keratoconus</option><option>Pellucid marginal degeneration</option><option>Post-LASIK ectasia</option><option>Forme fruste keratoconus</option><option>Other</option></select></div>
+                <div class="form-group"><label for="kcStaging">Staging</label><select id="kcStaging"><option value="">—</option><option>Stage I</option><option>Stage II</option><option>Stage III</option><option>Stage IV</option><option>ABCD A</option><option>ABCD B</option><option>ABCD C</option><option>ABCD D</option></select></div>
+                <div class="form-group"><label for="kcIndexDate">Index date</label><input type="date" id="kcIndexDate" /></div>
+                <div class="form-group"><label for="kcFamilyHistoryKc">Family history KC</label><select id="kcFamilyHistoryKc"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+                <div class="form-group"><label for="kcAtopy">Atopy</label><select id="kcAtopy"><option value="">—</option><option>None</option><option>Mild</option><option>Moderate</option><option>Severe</option></select></div>
+                <div class="form-group"><label for="kcEyeRubbing">Eye rubbing</label><select id="kcEyeRubbing"><option value="">—</option><option>None</option><option>Occasional</option><option>Frequent</option></select></div>
+                <div class="form-group"><label for="kcStatus">Programme status</label><select id="kcStatus"><option>Active</option><option>Watch</option><option>Post-CXL</option><option>Transplant listed</option><option>Discharged</option></select></div>
+                <div class="form-group span-2"><label for="kcNotes">Notes</label><textarea id="kcNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('kcPatientModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="saveKcPatient()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="kcTopoModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="kcTopoModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="kcTopoModalTitle"><i class="fa-solid fa-chart-area"></i> Topography Reading</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('kcTopoModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="kcTopoRecordId"><input type="hidden" id="kcTopoPatientId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label class="required" for="kcTopoEye">Eye</label><select id="kcTopoEye" required><option value="">—</option><option>OD</option><option>OS</option></select></div>
+                <div class="form-group"><label class="required" for="kcTopoCapturedAt">Capture date</label><input type="date" id="kcTopoCapturedAt" required /></div>
+                <div class="form-group"><label for="kcTopoDevice">Device</label><select id="kcTopoDevice"><option value="">—</option><option>Pentacam</option><option>Galilei</option><option>Orbscan</option><option>Sirius</option><option>Other</option></select></div>
+                <div class="form-group"><label for="kcTopoKmax">Kmax (D)</label><input type="number" id="kcTopoKmax" step="0.01" /></div>
+                <div class="form-group"><label for="kcTopoKmean">Kmean (D)</label><input type="number" id="kcTopoKmean" step="0.01" /></div>
+                <div class="form-group"><label for="kcTopoK1">K1 (D)</label><input type="number" id="kcTopoK1" step="0.01" /></div>
+                <div class="form-group"><label for="kcTopoK2">K2 (D)</label><input type="number" id="kcTopoK2" step="0.01" /></div>
+                <div class="form-group"><label for="kcTopoThinnestPachy">Thinnest pachy (µm)</label><input type="number" id="kcTopoThinnestPachy" /></div>
+                <div class="form-group"><label for="kcTopoCentralPachy">Central pachy (µm)</label><input type="number" id="kcTopoCentralPachy" /></div>
+                <div class="form-group"><label for="kcTopoBadD">BAD-D</label><input type="number" id="kcTopoBadD" step="0.01" /></div>
+                <div class="form-group"><label for="kcTopoAbcd">ABCD</label><select id="kcTopoAbcd"><option value="">—</option><option>Normal</option><option>A</option><option>B</option><option>C</option><option>D</option></select></div>
+                <div class="form-group"><label for="kcTopoConeSeverity">Cone severity</label><select id="kcTopoConeSeverity"><option value="">—</option><option>None</option><option>Suspect</option><option>Mild</option><option>Moderate</option><option>Advanced</option></select></div>
+                <div class="form-group"><label for="kcTopoConeLocation">Cone location</label><input type="text" id="kcTopoConeLocation" /></div>
+                <div class="form-group"><label for="kcTopoProgressionFlag">Progression</label><select id="kcTopoProgressionFlag"><option>None</option><option>Suspect</option><option>Confirmed</option><option>Stable</option></select></div>
+                <div class="form-group span-2"><label for="kcTopoNotes">Notes</label><textarea id="kcTopoNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('kcTopoModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="saveKcTopo()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="kcCxlModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="kcCxlModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="kcCxlModalTitle"><i class="fa-solid fa-sun"></i> CXL Procedure</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('kcCxlModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="kcCxlRecordId"><input type="hidden" id="kcCxlPatientId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label class="required" for="kcCxlEye">Eye</label><select id="kcCxlEye" required><option value="">—</option><option>OD</option><option>OS</option></select></div>
+                <div class="form-group"><label class="required" for="kcCxlProcedureDate">Procedure date</label><input type="date" id="kcCxlProcedureDate" required /></div>
+                <div class="form-group"><label for="kcCxlProtocol">Protocol</label><select id="kcCxlProtocol"><option value="">—</option><option>Dresden standard</option><option>Accelerated</option><option>Epithelial-on</option><option>Transepithelial</option><option>PACK-CXL</option><option>Custom</option></select></div>
+                <div class="form-group"><label for="kcCxlEpiType">Epithelium</label><select id="kcCxlEpiType"><option value="">—</option><option>Epi-off</option><option>Epi-on</option><option>Transepithelial</option></select></div>
+                <div class="form-group"><label for="kcCxlRiboflavinType">Riboflavin</label><select id="kcCxlRiboflavinType"><option value="">—</option><option>Riboflavin 0.1%</option><option>Hydroxypropyl methylcellulose</option><option>Dextran 20%</option><option>Other</option></select></div>
+                <div class="form-group"><label for="kcCxlRiboflavinDurationMin">Riboflavin soak (min)</label><input type="number" id="kcCxlRiboflavinDurationMin" /></div>
+                <div class="form-group"><label for="kcCxlUvEnergy">UV energy (J/cm²)</label><input type="number" id="kcCxlUvEnergy" step="0.1" /></div>
+                <div class="form-group"><label for="kcCxlUvDurationSec">UV duration (sec)</label><input type="number" id="kcCxlUvDurationSec" /></div>
+                <div class="form-group"><label for="kcCxlUvPower">UV power (mW/cm²)</label><input type="number" id="kcCxlUvPower" step="0.1" /></div>
+                <div class="form-group"><label for="kcCxlIontophoresis">Iontophoresis</label><select id="kcCxlIontophoresis"><option value="">—</option><option>Yes</option><option>No</option></select></div>
+                <div class="form-group"><label for="kcCxlSurgeon">Surgeon</label><input type="text" id="kcCxlSurgeon" /></div>
+                <div class="form-group"><label for="kcCxlPreKmax">Pre-op Kmax (D)</label><input type="number" id="kcCxlPreKmax" step="0.01" /></div>
+                <div class="form-group"><label for="kcCxlPreKmean">Pre-op Kmean (D)</label><input type="number" id="kcCxlPreKmean" step="0.01" /></div>
+                <div class="form-group"><label for="kcCxlPreThinnestPachy">Pre-op thinnest pachy (µm)</label><input type="number" id="kcCxlPreThinnestPachy" /></div>
+                <div class="form-group"><label for="kcCxlPostKmax3m">Post Kmax 3m</label><input type="number" id="kcCxlPostKmax3m" step="0.01" /></div>
+                <div class="form-group"><label for="kcCxlPostKmax6m">Post Kmax 6m</label><input type="number" id="kcCxlPostKmax6m" step="0.01" /></div>
+                <div class="form-group"><label for="kcCxlPostKmax12m">Post Kmax 12m</label><input type="number" id="kcCxlPostKmax12m" step="0.01" /></div>
+                <div class="form-group"><label for="kcCxlPostKmean3m">Post Kmean 3m</label><input type="number" id="kcCxlPostKmean3m" step="0.01" /></div>
+                <div class="form-group"><label for="kcCxlPostKmean6m">Post Kmean 6m</label><input type="number" id="kcCxlPostKmean6m" step="0.01" /></div>
+                <div class="form-group"><label for="kcCxlPostKmean12m">Post Kmean 12m</label><input type="number" id="kcCxlPostKmean12m" step="0.01" /></div>
+                <div class="form-group"><label for="kcCxlOutcome">Outcome</label><select id="kcCxlOutcome"><option>Pending</option><option>Success</option><option>Partial</option><option>Failed</option><option>Halted progression</option></select></div>
+                <div class="form-group span-2"><label for="kcCxlComplications">Complications</label><textarea id="kcCxlComplications" rows="2"></textarea></div>
+                <div class="form-group span-2"><label for="kcCxlNotes">Notes</label><textarea id="kcCxlNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('kcCxlModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="saveKcCxl()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
         </div>
     </div>
 </div>
@@ -4926,6 +5226,25 @@
     </div>
 </div>
 
+<div id="clinicalMediaViewerModal" class="emr-modal-overlay" aria-hidden="true" role="presentation">
+    <div class="emr-modal emr-modal-xl" role="dialog" aria-modal="true" aria-labelledby="clinicalMediaViewerTitle">
+        <div class="emr-modal-header">
+            <h2 id="clinicalMediaViewerTitle">Clinical Image Viewer</h2>
+            <button type="button" class="emr-modal-close" id="clinicalMediaViewerClose" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <div class="clinical-media-viewer-tools no-print">
+                <button type="button" class="btn-secondary btn-sm" id="clinicalMediaZoomIn"><i class="fa-solid fa-magnifying-glass-plus"></i> Zoom in</button>
+                <button type="button" class="btn-secondary btn-sm" id="clinicalMediaZoomOut"><i class="fa-solid fa-magnifying-glass-minus"></i> Zoom out</button>
+                <button type="button" class="btn-secondary btn-sm" id="clinicalMediaRotate"><i class="fa-solid fa-rotate-right"></i> Rotate</button>
+                <label>Brightness <input type="range" id="clinicalMediaBrightness" min="50" max="150" value="100" /></label>
+            </div>
+            <div id="clinicalMediaViewerMeta" class="form-hint" style="margin-bottom:8px;"></div>
+            <div id="clinicalMediaViewerCanvas" class="clinical-media-viewer-canvas"></div>
+        </div>
+    </div>
+</div>
+
 <script src="js/storage.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/form-section-collapse.js"></script>
@@ -4951,6 +5270,10 @@
 <script src="cornea-anterior-segment.js"></script>
 <script src="js/anterior-drawing.js"></script>
 <script src="js/keratoplasty.js"></script>
+<script src="cornea-kc-cxl-taxonomy.js"></script>
+<script src="cornea-kc-cxl.js"></script>
+<script src="cornea-media-blob-store.js"></script>
+<script src="cornea-clinical-media.js"></script>
 <script src="js/init.js"></script>
 <script src="cornea-sync-client.js"></script>
 <script src="cornea-visit-media.js"></script>
@@ -4975,12 +5298,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         cloudConnected = await CorneaApi.tryConnect({ prompt: isPublic });
     } catch (err) {
         console.warn('[CorneaApi] Cloud mode unavailable — using offline authentication.', err);
+        if (window.__corneaCloudMode) cloudConnected = true;
     }
-    if (window.CorneaOfflineAuth) {
-        await window.CorneaOfflineAuth.initAfterCloudCheck(cloudConnected);
-    }
-    if (window.CorneaAudit) {
-        window.CorneaAudit.installHooks();
+    try {
+        if (window.CorneaOfflineAuth) {
+            await window.CorneaOfflineAuth.initAfterCloudCheck(cloudConnected);
+        }
+        if (window.CorneaAudit) {
+            window.CorneaAudit.installHooks();
+        }
+    } finally {
+        const authed = window.__corneaCloudMode || window.CorneaOfflineAuth?.getCurrentUser?.();
+        const cloudOpen = document.getElementById('corneaCloudLoginModal')?.classList.contains('is-open');
+        const offlineOpen = document.getElementById('corneaOfflineLogin')?.classList.contains('is-open');
+        if (authed) {
+            document.body.classList.remove('cornea-auth-pending');
+            window.CorneaAuthEnv?.unlockUi?.();
+        } else if (isPublic && !cloudOpen && !offlineOpen) {
+            console.warn('[Cornea] No auth UI visible — reopening cloud sign-in.');
+            window.CorneaApiForceCloudSignIn?.();
+        }
     }
 }, { once: true });
 </script>

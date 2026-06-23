@@ -17,6 +17,7 @@
     "deploy:clinic": "wrangler deploy"
   },
   "devDependencies": {
+    "docx": "^9.7.1",
     "wrangler": "^4.100.0"
   }
 }

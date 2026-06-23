@@ -79,6 +79,7 @@ server.listen(PORT, HOST, () => {
     console.log('');
     console.log('  Cornea Clinic static server running');
     console.log(`  Open: http://${HOST}:${PORT}/Cornea.html`);
+    console.log(`  Offline admin reset: http://${HOST}:${PORT}/reset-offline-admin.html`);
     console.log('  ICD-11: sign in to cloud sync (API proxies WHO securely)');
     console.log('  Press Ctrl+C to stop');
     console.log('');

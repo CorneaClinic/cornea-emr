@@ -43,27 +43,27 @@
   const ROLE_SECTIONS = Object.freeze({
     administrator: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: true, database: true, user_admin: true
+      keratoplasty: true, kc_registry: true, clinical_media: true, database: true, user_admin: true
     },
     consultant: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: true, database: false, user_admin: false
+      keratoplasty: true, kc_registry: true, clinical_media: true, database: false, user_admin: false
     },
     resident: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: true, database: false, user_admin: false
+      keratoplasty: true, kc_registry: true, clinical_media: true, database: false, user_admin: false
     },
     nurse: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: false, database: false, user_admin: false
+      keratoplasty: false, kc_registry: true, clinical_media: true, database: false, user_admin: false
     },
     technician: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: false, database: false, user_admin: false
+      keratoplasty: false, kc_registry: true, clinical_media: true, database: false, user_admin: false
     },
     receptionist: {
       dashboard: true, patient_form: false, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: false, database: false, user_admin: false
+      keratoplasty: false, kc_registry: false, clinical_media: false, database: false, user_admin: false
     }
   });
 
@@ -327,6 +327,11 @@
       body.cornea-auth-pending #sidebar,
       body.cornea-auth-pending .sidebar-overlay,
       body.cornea-auth-pending .topbar { visibility: hidden !important; pointer-events: none !important; }
+      body.cornea-auth-pending #corneaCloudLoginModal.is-open,
+      body.cornea-auth-pending #corneaPwChangeModal.is-open,
+      body.cornea-auth-pending #corneaOfflineLogin.is-open {
+        visibility: visible !important; pointer-events: auto !important;
+      }
       #corneaOfflineLogin {
         position: fixed; inset: 0; z-index: 10000;
         display: none; align-items: center; justify-content: center;
@@ -373,6 +378,9 @@
             <input type="password" id="corneaOfflinePassword" autocomplete="current-password" />
           </div>
           <p id="corneaOfflineLoginError" class="form-hint" style="color:var(--danger,#c62828);display:none;"></p>
+          <p class="form-hint" style="font-size:0.8rem;margin-top:10px;line-height:1.45;">
+            Offline accounts are stored only on this device. Your <strong>cloud email and password</strong> do not work here — use <strong>Cloud sign in instead</strong>.
+          </p>
           <button type="button" class="btn-primary" id="corneaOfflineLoginBtn" style="width:100%;margin-top:8px;">
             <i class="fa-solid fa-right-to-bracket"></i> Sign in
           </button>
@@ -390,9 +398,30 @@
       if (e.key === 'Enter') submitLogin().catch((err) => showLoginError(err.message));
     });
     document.getElementById('corneaOfflineCloudBtn')?.addEventListener('click', async () => {
-      if (!global.CorneaApi?.signIn) return;
-      const ok = await global.CorneaApi.signIn();
-      if (ok) showApp(true);
+      clearLoginError();
+      const offline = document.getElementById('corneaOfflineLogin');
+      if (offline) {
+        offline.classList.remove('is-open');
+        offline.style.display = 'none';
+      }
+      const openCloud = global.CorneaApiForceCloudSignIn || global.CorneaApi?.signIn;
+      if (!openCloud) {
+        showLoginError('Cloud sign-in is not available. Reload the page and try again.');
+        if (offline) { offline.style.display = ''; offline.classList.add('is-open'); }
+        return;
+      }
+      try {
+        const ok = await openCloud();
+        if (ok) {
+          showApp(true);
+        } else if (offline) {
+          offline.style.display = '';
+          offline.classList.add('is-open');
+        }
+      } catch (err) {
+        showLoginError(err.message || 'Cloud sign-in failed');
+        if (offline) { offline.style.display = ''; offline.classList.add('is-open'); }
+      }
     });
     document.getElementById('corneaLogoutBtn')?.addEventListener('click', async () => {
       if (global.__corneaCloudMode && global.CorneaApi?.logout) {
@@ -784,7 +813,7 @@
     },
 
     async initAfterCloudCheck(cloudConnected) {
-      if (cloudConnected) {
+      if (cloudConnected || global.__corneaCloudMode) {
         currentUser = null;
         clearSession();
         showApp(true);
@@ -797,21 +826,34 @@
         if (global.CorneaAuthEnv?.isOfflineFallbackActive?.()) {
           ensureLoginUi();
           updateOfflineLoginCopy();
+          if (global.CorneaApi?.resolveBaseUrl) {
+            try {
+              const base = await global.CorneaApi.resolveBaseUrl();
+              const health = await global.CorneaApi.probeHealth?.(base);
+              if (health?.healthy) {
+                global.CorneaAuthEnv?.clearOfflineFallback?.();
+                const offline = document.getElementById('corneaOfflineLogin');
+                if (offline) offline.style.display = 'none';
+                if (global.CorneaApi.signIn) await global.CorneaApi.signIn();
+              }
+            } catch (_) { /* keep offline UI */ }
+          }
           if (global.db) await this.onDbReady();
           return;
         }
-        ensureLoginUi();
-        showApp(false);
-        const offlineOverlay = document.getElementById('corneaOfflineLogin');
-        if (offlineOverlay) offlineOverlay.style.display = 'none';
-        if (global.CorneaApi?.signIn) {
-          await global.CorneaApi.signIn();
+        if (global.__corneaCloudMode) {
+          showApp(true);
+          return;
+        }
+        const cloudModal = document.getElementById('corneaCloudLoginModal');
+        if (!cloudModal?.classList.contains('is-open')) {
+          const openCloud = global.CorneaApiForceCloudSignIn || global.CorneaApi?.signIn;
+          if (openCloud) await openCloud();
         }
         if (global.CorneaAuthEnv?.isOfflineFallbackActive?.() && global.db) {
+          ensureLoginUi();
           updateOfflineLoginCopy();
           await this.onDbReady();
-        } else if (!global.__corneaCloudMode) {
-          showApp(false);
         }
         return;
       }

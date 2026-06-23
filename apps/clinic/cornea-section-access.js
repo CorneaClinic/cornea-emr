@@ -12,6 +12,8 @@
     auditTrailTab: 'audit_trail',
     flowTab: 'patient_flow',
     keratoplastyTab: 'keratoplasty',
+    kcRegistryTab: 'kc_registry',
+    clinicalMediaTab: 'clinical_media',
     databaseTab: 'database'
   });
 

@@ -6,11 +6,48 @@ import { PERMISSIONS } from '../core/permissions.js';
 import {
   getMediaAssetById,
   getMediaAssetContent,
+  getMediaAssetSignedUrl,
   deleteMediaAsset,
-  updateMediaAssetMetadata
+  updateMediaAssetMetadata,
+  archiveMediaAsset,
+  restoreMediaAsset
 } from '../services/mediaAssetService.js';
 
 const router = Router();
+
+router.get(
+  '/:id/signed-url',
+  authenticate,
+  requirePermission(PERMISSIONS.MEDIA_READ),
+  asyncHandler(async (req, res) => {
+    const { asset, url } = await getMediaAssetSignedUrl(req.user.clinicId, req.params.id);
+    if (url) {
+      res.json({ data: { assetId: asset.id, url, mimeType: asset.mimeType } });
+    } else {
+      res.json({ data: { assetId: asset.id, url: null, useContentEndpoint: true } });
+    }
+  })
+);
+
+router.post(
+  '/:id/archive',
+  authenticate,
+  requirePermission(PERMISSIONS.MEDIA_WRITE),
+  asyncHandler(async (req, res) => {
+    const asset = await archiveMediaAsset(req, req.params.id);
+    res.json({ data: asset });
+  })
+);
+
+router.post(
+  '/:id/restore',
+  authenticate,
+  requirePermission(PERMISSIONS.MEDIA_WRITE),
+  asyncHandler(async (req, res) => {
+    const asset = await restoreMediaAsset(req, req.params.id);
+    res.json({ data: asset });
+  })
+);
 
 router.get(
   '/:id/content',
@@ -22,6 +59,7 @@ router.get(
     res.setHeader('Content-Length', String(buffer.length));
     res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(asset.originalFilename)}"`);
     res.setHeader('ETag', `"${asset.checksum}"`);
+    res.setHeader('Cache-Control', 'private, max-age=3600');
     res.send(buffer);
   })
 );

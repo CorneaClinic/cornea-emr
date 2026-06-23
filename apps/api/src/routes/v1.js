@@ -5,6 +5,7 @@ import visitsRouter from './visits.js';
 import prescriptionsRouter, { prescriptionByIdRouter } from './prescriptions.js';
 import followupsRouter, { visitFollowupRouter } from './followups.js';
 import keratoplastyPatientsRouter from './keratoplasty-patients.js';
+import kcRegistryRouter from './kc-registry.js';
 import cornealTissuesRouter from './corneal-tissues.js';
 import syncRouter from './sync.js';
 import migrationRouter from './migration.js';
@@ -12,6 +13,7 @@ import adminUsersRouter from './admin-users.js';
 import adminAuditLogsRouter from './admin-audit-logs.js';
 import auditLogsRouter from './audit-logs.js';
 import mediaRouter from './media.js';
+import mediaLibraryRouter from './media-library.js';
 import drawingRouter from './drawing.js';
 import icdRouter from './icd.js';
 import { createEntityMediaRouter } from './entityMedia.js';
@@ -21,6 +23,12 @@ const router = Router();
 
 router.use(auditContextMiddleware);
 
+router.use('/patients/:patientId/media', createEntityMediaRouter({
+  entityType: 'patient',
+  idParam: 'patientId',
+  readPermission: PERMISSIONS.VISITS_READ,
+  writePermission: PERMISSIONS.VISITS_WRITE
+}));
 router.use('/patients', patientsRouter);
 router.use('/visits/:visitId/media', createEntityMediaRouter({
   entityType: 'visit',
@@ -41,6 +49,7 @@ router.use('/keratoplasty-patients/:id/media', createEntityMediaRouter({
   writePermission: PERMISSIONS.KP_WRITE
 }));
 router.use('/keratoplasty-patients', keratoplastyPatientsRouter);
+router.use('/kc-registry', kcRegistryRouter);
 router.use('/corneal-tissues/:id/media', createEntityMediaRouter({
   entityType: 'corneal_tissue',
   idParam: 'id',
@@ -48,6 +57,7 @@ router.use('/corneal-tissues/:id/media', createEntityMediaRouter({
   writePermission: PERMISSIONS.KP_WRITE
 }));
 router.use('/corneal-tissues', cornealTissuesRouter);
+router.use('/media-library', mediaLibraryRouter);
 router.use('/media', mediaRouter);
 router.use('/sync', syncRouter);
 router.use('/icd', icdRouter);

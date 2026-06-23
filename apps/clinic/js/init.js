@@ -42,6 +42,8 @@ window.addEventListener('DOMContentLoaded', () => {
         window.CorneaAnteriorSegment.init();
     }
 
+    if (window.CorneaClinicalMedia) window.CorneaClinicalMedia.init();
+
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && window.innerWidth < 900) closeSidebar();
     });

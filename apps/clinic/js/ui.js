@@ -13,7 +13,9 @@ var PAGE_META = {
     auditTrailTab:{ title: 'Audit Trail', subtitle: 'Who changed which patient records' },
     flowTab:      { title: 'Patient Flow', subtitle: 'Today\'s patients by clinic station' },
     databaseTab:  { title: 'Database Management', subtitle: 'Export, import & manage local data' },
-    keratoplastyTab: { title: 'Keratoplasty Register', subtitle: 'Patient register, tissue inventory & matching' }
+    keratoplastyTab: { title: 'Keratoplasty Register', subtitle: 'Patient register, tissue inventory & matching' },
+    kcRegistryTab: { title: 'KC & CXL Registry', subtitle: 'Keratoconus programme, serial topography & cross-linking' },
+    clinicalMediaTab: { title: 'Clinical Media', subtitle: 'Imaging library, timeline & comparison' }
 };
 
 function escapeHtml(str) {
@@ -154,6 +156,9 @@ window.switchTab = function(tabId) {
     }
     if (tabId === 'keratoplastyTab') {
         initKeratoplastyTab();
+    }
+    if (tabId === 'kcRegistryTab' && typeof initKcRegistry === 'function') {
+        initKcRegistry();
     }
 
     if (window.innerWidth < 900) closeSidebar();

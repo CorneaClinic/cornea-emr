@@ -5,7 +5,7 @@
 window.db = null;
 var DB_NAME = "CorneaClinicDB";
 var STORE_NAME = "patients";
-var DB_VERSION = 6;
+var DB_VERSION = 8;
 var STORE_USERS = 'users';
 var STORE_SYNC_QUEUE = 'sync_queue';
 var STORE_SYNC_META = 'sync_meta';
@@ -68,13 +68,21 @@ function initDB() {
             if (window.CorneaAudit && typeof window.CorneaAudit.ensureAuditStore === 'function') {
                 window.CorneaAudit.ensureAuditStore(db);
             }
+            if (window.CorneaMediaBlobStore && typeof window.CorneaMediaBlobStore.ensureStore === 'function') {
+                window.CorneaMediaBlobStore.ensureStore(db, event);
+            }
+            if (window.CorneaKcCxl && typeof window.CorneaKcCxl.ensureStores === 'function') {
+                window.CorneaKcCxl.ensureStores(db, event);
+            }
         };
 
         request.onsuccess = (event) => {
             window.db = event.target.result;
             window.__corneaIdbReady = true;
             if (typeof window.__corneaOnCloudReady === 'function') {
-                window.__corneaOnCloudReady();
+                window.__corneaOnCloudReady().catch((err) => {
+                    console.warn('[CorneaClinic] Cloud bootstrap after IndexedDB open failed:', err);
+                });
             }
             if (typeof window.setupFieldListeners === 'function') {
                 window.setupFieldListeners();

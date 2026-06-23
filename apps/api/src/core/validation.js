@@ -168,6 +168,21 @@ export function optionalNumber(value, field) {
  * @param {unknown} value
  * @param {string} field
  */
+export function optionalBool(value, field) {
+  if (value === undefined || value === null || value === '') {
+    return null;
+  }
+  if (typeof value === 'boolean') return value;
+  const str = String(value).trim().toLowerCase();
+  if (['true', '1', 'yes'].includes(str)) return true;
+  if (['false', '0', 'no'].includes(str)) return false;
+  throw new ValidationError(`${field} must be a boolean`);
+}
+
+/**
+ * @param {unknown} value
+ * @param {string} field
+ */
 export function optionalObject(value, field) {
   if (value === undefined || value === null) {
     return {};

@@ -8,7 +8,11 @@
   const STORAGE_TOKEN = 'corneaEmr_apiToken';
   const STORAGE_BASE = 'corneaEmr_apiBase';
   const STORAGE_EMAIL = 'corneaEmr_apiEmail';
-  const DEFAULT_API_BASE = 'https://api.visionemr.net';
+  /** Primary production API (DigitalOcean App Platform). */
+  const DEFAULT_API_BASE = 'https://corneaclinic-2zfpt.ondigitalocean.app';
+  /** Custom domain — used when Cloudflare routing is healthy. */
+  const LEGACY_API_BASE = 'https://api.visionemr.net';
+  const API_CANDIDATES = [DEFAULT_API_BASE, LEGACY_API_BASE];
   const STORE_PATIENTS = 'patients';
   const STORE_KP_PATIENTS = 'kpPatients';
   const STORE_KP_TISSUES = 'kpTissues';
@@ -27,7 +31,7 @@
     return `Cannot reach the API at ${api}. Start it with: cd cornea-emr/apps/api && npm run dev`;
   }
 
-  async function probeApiReachable(url) {
+  async function probeApi(url) {
     const base = (url || baseUrl || DEFAULT_API_BASE).replace(/\/$/, '');
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), 8000);
@@ -35,14 +39,48 @@
       const res = await fetch(`${base}/health/live`, {
         method: 'GET',
         signal: controller.signal,
-        cache: 'no-store'
+        cache: 'no-store',
+        mode: 'cors'
       });
-      return res.ok;
+      return { reachable: true, healthy: res.ok, status: res.status };
     } catch (_) {
-      return false;
+      return { reachable: false, healthy: false, status: 0 };
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  async function probeApiReachable(url) {
+    const result = await probeApi(url);
+    return result.reachable;
+  }
+
+  /**
+   * Pick the first API base that responds healthy on /health/live.
+   * @param {string} [preferred]
+   */
+  async function resolveApiBase(preferred) {
+    const list = [];
+    if (preferred) list.push(preferred);
+    const stored = localStorage.getItem(STORAGE_BASE);
+    if (stored) list.push(stored);
+    for (const c of API_CANDIDATES) list.push(c);
+    if (!isPublicHost()) list.push('http://127.0.0.1:3000');
+
+    const seen = new Set();
+    for (const raw of list) {
+      const url = String(raw || '').replace(/\/$/, '');
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      const result = await probeApi(url);
+      if (result.healthy) {
+        localStorage.setItem(STORAGE_BASE, url);
+        return url;
+      }
+    }
+    const fallback = (preferred || stored || DEFAULT_API_BASE).replace(/\/$/, '');
+    localStorage.setItem(STORAGE_BASE, fallback);
+    return fallback;
   }
 
   async function refreshLoginApiStatus() {
@@ -54,13 +92,16 @@
     statusEl.textContent = 'Checking server…';
     statusEl.style.color = 'var(--text-muted, #666)';
     statusEl.style.display = 'block';
-    const ok = await probeApiReachable(url);
+    const probe = await probeApi(url);
     if (offlineBtn) {
-      offlineBtn.style.display = isPublicHost() && !ok ? '' : 'none';
+      offlineBtn.style.display = isPublicHost() && !probe.reachable ? '' : 'none';
     }
-    if (ok) {
+    if (probe.healthy) {
       statusEl.textContent = 'Server reachable';
       statusEl.style.color = 'var(--success, #2e7d32)';
+    } else if (probe.reachable) {
+      statusEl.textContent = `Server responded with HTTP ${probe.status} — cloud sign-in may still work; if not, contact your administrator (API or Cloudflare tunnel).`;
+      statusEl.style.color = 'var(--warning, #f57f17)';
     } else {
       statusEl.textContent = isPublicHost()
         ? 'Server unreachable — you can continue offline with a local account on this device.'
@@ -127,6 +168,7 @@
     global.__corneaUser = user || null;
     if (user) {
       global.CorneaAuthEnv?.clearOfflineFallback?.();
+      global.CorneaAuthEnv?.unlockUi?.();
     }
     if (user && global.CorneaOfflineAuth) {
       global.__corneaCloudMode = true;
@@ -213,9 +255,20 @@
     document.body.appendChild(overlay);
   }
 
+  function hideOfflineLoginOverlay() {
+    const offline = document.getElementById('corneaOfflineLogin');
+    if (offline) {
+      offline.classList.remove('is-open');
+      offline.setAttribute('aria-hidden', 'true');
+      offline.style.display = 'none';
+    }
+  }
+
   function openLoginModal(opts = {}) {
     ensureLoginModal();
     configureCloudLoginModal();
+    hideOfflineLoginOverlay();
+    global.CorneaAuthEnv?.clearOfflineFallback?.();
     const overlay = document.getElementById('corneaCloudLoginModal');
     const errEl = document.getElementById('corneaLoginError');
     const urlEl = document.getElementById('corneaLoginApiUrl');
@@ -233,6 +286,7 @@
       overlay.setAttribute('aria-hidden', 'false');
       document.body.classList.add('emr-modal-open');
     }
+    overlay.style.zIndex = '10001';
     global.CorneaAuthEnv?.lockUi?.();
     return new Promise((resolve) => {
       overlay._corneaLoginResolve = resolve;
@@ -243,6 +297,7 @@
     if (!overlay) return;
     overlay.classList.remove('is-open');
     overlay.setAttribute('aria-hidden', 'true');
+    overlay.style.zIndex = '';
     if (!document.querySelector('.emr-modal-overlay.is-open')) {
       document.body.classList.remove('emr-modal-open');
     }
@@ -452,14 +507,22 @@
     global.CorneaSync.onInboundChanges = (summary) => self.handleInboundSyncChanges(summary);
     global.CorneaSync.init(api);
     global.CorneaSync.startLongPoll();
-    await global.CorneaSync.pull();
-    await global.CorneaSync.migrateExistingRecords();
-    await global.CorneaSync.drainQueue();
-    await global.CorneaSync.rebaseMigrationConflicts();
-    await global.CorneaSync.drainQueue();
-    await self.refreshRecordsList();
+    try {
+      await global.CorneaSync.pull();
+      await global.CorneaSync.migrateExistingRecords();
+      await global.CorneaSync.drainQueue();
+      await global.CorneaSync.rebaseMigrationConflicts();
+      await global.CorneaSync.drainQueue();
+      await self.refreshRecordsList();
+    } catch (err) {
+      console.warn('[CorneaApi] Initial cloud bootstrap sync failed (app remains usable):', err);
+    }
     if (typeof global.updateDashboardStats === 'function') {
       global.updateDashboardStats();
+    }
+    if (global.CorneaClinicalMedia) {
+      global.CorneaClinicalMedia.loadLibrary().catch(() => {});
+      global.CorneaClinicalMedia.loadTimeline().catch(() => {});
     }
     updateCloudHeader(true);
   }
@@ -471,7 +534,13 @@
       await bootstrapCloudUi(self);
       return;
     }
-    global.__corneaOnCloudReady = () => bootstrapCloudUi(self);
+    global.__corneaOnCloudReady = async () => {
+      try {
+        await bootstrapCloudUi(self);
+      } catch (err) {
+        console.warn('[CorneaApi] Deferred cloud bootstrap failed (app remains usable):', err);
+      }
+    };
   }
 
   function bindSyncClient() {
@@ -542,16 +611,26 @@
 
     async signIn() {
       bindLoginModalOnce();
+      global.CorneaAuthEnv?.clearOfflineFallback?.();
+      hideOfflineLoginOverlay();
       const ok = await openLoginModal();
       return !!ok;
     },
 
     async tryConnect(opts = {}) {
       bindLoginModalOnce();
-      const url = (opts.baseUrl || localStorage.getItem(STORAGE_BASE) || DEFAULT_API_BASE).replace(/\/$/, '');
-      baseUrl = url;
-      localStorage.setItem(STORAGE_BASE, url);
+      if (opts.forceCloud === true || new URLSearchParams(global.location?.search || '').get('cloud') === '1') {
+        global.CorneaAuthEnv?.clearOfflineFallback?.();
+      }
+      const preferred = (opts.baseUrl || localStorage.getItem(STORAGE_BASE) || '').replace(/\/$/, '');
+      baseUrl = await resolveApiBase(preferred || null);
+      localStorage.setItem(STORAGE_BASE, baseUrl);
       token = localStorage.getItem(STORAGE_TOKEN);
+
+      const probe = await probeApi(baseUrl);
+      if (probe.healthy || probe.reachable) {
+        global.CorneaAuthEnv?.clearOfflineFallback?.();
+      }
 
       if (token) {
         try {
@@ -561,8 +640,12 @@
           this.patchGlobals();
           showCloudBadge(true);
           await promptPasswordChangeIfNeeded(me.user);
-          await ensureCloudBootstrap(this);
-          console.info('[CorneaApi] Restored cloud session:', url);
+          try {
+            await ensureCloudBootstrap(this);
+          } catch (bootstrapErr) {
+            console.warn('[CorneaApi] Cloud bootstrap failed after session restore (app remains usable):', bootstrapErr);
+          }
+          console.info('[CorneaApi] Restored cloud session:', baseUrl);
           return true;
         } catch (_) {
           token = null;
@@ -573,12 +656,9 @@
       updateCloudHeader(false);
 
       if (opts.prompt !== false) {
-        const apiUp = await probeApiReachable(url);
-        if (isPublicHost() && !apiUp) {
-          global.CorneaAuthEnv?.enableOfflineFallback?.();
-          return false;
-        }
-        const signedIn = await openLoginModal({ baseUrl: url });
+        // Public site: always show cloud sign-in first. Offline mode is only entered
+        // when the user explicitly chooses "Continue offline" in the cloud modal.
+        const signedIn = await openLoginModal({ baseUrl });
         if (signedIn === 'offline') {
           return false;
         }
@@ -1003,8 +1083,22 @@
       toast.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i><span>${escapeHtml(label)}</span>`;
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 6000);
-    }
+    },
+
+    resolveBaseUrl: (preferred) => resolveApiBase(preferred),
+    probeHealth: (url) => probeApi(url),
+    getDefaultApiBase: () => DEFAULT_API_BASE
   };
 
   global.CorneaApi = CorneaApi;
+  global.CorneaApiForceCloudSignIn = async function CorneaApiForceCloudSignIn() {
+    try {
+      sessionStorage.removeItem('corneaEmr_offlineFallback');
+    } catch (_) { /* ignore */ }
+    hideOfflineLoginOverlay();
+    document.body.classList.remove('cornea-auth-pending');
+    global.CorneaAuthEnv?.clearOfflineFallback?.();
+    global.CorneaAuthEnv?.unlockUi?.();
+    return CorneaApi.signIn();
+  };
 })(typeof window !== 'undefined' ? window : globalThis);

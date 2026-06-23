@@ -14,10 +14,13 @@ import { getKeratoplastyPatientById } from './keratoplastyPatientService.js';
 import { getCornealTissueById } from './cornealTissueService.js';
 import {
   assertCategoryForEntity,
+  assertFileSizeForCategory,
   buildStorageKey,
   computeChecksum,
   deleteStorageFile,
+  getStorageSignedUrl,
   isAllowedMimeType,
+  normalizeCategory,
   readStorageFile,
   writeStorageFile
 } from './fileStorageService.js';
@@ -36,6 +39,10 @@ export function mapMediaAsset(row) {
     category: row.category,
     originalFilename: row.original_filename,
     storageKey: row.storage_key,
+    storageProvider: row.storage_provider,
+    bucket: row.bucket,
+    etag: row.etag,
+    thumbnailKey: row.thumbnail_key,
     mimeType: row.mime_type,
     byteSize: Number(row.byte_size),
     checksum: row.checksum,
@@ -43,19 +50,30 @@ export function mapMediaAsset(row) {
     height: row.height,
     metadata: row.metadata || {},
     status: row.status,
+    archivedAt: row.archived_at,
     createdBy: row.created_by,
     updatedBy: row.updated_by,
     revision: row.revision,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
+    patientName: row.patient_name,
+    patientMrn: row.patient_mrn,
+    providerName: row.provider_name,
+    visitDate: row.visit_date,
+    visitDiagnosis: row.visit_diagnosis,
     link: row.link_entity_type
       ? {
           entityType: row.link_entity_type,
           entityId: row.link_entity_id,
           eye: row.link_eye,
           label: row.link_label,
-          sortOrder: row.link_sort_order
+          sortOrder: row.link_sort_order,
+          moduleName: row.link_module_name,
+          diagnosisLabel: row.link_diagnosis_label,
+          procedureLabel: row.link_procedure_label,
+          captureLocation: row.link_capture_location,
+          capturedAt: row.link_captured_at
         }
       : undefined
   };
@@ -116,7 +134,12 @@ export async function listMediaForEntity(clinicId, entityType, entityId, queryPa
              l.entity_id AS link_entity_id,
              l.eye AS link_eye,
              l.label AS link_label,
-             l.sort_order AS link_sort_order
+             l.sort_order AS link_sort_order,
+             l.module_name AS link_module_name,
+             l.diagnosis_label AS link_diagnosis_label,
+             l.procedure_label AS link_procedure_label,
+             l.capture_location AS link_capture_location,
+             l.captured_at AS link_captured_at
         FROM media_asset_links l
         JOIN media_assets m ON m.id = l.media_asset_id
        WHERE ${filters.join(' AND ')}
@@ -156,6 +179,27 @@ export async function getMediaAssetById(clinicId, id) {
 }
 
 /**
+ * @param {string} clinicId
+ * @param {string} checksum
+ * @param {string} [excludeId]
+ */
+export async function findDuplicateByChecksum(clinicId, checksum, excludeId) {
+  const params = [clinicId, checksum];
+  let sql = `
+    SELECT id, original_filename, created_at
+      FROM media_assets
+     WHERE clinic_id = $1 AND checksum = $2 AND deleted_at IS NULL
+  `;
+  if (excludeId) {
+    params.push(excludeId);
+    sql += ` AND id <> $${params.length}`;
+  }
+  sql += ' LIMIT 1';
+  const { rows } = await query(sql, params);
+  return rows[0] || null;
+}
+
+/**
  * @param {import('express').Request} req
  * @param {object} options
  * @param {string} options.entityType
@@ -168,6 +212,12 @@ export async function getMediaAssetById(clinicId, id) {
  * @param {string} [options.label]
  * @param {number} [options.sortOrder]
  * @param {Record<string, unknown>} [options.metadata]
+ * @param {string} [options.moduleName]
+ * @param {string} [options.diagnosisLabel]
+ * @param {string} [options.procedureLabel]
+ * @param {string} [options.captureLocation]
+ * @param {string} [options.capturedAt]
+ * @param {boolean} [options.allowDuplicate]
  */
 export async function uploadMediaForEntity(req, options) {
   const clinicId = req.user.clinicId;
@@ -175,22 +225,29 @@ export async function uploadMediaForEntity(req, options) {
   const {
     entityType,
     entityId,
-    category,
+    category: rawCategory,
     buffer,
     originalFilename,
     mimeType,
     eye,
     label,
     sortOrder,
-    metadata
+    metadata,
+    moduleName,
+    diagnosisLabel,
+    procedureLabel,
+    captureLocation,
+    capturedAt,
+    allowDuplicate
   } = options;
 
   if (!buffer || !buffer.length) {
     throw new ValidationError('File is empty');
   }
-  if (buffer.length > env.media.maxFileBytes) {
-    throw new ValidationError(`File exceeds maximum size of ${env.media.maxFileBytes} bytes`);
-  }
+
+  const category = normalizeCategory(rawCategory);
+  assertFileSizeForCategory(category, buffer.length);
+
   if (!isAllowedMimeType(mimeType)) {
     throw new ValidationError(`MIME type not allowed: ${mimeType}`);
   }
@@ -201,7 +258,23 @@ export async function uploadMediaForEntity(req, options) {
   const parsedEye = eye ? parseEnum(eye, 'eye', EYE_VALUES) : null;
   const parsedLabel = optionalString(label, 'label');
   const parsedSortOrder = optionalInt(sortOrder, 'sortOrder') ?? 0;
+  const parsedModule = optionalString(moduleName, 'moduleName');
+  const parsedDiagnosis = optionalString(diagnosisLabel, 'diagnosisLabel');
+  const parsedProcedure = optionalString(procedureLabel, 'procedureLabel');
+  const parsedLocation = optionalString(captureLocation, 'captureLocation');
+  const parsedCapturedAt = capturedAt ? new Date(capturedAt) : new Date();
+  if (capturedAt && Number.isNaN(parsedCapturedAt.getTime())) {
+    throw new ValidationError('Invalid capturedAt');
+  }
+
   const checksum = computeChecksum(buffer);
+  const duplicate = await findDuplicateByChecksum(clinicId, checksum);
+  if (duplicate && !allowDuplicate) {
+    throw new ValidationError(
+      `Duplicate file already uploaded (${duplicate.original_filename}, ${duplicate.id})`
+    );
+  }
+
   const assetId = randomUUID();
   const storageKey = buildStorageKey(clinicId, category, assetId, originalFilename);
 
@@ -210,9 +283,10 @@ export async function uploadMediaForEntity(req, options) {
       `
         INSERT INTO media_assets (
           id, clinic_id, category, original_filename, storage_key,
-          mime_type, byte_size, checksum, metadata, status, created_by, updated_by
+          storage_provider, bucket, mime_type, byte_size, checksum, metadata,
+          status, created_by, updated_by
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'ready', $10, $10)
+        VALUES ($1, $2, $3, $4, $5, 'local', NULL, $6, $7, $8, $9, 'pending', $10, $10)
         RETURNING *
       `,
       [
@@ -232,14 +306,30 @@ export async function uploadMediaForEntity(req, options) {
     await client.query(
       `
         INSERT INTO media_asset_links (
-          media_asset_id, clinic_id, entity_type, entity_id, eye, label, sort_order
+          media_asset_id, clinic_id, entity_type, entity_id, eye, label, sort_order,
+          module_name, diagnosis_label, procedure_label, provider_user_id,
+          capture_location, captured_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
       `,
-      [assetId, clinicId, entityType, entityId, parsedEye, parsedLabel, parsedSortOrder]
+      [
+        assetId,
+        clinicId,
+        entityType,
+        entityId,
+        parsedEye,
+        parsedLabel,
+        parsedSortOrder,
+        parsedModule,
+        parsedDiagnosis,
+        parsedProcedure,
+        userId,
+        parsedLocation,
+        parsedCapturedAt
+      ]
     );
 
-    if (entityType === 'visit' && category === 'anterior_drawing') {
+    if (entityType === 'visit' && (category === 'anterior_drawing' || category === 'corneal_drawing')) {
       if (mimeType === 'image/png') {
         await client.query(
           `
@@ -270,7 +360,19 @@ export async function uploadMediaForEntity(req, options) {
   });
 
   try {
-    await writeStorageFile(storageKey, buffer);
+    const stored = await writeStorageFile(storageKey, buffer, mimeType);
+    await query(
+      `
+        UPDATE media_assets
+           SET status = 'ready',
+               storage_provider = $3,
+               bucket = $4,
+               etag = $5,
+               updated_at = now()
+         WHERE id = $1 AND clinic_id = $2
+      `,
+      [assetId, clinicId, stored.provider, stored.bucket, stored.etag]
+    );
   } catch (err) {
     await query(
       `UPDATE media_assets SET status = 'deleted', deleted_at = now() WHERE id = $1`,
@@ -279,24 +381,19 @@ export async function uploadMediaForEntity(req, options) {
     throw err;
   }
 
-  const mapped = mapMediaAsset({
-    ...asset,
-    link_entity_type: entityType,
-    link_entity_id: entityId,
-    link_eye: parsedEye,
-    link_label: parsedLabel,
-    link_sort_order: parsedSortOrder
-  });
+  const refreshed = await getMediaAssetById(clinicId, assetId);
 
-  await auditMutation(req, 'media_asset', mapped.id, 'upload', {
+  await auditMutation(req, 'media_asset', refreshed.id, 'upload', {
     category,
     entityType,
     entityId,
-    byteSize: mapped.byteSize,
-    mimeType: mapped.mimeType
+    byteSize: refreshed.byteSize,
+    mimeType: refreshed.mimeType,
+    storageProvider: refreshed.storageProvider,
+    duplicateOf: duplicate?.id || null
   });
 
-  return mapped;
+  return refreshed;
 }
 
 /**
@@ -307,6 +404,58 @@ export async function getMediaAssetContent(clinicId, id) {
   const asset = await getMediaAssetById(clinicId, id);
   const buffer = await readStorageFile(asset.storageKey);
   return { asset, buffer };
+}
+
+/**
+ * @param {string} clinicId
+ * @param {string} id
+ */
+export async function getMediaAssetSignedUrl(clinicId, id) {
+  const asset = await getMediaAssetById(clinicId, id);
+  const url = await getStorageSignedUrl(asset.storageKey, asset.mimeType);
+  return { asset, url };
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {string} id
+ */
+export async function archiveMediaAsset(req, id) {
+  const clinicId = req.user.clinicId;
+  await getMediaAssetById(clinicId, id);
+  await query(
+    `
+      UPDATE media_assets
+         SET archived_at = now(),
+             updated_by = $3,
+             revision = revision + 1
+       WHERE id = $1 AND clinic_id = $2 AND deleted_at IS NULL
+    `,
+    [id, clinicId, req.user.sub]
+  );
+  await auditMutation(req, 'media_asset', id, 'archive', {});
+  return getMediaAssetById(clinicId, id);
+}
+
+/**
+ * @param {import('express').Request} req
+ * @param {string} id
+ */
+export async function restoreMediaAsset(req, id) {
+  const clinicId = req.user.clinicId;
+  await getMediaAssetById(clinicId, id);
+  await query(
+    `
+      UPDATE media_assets
+         SET archived_at = NULL,
+             updated_by = $3,
+             revision = revision + 1
+       WHERE id = $1 AND clinic_id = $2
+    `,
+    [id, clinicId, req.user.sub]
+  );
+  await auditMutation(req, 'media_asset', id, 'restore', {});
+  return getMediaAssetById(clinicId, id);
 }
 
 /**

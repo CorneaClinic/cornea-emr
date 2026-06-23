@@ -60,6 +60,10 @@ export const PERMISSIONS = Object.freeze({
 
   KP_RESERVE: 'kp:reserve',
 
+  KC_READ: 'kc:read',
+
+  KC_WRITE: 'kc:write',
+
   MEDIA_READ: 'media:read',
 
   MEDIA_WRITE: 'media:write',
@@ -103,6 +107,10 @@ const CLINICAL_SENIOR = Object.freeze([
   PERMISSIONS.KP_WRITE,
 
   PERMISSIONS.KP_RESERVE,
+
+  PERMISSIONS.KC_READ,
+
+  PERMISSIONS.KC_WRITE,
 
   PERMISSIONS.MEDIA_READ,
 

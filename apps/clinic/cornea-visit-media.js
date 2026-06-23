@@ -16,11 +16,31 @@
 
     { value: 'slit_lamp', label: 'Slit Lamp Photo', accept: 'image/*' },
 
-    { value: 'corneal_topography', label: 'Corneal Topography', accept: 'image/*' },
+    { value: 'topography', label: 'Topography (Pentacam)', accept: 'image/*' },
+
+    { value: 'tomography', label: 'Tomography (Orbscan/Sirius)', accept: 'image/*' },
+
+    { value: 'corneal_topography', label: 'Corneal Topography (legacy)', accept: 'image/*' },
 
     { value: 'as_oct', label: 'AS-OCT Scan', accept: 'image/*' },
 
-    { value: 'document', label: 'Clinical Document (PDF)', accept: 'application/pdf,.pdf' }
+    { value: 'specular', label: 'Specular Microscopy', accept: 'image/*' },
+
+    { value: 'confocal', label: 'Confocal Microscopy', accept: 'image/*' },
+
+    { value: 'corneal_drawing', label: 'Corneal Drawing', accept: 'image/*' },
+
+    { value: 'operative_photo', label: 'Operative Photo', accept: 'image/*' },
+
+    { value: 'video', label: 'Surgical Video', accept: 'video/mp4,video/webm' },
+
+    { value: 'pdf_report', label: 'PDF Report', accept: 'application/pdf,.pdf' },
+
+    { value: 'document', label: 'Clinical Document (PDF)', accept: 'application/pdf,.pdf' },
+
+    { value: 'referral', label: 'Referral Letter', accept: 'application/pdf,image/*' },
+
+    { value: 'other', label: 'Other', accept: 'image/*,application/pdf,video/mp4' }
 
   ];
 
@@ -71,6 +91,22 @@
   async function resolveItemUrl(item) {
 
     if (item.dataUrl) return item.dataUrl;
+
+    if (item.blobLocalId && global.CorneaMediaBlobStore) {
+
+      const rec = await global.CorneaMediaBlobStore.getBlob(item.blobLocalId);
+
+      if (rec?.blob) {
+
+        revokePreviewBlob();
+
+        previewBlobUrl = URL.createObjectURL(rec.blob);
+
+        return previewBlobUrl;
+
+      }
+
+    }
 
     const baseUrl = getBaseUrl();
 
@@ -274,7 +310,17 @@
 
   function apiCategory(value) {
 
-    return value === 'document' ? 'as_oct' : value;
+    const map = {
+
+      document: 'pdf_report',
+
+      corneal_topography: 'topography',
+
+      drawing: 'corneal_drawing'
+
+    };
+
+    return map[value] || value;
 
   }
 
@@ -292,7 +338,13 @@
 
         const copy = { ...item };
 
-        if (copy.serverAssetId) delete copy.dataUrl;
+        if (copy.serverAssetId) {
+
+          delete copy.dataUrl;
+
+          delete copy.blobLocalId;
+
+        }
 
         return copy;
 
@@ -426,11 +478,21 @@
 
     const token = getToken();
 
-    if (!baseUrl || !token || !visitUuid || !item.dataUrl) return false;
+    if (!baseUrl || !token || !visitUuid) return false;
 
+    let blob = null;
 
+    if (item.blobLocalId && global.CorneaMediaBlobStore) {
 
-    const blob = await dataUrlToBlob(item.dataUrl);
+      const rec = await global.CorneaMediaBlobStore.getBlob(item.blobLocalId);
+
+      blob = rec?.blob || null;
+
+    }
+
+    if (!blob && item.dataUrl) blob = await dataUrlToBlob(item.dataUrl);
+
+    if (!blob) return false;
 
     const form = new FormData();
 
@@ -442,9 +504,17 @@
 
     form.append('label', item.label || item.filename);
 
-    if (item.category === 'document') {
+    if (item.category === 'document' || item.category === 'pdf_report') {
 
       form.append('metadata', JSON.stringify({ kind: 'clinical_document' }));
+
+    }
+
+    form.append('moduleName', 'visit_media');
+
+    if (document.getElementById('diagnosis')?.value) {
+
+      form.append('diagnosisLabel', document.getElementById('diagnosis').value.slice(0, 500));
 
     }
 
@@ -479,6 +549,14 @@
     item.uploadedAt = new Date().toISOString();
 
     delete item.dataUrl;
+
+    if (item.blobLocalId && global.CorneaMediaBlobStore) {
+
+      await global.CorneaMediaBlobStore.deleteBlob(item.blobLocalId);
+
+      delete item.blobLocalId;
+
+    }
 
     return true;
 
@@ -706,15 +784,27 @@
 
         const isImage = (file.type || '').startsWith('image/');
 
-        if (category === 'document' && !isPdf) {
+        const isVideo = (file.type || '').startsWith('video/');
 
-          alert(`"${file.name}" must be a PDF for clinical documents.`);
+        const pdfCats = ['document', 'pdf_report'];
+
+        if (pdfCats.includes(category) && !isPdf) {
+
+          alert(`"${file.name}" must be a PDF for this category.`);
 
           continue;
 
         }
 
-        if (category !== 'document' && !isImage) {
+        if (category === 'video' && !isVideo) {
+
+          alert(`"${file.name}" must be a video for surgical video.`);
+
+          continue;
+
+        }
+
+        if (!pdfCats.includes(category) && category !== 'video' && category !== 'referral' && !isImage) {
 
           alert(`"${file.name}" must be an image for this category.`);
 
@@ -724,11 +814,23 @@
 
 
 
-        const dataUrl = await readFileAsDataUrl(file);
+        const localId = uid();
+
+        if (global.CorneaMediaBlobStore) {
+
+          await global.CorneaMediaBlobStore.putBlob(localId, file, {
+
+            mimeType: file.type,
+
+            filename: file.name
+
+          });
+
+        }
 
         state.items.push({
 
-          localId: uid(),
+          localId,
 
           category,
 
@@ -742,11 +844,15 @@
 
           size: file.size,
 
-          dataUrl,
+          blobLocalId: global.CorneaMediaBlobStore ? localId : null,
+
+          dataUrl: global.CorneaMediaBlobStore ? null : await readFileAsDataUrl(file),
 
           serverAssetId: null,
 
-          uploadedAt: null
+          uploadedAt: null,
+
+          syncStatus: 'pending'
 
         });
 

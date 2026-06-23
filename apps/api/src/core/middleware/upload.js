@@ -4,7 +4,10 @@ import { ValidationError } from '../errors.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: env.media.maxFileBytes, files: 1 }
+  limits: {
+    fileSize: Math.max(env.media.maxFileBytes, env.media.maxVideoBytes),
+    files: 1
+  }
 });
 
 /**
@@ -45,6 +48,12 @@ export function parseUploadFields(req) {
     eye: req.body?.eye,
     label: req.body?.label,
     sortOrder: req.body?.sortOrder,
+    moduleName: req.body?.moduleName,
+    diagnosisLabel: req.body?.diagnosisLabel,
+    procedureLabel: req.body?.procedureLabel,
+    captureLocation: req.body?.captureLocation,
+    capturedAt: req.body?.capturedAt,
+    allowDuplicate: req.body?.allowDuplicate === 'true' || req.body?.allowDuplicate === true,
     metadata: req.body?.metadata ? safeParseJson(req.body.metadata, 'metadata') : undefined,
     buffer: req.file.buffer,
     originalFilename: req.file.originalname || 'upload',
