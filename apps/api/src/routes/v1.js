@@ -10,6 +10,7 @@ import keratitisRegistryRouter from './keratitis-registry.js';
 import researchAnalyticsRouter from './research-analytics.js';
 import recordLocksRouter from './record-locks.js';
 import ectasiaAiRouter from './ectasia-ai.js';
+import eyeBankRouter from './eye-bank.js';
 import kcRegistryRouter from './kc-registry.js';
 import cornealTissuesRouter from './corneal-tissues.js';
 import syncRouter from './sync.js';
@@ -59,6 +60,7 @@ router.use('/keratitis-registry', keratitisRegistryRouter);
 router.use('/research-analytics', researchAnalyticsRouter);
 router.use('/record-locks', recordLocksRouter);
 router.use('/ectasia-ai', ectasiaAiRouter);
+router.use('/eye-bank', eyeBankRouter);
 router.use('/kc-registry', kcRegistryRouter);
 router.use('/corneal-tissues/:id/media', createEntityMediaRouter({
   entityType: 'corneal_tissue',

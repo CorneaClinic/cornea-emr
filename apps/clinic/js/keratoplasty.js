@@ -50,8 +50,18 @@ function renderKpTissueReadOnly(t) {
         { label: 'Edema', value: t.kpEdema }, { label: 'Clarity', value: t.kpClarity },
         { label: 'Infection risk', value: t.kpInfectionRisk }, { label: 'Status', value: t.kpTissueStatus },
         { label: 'Storage medium', value: t.kpStorageMedium }, { label: 'Location', value: t.kpStorageLocation },
-        { label: 'Eye bank', value: t.kpEyeBank }
+        { label: 'Eye bank', value: t.kpEyeBank },
+        { label: 'Donor ID', value: t.kpDonorId },
+        { label: 'Lot number', value: t.kpLotNumber },
+        { label: 'Laterality', value: t.kpTissueLaterality },
+        { label: 'Quarantine', value: t.kpQuarantineStatus },
+        { label: 'Serology HIV', value: t.kpSerologyHiv },
+        { label: 'Serology HBV', value: t.kpSerologyHbv },
+        { label: 'Serology HCV', value: t.kpSerologyHcv }
     ]);
+    if (global.CorneaEyeBank) {
+        global.CorneaEyeBank.renderTissueTraceability(t);
+    }
 }
 
 window.openKpPatientModal = function(mode) {
@@ -591,7 +601,10 @@ function collectKpPatientForm() {
 function collectKpTissueForm() {
     const ids = ['kpTissueId','kpDonorAge','kpDonorGender','kpDeathToPreservation','kpPreservationDate','kpExpiryDate',
         'kpSpecular','kpEdema','kpClarity','kpInfectionRisk','kpOpticalGrade','kpTherapeuticGrade',
-        'kpTissueStatus','kpStorageMedium','kpStorageLocation','kpEyeBank'];
+        'kpTissueStatus','kpStorageMedium','kpStorageLocation','kpEyeBank',
+        'kpDonorId','kpLotNumber','kpTissueLaterality',
+        'kpSerologyHiv','kpSerologyHbv','kpSerologyHcv','kpSerologySyphilis','kpSerologyCmv',
+        'kpQuarantineStatus','kpQuarantineReason','kpQuarantineUntil'];
     const data = { lastModified: new Date().toISOString() };
     ids.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
     const rid = document.getElementById('kpTissueRecordId')?.value;
@@ -668,12 +681,19 @@ window.resetKpTissueForm = function() {
     document.getElementById('kpTissueRecordId').value = '';
     ['kpTissueId','kpDonorAge','kpDonorGender','kpDeathToPreservation','kpPreservationDate','kpExpiryDate',
         'kpSpecular','kpEdema','kpClarity','kpInfectionRisk','kpOpticalGrade','kpTherapeuticGrade',
-        'kpStorageMedium','kpStorageLocation','kpEyeBank'].forEach(id => {
+        'kpStorageMedium','kpStorageLocation','kpEyeBank','kpDonorId','kpLotNumber','kpTissueLaterality',
+        'kpQuarantineReason','kpQuarantineUntil'].forEach(id => {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
     const st = document.getElementById('kpTissueStatus');
     if (st) st.value = 'Available';
+    const qs = document.getElementById('kpQuarantineStatus');
+    if (qs) qs.value = 'Cleared';
+    ['kpSerologyHiv','kpSerologyHbv','kpSerologyHcv','kpSerologySyphilis','kpSerologyCmv'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
 };
 
 window.editKpPatient = function(id) {
@@ -763,7 +783,7 @@ function renderKpTissuesTable() {
             <td>${escapeHtml(t.kpTherapeuticGrade||'—')}</td>
             <td>${day != null ? 'Day ' + day : '—'}</td>
             <td>${escapeHtml(t.kpExpiryDate||'—')}</td>
-            <td>${kpBadgeStatus(t.kpTissueStatus, 'tissue')}</td>
+            <td>${kpBadgeStatus(t.kpTissueStatus, 'tissue')} ${global.CorneaEyeBank?.quarantineBadge?.(t.kpQuarantineStatus) || ''}</td>
             <td style="font-size:0.78rem;">${escapeHtml(procs)}</td>
             <td class="no-print records-actions">
                 <button type="button" class="btn-info btn-sm" onclick="viewKpTissueReadOnly(${t.id})"><i class="fa-solid fa-eye"></i></button>

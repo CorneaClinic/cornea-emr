@@ -2797,6 +2797,16 @@
     .ectasia-urgency-low { background: #2e7d32; color: #fff; }
     .ectasia-registry-badge { font-size: 0.7rem; color: #1565c0; }
     .lr-ai-ectasia .ectasia-ai-panel { margin-top: 12px; }
+    .eye-bank-serology-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: 10px;
+        padding: 10px;
+        background: #f5f8fc;
+        border-radius: 8px;
+        font-size: 0.875rem;
+    }
+    .eye-bank-trace-panel { margin-top: 16px; }
     .emr-modal-sm { max-width: 480px; }
     .emr-modal-md { max-width: 640px; }
     .emr-modal-lg { max-width: 860px; }
@@ -4755,6 +4765,7 @@
                                 </div>
                             </div>
                             <div id="kpTissueReadOnlyContent" class="emr-readonly-content"></div>
+                            <div id="kpTissueTraceabilityPanel" class="no-print"></div>
                         </div>
                         <div class="kp-filters no-print">
                             <div class="form-group"><label>Status</label><select id="kpTissueFilterStatus" onchange="filterKpTissuesTable()"><option value="">All</option><option>Available</option><option>Reserved</option><option>Ordered</option><option>Used</option><option>Expired</option><option>Discarded</option></select></div>
@@ -5109,11 +5120,88 @@
                 <div class="form-group"><label for="kpStorageMedium">Storage medium</label><input type="text" id="kpStorageMedium" /></div>
                 <div class="form-group"><label for="kpStorageLocation">Storage location</label><input type="text" id="kpStorageLocation" /></div>
                 <div class="form-group"><label for="kpEyeBank">Eye bank source</label><input type="text" id="kpEyeBank" /></div>
+                <div class="form-group span-2"><h4 style="margin:12px 0 4px;grid-column:1/-1;">Eye bank traceability</h4></div>
+                <div class="form-group"><label for="kpDonorId">Donor ID (de-identified)</label><input type="text" id="kpDonorId" /></div>
+                <div class="form-group"><label for="kpLotNumber">Lot / batch</label><input type="text" id="kpLotNumber" /></div>
+                <div class="form-group"><label for="kpTissueLaterality">Laterality</label>
+                    <select id="kpTissueLaterality"><option value="">—</option><option>OD</option><option>OS</option></select>
+                </div>
+                <div class="form-group"><label for="kpQuarantineStatus">Quarantine</label>
+                    <select id="kpQuarantineStatus"><option>Cleared</option><option>Quarantine</option><option>Released</option><option>Failed</option></select>
+                </div>
+                <div class="form-group"><label for="kpQuarantineUntil">Quarantine until</label><input type="date" id="kpQuarantineUntil" /></div>
+                <div class="form-group span-2"><label for="kpQuarantineReason">Quarantine reason</label><input type="text" id="kpQuarantineReason" /></div>
+                <div class="form-group"><label for="kpSerologyHiv">HIV</label>
+                    <select id="kpSerologyHiv"><option value="">—</option><option>Negative</option><option>Positive</option><option>Pending</option><option>Not done</option></select>
+                </div>
+                <div class="form-group"><label for="kpSerologyHbv">HBV</label>
+                    <select id="kpSerologyHbv"><option value="">—</option><option>Negative</option><option>Positive</option><option>Pending</option><option>Not done</option></select>
+                </div>
+                <div class="form-group"><label for="kpSerologyHcv">HCV</label>
+                    <select id="kpSerologyHcv"><option value="">—</option><option>Negative</option><option>Positive</option><option>Pending</option><option>Not done</option></select>
+                </div>
+                <div class="form-group"><label for="kpSerologySyphilis">Syphilis</label>
+                    <select id="kpSerologySyphilis"><option value="">—</option><option>Negative</option><option>Positive</option><option>Pending</option><option>Not done</option></select>
+                </div>
+                <div class="form-group"><label for="kpSerologyCmv">CMV</label>
+                    <select id="kpSerologyCmv"><option value="">—</option><option>Negative</option><option>Positive</option><option>Pending</option><option>Not done</option></select>
+                </div>
             </div>
         </div>
         <div class="emr-modal-footer">
             <button type="button" class="btn-secondary" onclick="closeEmrModal('kpTissueModal')">Cancel</button>
             <button type="button" class="btn-primary" onclick="saveKpTissue()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="kpCustodyModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-md" role="dialog" aria-modal="true">
+        <div class="emr-modal-header">
+            <h2><i class="fa-solid fa-truck"></i> Chain of custody event</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('kpCustodyModal')">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="kpCustodyTissueId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label for="kpCustodyType">Event type</label>
+                    <select id="kpCustodyType"><option>Received</option><option>Quarantine</option><option>Released</option><option>Reserved</option><option>Transferred</option><option>Shipped</option><option>Implanted</option><option>Discarded</option><option>Audit</option></select>
+                </div>
+                <div class="form-group"><label for="kpCustodyAt">When</label><input type="datetime-local" id="kpCustodyAt" /></div>
+                <div class="form-group"><label for="kpCustodyFrom">From</label><input type="text" id="kpCustodyFrom" placeholder="Eye bank / courier" /></div>
+                <div class="form-group"><label for="kpCustodyTo">To</label><input type="text" id="kpCustodyTo" placeholder="Clinic / OR" /></div>
+                <div class="form-group span-2"><label for="kpCustodyLocation">Location</label><input type="text" id="kpCustodyLocation" /></div>
+                <div class="form-group span-2"><label for="kpCustodyNotes">Notes</label><textarea id="kpCustodyNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('kpCustodyModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="saveKpCustodyEvent()">Save event</button>
+        </div>
+    </div>
+</div>
+
+<div id="kpColdChainModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-md" role="dialog" aria-modal="true">
+        <div class="emr-modal-header">
+            <h2><i class="fa-solid fa-temperature-low"></i> Cold chain log</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('kpColdChainModal')">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="kpColdTissueId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label for="kpColdType">Event</label>
+                    <select id="kpColdType"><option>Storage check</option><option>Transfer</option><option>Out of range</option><option>Corrected</option><option>Alarm</option></select>
+                </div>
+                <div class="form-group"><label for="kpColdAt">When</label><input type="datetime-local" id="kpColdAt" /></div>
+                <div class="form-group"><label for="kpColdTemp">Temperature (°C)</label><input type="number" id="kpColdTemp" step="0.1" placeholder="2–8 optimal" /></div>
+                <div class="form-group"><label for="kpColdLocation">Location</label><input type="text" id="kpColdLocation" placeholder="Fridge A / OR trolley" /></div>
+                <div class="form-group span-2"><label for="kpColdNotes">Notes</label><textarea id="kpColdNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('kpColdChainModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="saveKpColdChainEvent()">Save log</button>
         </div>
     </div>
 </div>
@@ -5596,6 +5684,7 @@
 <script src="js/anterior-drawing.js"></script>
 <script src="js/keratoplasty.js"></script>
 <script src="cornea-kp-graft-outcomes.js"></script>
+<script src="cornea-eye-bank-traceability.js"></script>
 <script src="cornea-keratitis-taxonomy.js"></script>
 <script src="cornea-keratitis.js"></script>
 <script src="cornea-research-analytics.js"></script>

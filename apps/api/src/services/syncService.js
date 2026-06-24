@@ -376,7 +376,11 @@ async function applyKpTissueMutation(client, clinicId, mutation) {
           preservation_date = $7, expiry_date = $8, specular_count = $9, edema = $10,
           clarity = $11, infection_risk = $12, optical_grade = $13, therapeutic_grade = $14,
           tissue_status = $15, storage_medium = $16, storage_location = $17, eye_bank = $18,
-          legacy_local_id = COALESCE(legacy_local_id, $19), revision = revision + 1
+          donor_id = $19, lot_number = $20, tissue_laterality = $21,
+          serology_hiv = $22, serology_hbv = $23, serology_hcv = $24, serology_syphilis = $25,
+          serology_cmv = $26, quarantine_status = $27, quarantine_reason = $28,
+          quarantine_until = $29, received_at = COALESCE($30::timestamptz, received_at),
+          legacy_local_id = COALESCE(legacy_local_id, $31), revision = revision + 1
         WHERE id = $1 AND clinic_id = $2
         RETURNING *
       `,
@@ -385,7 +389,10 @@ async function applyKpTissueMutation(client, clinicId, mutation) {
         row.death_to_preservation_hrs, row.preservation_date, row.expiry_date,
         row.specular_count, row.edema, row.clarity, row.infection_risk, row.optical_grade,
         row.therapeutic_grade, row.tissue_status, row.storage_medium, row.storage_location,
-        row.eye_bank, row.legacy_local_id
+        row.eye_bank, row.donor_id, row.lot_number, row.tissue_laterality,
+        row.serology_hiv, row.serology_hbv, row.serology_hcv, row.serology_syphilis,
+        row.serology_cmv, row.quarantine_status, row.quarantine_reason, row.quarantine_until,
+        row.received_at, row.legacy_local_id
       ]
     );
     saved = updated.rows[0];
@@ -396,9 +403,11 @@ async function applyKpTissueMutation(client, clinicId, mutation) {
           clinic_id, kp_tissue_id, donor_age, donor_gender, death_to_preservation_hrs,
           preservation_date, expiry_date, specular_count, edema, clarity, infection_risk,
           optical_grade, therapeutic_grade, tissue_status, storage_medium, storage_location,
-          eye_bank, legacy_local_id
+          eye_bank, donor_id, lot_number, tissue_laterality,
+          serology_hiv, serology_hbv, serology_hcv, serology_syphilis, serology_cmv,
+          quarantine_status, quarantine_reason, quarantine_until, received_at, legacy_local_id
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30)
         RETURNING *
       `,
       [
@@ -406,7 +415,10 @@ async function applyKpTissueMutation(client, clinicId, mutation) {
         row.death_to_preservation_hrs, row.preservation_date, row.expiry_date,
         row.specular_count, row.edema, row.clarity, row.infection_risk, row.optical_grade,
         row.therapeutic_grade, row.tissue_status, row.storage_medium, row.storage_location,
-        row.eye_bank, row.legacy_local_id
+        row.eye_bank, row.donor_id, row.lot_number, row.tissue_laterality,
+        row.serology_hiv, row.serology_hbv, row.serology_hcv, row.serology_syphilis,
+        row.serology_cmv, row.quarantine_status, row.quarantine_reason, row.quarantine_until,
+        row.received_at, row.legacy_local_id
       ]
     );
     saved = inserted.rows[0];
