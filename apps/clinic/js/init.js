@@ -41,6 +41,10 @@ window.addEventListener('DOMContentLoaded', () => {
         window.CorneaAnteriorSegment.buildLegacyHiddenFields();
         window.CorneaAnteriorSegment.init();
     }
+    if (window.CorneaPosteriorSegment) {
+        window.CorneaPosteriorSegment.buildLegacyHiddenFields();
+        window.CorneaPosteriorSegment.init();
+    }
 
     if (window.CorneaClinicalMedia) window.CorneaClinicalMedia.init();
 

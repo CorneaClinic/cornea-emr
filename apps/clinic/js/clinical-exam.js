@@ -53,6 +53,10 @@ window.setNormalFindings = function() {
 };
 
 window.setNormalFundusFindings = function() {
+    if (window.CorneaPosteriorSegment?.setAllNormal) {
+        window.CorneaPosteriorSegment.setAllNormal();
+        return;
+    }
     FUNDUS_FIELDS.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -128,6 +132,11 @@ window.pullPreviousFundusExam = function() {
                 const el = document.getElementById(id);
                 if (el && prev[id] !== undefined) el.value = prev[id];
             });
+            if (prev.posteriorSegmentJSON) {
+                const jsonEl = document.getElementById('posteriorSegmentJSON');
+                if (jsonEl) jsonEl.value = prev.posteriorSegmentJSON;
+            }
+            window.CorneaPosteriorSegment?.onFormPopulated?.(prev);
             alert("Pulled Fundus Exam findings from visit: " + (prev.visitDate || "Unknown Date"));
             found = true;
         } else if (!found) {

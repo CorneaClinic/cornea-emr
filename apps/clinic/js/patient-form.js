@@ -125,6 +125,7 @@ function buildReadOnlyClinicTable(table, data, plainFindings) {
 
 function collectFormDataObject() {
     window.CorneaAnteriorSegment?.syncToLegacyFields?.();
+    window.CorneaPosteriorSegment?.syncToLegacyFields?.();
     window.CorneaContactLens?.syncToHiddenField?.();
     window.CorneaScleralLens?.syncToHiddenField?.();
     window.CorneaLaserRefractive?.syncToHiddenField?.();
@@ -203,6 +204,9 @@ function populateFormFromData(data) {
     if (window.CorneaAnteriorSegment) {
         window.CorneaAnteriorSegment.onFormPopulated(data);
     }
+    if (window.CorneaPosteriorSegment) {
+        window.CorneaPosteriorSegment.onFormPopulated(data);
+    }
     if (window.CorneaContactLens) {
         window.CorneaContactLens.onFormPopulated(data);
     }
@@ -253,6 +257,27 @@ window.renderPatientReadOnly = function(data, containerId) {
                 }
                 const remRe = data.remarksAntRE?.trim();
                 const remLe = data.remarksAntLE?.trim();
+                if (remRe || remLe) {
+                    sectionHtml += `<div class="asb-ro-remarks table-wrapper mt-2">
+                        <table class="clinic-table asb-ro-table">
+                            <thead><tr><th scope="col">Remarks</th><th scope="col">OD (Right)</th><th scope="col">OS (Left)</th></tr></thead>
+                            <tbody><tr>
+                                <th scope="row">Additional notes</th>
+                                <td>${remRe ? escapeHtml(remRe) : '<span class="emr-ro-value empty">—</span>'}</td>
+                                <td>${remLe ? escapeHtml(remLe) : '<span class="emr-ro-value empty">—</span>'}</td>
+                            </tr></tbody>
+                        </table>
+                    </div>`;
+                }
+                if (sectionHtml) html += buildEmrRoSection(title, icon, sectionHtml, attrHtml, themeClass);
+                return;
+            }
+
+            if (title === 'Fundus Examination') {
+                const tableHtml = window.CorneaPosteriorSegment?.formatReadOnlyTable?.(data);
+                if (tableHtml) sectionHtml += tableHtml;
+                const remRe = data.fundusRemarksRE?.trim();
+                const remLe = data.fundusRemarksLE?.trim();
                 if (remRe || remLe) {
                     sectionHtml += `<div class="asb-ro-remarks table-wrapper mt-2">
                         <table class="clinic-table asb-ro-table">

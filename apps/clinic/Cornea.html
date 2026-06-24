@@ -3980,40 +3980,17 @@
                     <h3>Fundus Examination</h3>
                 </div>
                 <div class="form-card-body">
-                    <div class="actions no-print">
-                        <button type="button" class="btn-secondary btn-sm" onclick="setNormalFundusFindings()">
-                            <i class="fa-solid fa-check-double"></i> Set Normal Findings
-                        </button>
-                        <button type="button" class="btn-secondary btn-sm" onclick="pullPreviousFundusExam()">
-                            <i class="fa-solid fa-rotate-left"></i> Pull Previous Visit
-                        </button>
-                    </div>
-                    <div class="table-wrapper">
-                        <table class="clinic-table">
-                            <thead>
-                                <tr>
-                                    <th>Parameter</th>
-                                    <th>Right Eye (RE)</th>
-                                    <th>Left Eye (LE)</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr><td>Media</td><td><input type="text" id="mediaRE"></td><td><input type="text" id="mediaLE"></td></tr>
-                                <tr><td>Disc</td><td><input type="text" id="discRE"></td><td><input type="text" id="discLE"></td></tr>
-                                <tr><td>Vessels</td><td><input type="text" id="vesselRE"></td><td><input type="text" id="vesselLE"></td></tr>
-                                <tr><td>Background Retina</td><td><input type="text" id="retinaRE"></td><td><input type="text" id="retinaLE"></td></tr>
-                                <tr><td>Macula / Foveal Reflex</td><td><input type="text" id="fovealRE"></td><td><input type="text" id="fovealLE"></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                    <p class="asb-intro no-print">Structured posterior segment examination — media, disc, vessels, peripheral retina, and macula. Syncs to legacy fundus fields for printing and cloud sync.</p>
+                    <div id="posteriorSegmentBuilder" class="asb-root" aria-label="Posterior segment fundus examination"></div>
+                    <div id="posteriorSegmentLegacyFields" class="asb-legacy-host" aria-hidden="true"></div>
                     <div class="section-grid mt-4">
                         <div class="form-group">
                             <label for="fundusRemarksRE">Remarks — Right Eye</label>
-                            <textarea id="fundusRemarksRE" placeholder="Fundus RE notes…"></textarea>
+                            <textarea id="fundusRemarksRE" placeholder="Fundus OD notes…"></textarea>
                         </div>
                         <div class="form-group">
                             <label for="fundusRemarksLE">Remarks — Left Eye</label>
-                            <textarea id="fundusRemarksLE" placeholder="Fundus LE notes…"></textarea>
+                            <textarea id="fundusRemarksLE" placeholder="Fundus OS notes…"></textarea>
                         </div>
                     </div>
                 </div>
@@ -5554,6 +5531,8 @@
 <script src="cornea-laser-refractive.js"></script>
 <script src="cornea-anterior-segment-taxonomy.js"></script>
 <script src="cornea-anterior-segment.js"></script>
+<script src="cornea-posterior-segment-taxonomy.js"></script>
+<script src="cornea-posterior-segment.js"></script>
 <script src="js/anterior-drawing.js"></script>
 <script src="js/keratoplasty.js"></script>
 <script src="cornea-kp-graft-outcomes.js"></script>

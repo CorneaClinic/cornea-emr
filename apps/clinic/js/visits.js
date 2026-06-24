@@ -23,6 +23,7 @@ window.saveToDatabase = async function() {
     }
 
     window.CorneaAnteriorSegment?.syncToLegacyFields?.();
+    window.CorneaPosteriorSegment?.syncToLegacyFields?.();
 
     if (window.CorneaContactLens) {
         window.CorneaContactLens.syncToHiddenField();
