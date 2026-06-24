@@ -372,6 +372,7 @@
         }
       } catch (err) {
         console.warn('[KC Registry] Cloud sync failed:', err);
+        alert('Saved on this device but cloud sync failed. Sign in to cloud and open KC & CXL again to retry.');
       }
     } else if (apiEnabled()) {
       try {
@@ -387,6 +388,7 @@
         }
       } catch (err) {
         console.warn('[KC Registry] Cloud create failed:', err);
+        alert('Saved on this device only — cloud upload failed. Other devices will not see this patient until sync succeeds.');
       }
     }
 
@@ -449,24 +451,10 @@
     };
     const rid = document.getElementById('kcTopoRecordId')?.value;
     if (rid) row.id = Number(rid);
-    const id = await kcDbPut(STORE_KC_TOPOGRAPHY, row);
-    if (!row.id) row.id = id;
-
-    const patient = _kcPatientsCache.find((p) => p.id === kcPatientId);
-    if (apiEnabled() && patient?.uuid) {
-      try {
-        const path = rid
-          ? `/api/v1/kc-registry/${patient.uuid}/topography/${row.uuid || ''}`
-          : `/api/v1/kc-registry/${patient.uuid}/topography`;
-        const method = rid && row.uuid ? 'PUT' : 'POST';
-        const res = await apiRequest(path, { method, body: JSON.stringify(topoToApi(row)) });
-        if (res?.data?.id) {
-          row.uuid = res.data.id;
-          await kcDbPut(STORE_KC_TOPOGRAPHY, row);
-        }
-      } catch (err) {
-        console.warn('[KC Registry] Topo cloud sync failed:', err);
-      }
+    try {
+      await saveTopoRow(row, kcPatientId);
+    } catch (err) {
+      console.warn('[KC Registry] Topo save:', err);
     }
 
     await recomputeLocalProgression(kcPatientId);
@@ -606,6 +594,60 @@
     a.click();
   };
 
+  async function pushUnsyncedToCloud() {
+    if (!apiEnabled()) return;
+    for (const row of _kcPatientsCache.filter((p) => !p.uuid)) {
+      try {
+        const res = await apiRequest('/api/v1/kc-registry', {
+          method: 'POST',
+          body: JSON.stringify(patientToApi(row))
+        });
+        if (res?.data?.id) {
+          row.uuid = res.data.id;
+          row.revision = res.data.revision;
+          row.kcRegistryId = res.data.kcRegistryId || row.kcRegistryId;
+          await kcDbPut(STORE_KC_PATIENTS, row);
+        }
+      } catch (err) {
+        console.warn('[KC Registry] Push local patient to cloud failed:', err);
+      }
+    }
+    await refreshCaches();
+    for (const row of _kcTopoCache.filter((t) => !t.uuid)) {
+      const patient = _kcPatientsCache.find((p) => p.id === row.kcPatientId);
+      if (!patient?.uuid) continue;
+      try {
+        const res = await apiRequest(`/api/v1/kc-registry/${patient.uuid}/topography`, {
+          method: 'POST',
+          body: JSON.stringify(topoToApi(row))
+        });
+        if (res?.data?.id) {
+          row.uuid = res.data.id;
+          await kcDbPut(STORE_KC_TOPOGRAPHY, row);
+        }
+      } catch (err) {
+        console.warn('[KC Registry] Push topography to cloud failed:', err);
+      }
+    }
+    await refreshCaches();
+    for (const row of _kcCxlCache.filter((c) => !c.uuid)) {
+      const patient = _kcPatientsCache.find((p) => p.id === row.kcPatientId);
+      if (!patient?.uuid) continue;
+      try {
+        const res = await apiRequest(`/api/v1/kc-registry/${patient.uuid}/cxl`, {
+          method: 'POST',
+          body: JSON.stringify(cxlToApi(row))
+        });
+        if (res?.data?.id) {
+          row.uuid = res.data.id;
+          await kcDbPut(STORE_KC_CXL, row);
+        }
+      } catch (err) {
+        console.warn('[KC Registry] Push CXL to cloud failed:', err);
+      }
+    }
+  }
+
   async function pullFromCloud() {
     if (!apiEnabled()) return;
     try {
@@ -694,10 +736,176 @@
           });
         }
       }
+      await refreshCaches();
     } catch (err) {
       console.warn('[KC Registry] Cloud pull failed:', err);
     }
   }
+
+  async function syncWithCloud() {
+    if (!apiEnabled() || !global.db) return;
+    await refreshCaches();
+    await pushUnsyncedToCloud();
+    await refreshCaches();
+    await pullFromCloud();
+    await refreshCaches();
+  }
+
+  function refreshUi() {
+    updateKcOverviewStats();
+    renderKcPatientsTable();
+    if (global._kcSelectedPatientId) {
+      const p = _kcPatientsCache.find((x) => x.id === global._kcSelectedPatientId);
+      if (p) renderKcPatientDetail(p);
+    }
+  }
+
+  async function saveTopoRow(row, kcPatientId) {
+    row.kcPatientId = kcPatientId;
+    const id = await kcDbPut(STORE_KC_TOPOGRAPHY, row);
+    if (!row.id) row.id = id;
+
+    const patient = _kcPatientsCache.find((p) => p.id === kcPatientId);
+    if (apiEnabled() && patient?.uuid) {
+      try {
+        const path = row.uuid
+          ? `/api/v1/kc-registry/${patient.uuid}/topography/${row.uuid}`
+          : `/api/v1/kc-registry/${patient.uuid}/topography`;
+        const method = row.uuid ? 'PUT' : 'POST';
+        const res = await apiRequest(path, { method, body: JSON.stringify(topoToApi(row)) });
+        if (res?.data?.id) {
+          row.uuid = res.data.id;
+          await kcDbPut(STORE_KC_TOPOGRAPHY, row);
+        }
+      } catch (err) {
+        console.warn('[KC Registry] Topo cloud sync failed:', err);
+        throw err;
+      }
+    }
+    return row;
+  }
+
+  let _pentacamImportReadings = [];
+  let _pentacamImportMode = 'kc';
+
+  function resetPentacamImportModal(mode) {
+    _pentacamImportMode = mode;
+    _pentacamImportReadings = [];
+    const preview = document.getElementById('pentacamImportPreview');
+    if (preview) preview.innerHTML = '<p class="text-muted">Choose a Pentacam CSV file (chamber.csv, BAD.CSV, or export).</p>';
+    const fileInput = document.getElementById('pentacamImportFile');
+    if (fileInput) fileInput.value = '';
+    const laserChk = document.getElementById('pentacamImportToLaser');
+    const laserRow = document.getElementById('pentacamImportLaserRow');
+    if (laserChk) laserChk.checked = mode === 'laser';
+    if (laserRow) laserRow.hidden = mode === 'laser';
+    const title = document.getElementById('pentacamImportModalTitle');
+    if (title) {
+      title.textContent = mode === 'laser'
+        ? 'Import Pentacam CSV — Laser work-up'
+        : 'Import Pentacam CSV — KC registry';
+    }
+  }
+
+  global.openKcPentacamImport = function () {
+    const kcPatientId = global._kcSelectedPatientId;
+    if (!kcPatientId) {
+      alert('Select a KC registry patient first (Open a patient from the list).');
+      return;
+    }
+    resetPentacamImportModal('kc');
+    global.openEmrModal('pentacamImportModal');
+  };
+
+  global.openLaserPentacamImport = function () {
+    if (document.getElementById('section-laser-refractive')?.hidden) {
+      global.CorneaLaserRefractive?.toggleSection?.(true);
+    }
+    resetPentacamImportModal('laser');
+    global.openEmrModal('pentacamImportModal');
+  };
+
+  global.onPentacamFileSelected = async function (input) {
+    const file = input?.files?.[0];
+    const preview = document.getElementById('pentacamImportPreview');
+    if (!file || !preview) return;
+    try {
+      const text = await file.text();
+      const result = global.CorneaPentacamImport?.parsePentacamCsv?.(text);
+      if (!result) {
+        preview.innerHTML = '<p class="text-muted">Pentacam import module not loaded.</p>';
+        return;
+      }
+      _pentacamImportReadings = result.readings || [];
+      if (!_pentacamImportReadings.length) {
+        preview.innerHTML = `<p class="text-muted">No topography readings found. ${(result.warnings || []).join(' ')}</p>`;
+        return;
+      }
+      const warn = (result.warnings || []).length
+        ? `<p class="form-hint">${global.escapeHtml?.(result.warnings.join('; ')) || result.warnings.join('; ')}</p>`
+        : '';
+      const rows = _pentacamImportReadings.map((r, i) => {
+        const p = global.CorneaPentacamImport.formatPreviewRow(r);
+        return `<tr>
+          <td><input type="checkbox" class="pentacam-import-row" data-idx="${i}" checked /></td>
+          <td>${p.eye}</td><td>${p.date}</td><td>${p.kmax}</td><td>${p.kmean}</td>
+          <td>${p.pachyMin}</td><td>${p.badD}</td><td>${global.escapeHtml?.(p.patient) || p.patient}</td>
+        </tr>`;
+      }).join('');
+      preview.innerHTML = `${warn}<p class="form-hint">Detected ${result.format} format · ${result.readings.length} reading(s)</p>
+        <div class="table-scroll"><table class="records-table">
+          <thead><tr><th></th><th>Eye</th><th>Date</th><th>Kmax</th><th>Kmean</th><th>Pachy min</th><th>BAD-D</th><th>Patient</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+    } catch (err) {
+      preview.innerHTML = `<p class="text-muted">Failed to read file: ${global.escapeHtml?.(err.message) || err.message}</p>`;
+    }
+  };
+
+  global.commitKcPentacamImport = async function () {
+    const checks = document.querySelectorAll('.pentacam-import-row:checked');
+    const indices = [...checks].map((el) => Number(el.dataset.idx));
+    if (!indices.length) { alert('Select at least one reading to import.'); return; }
+    const selected = indices.map((i) => _pentacamImportReadings[i]).filter(Boolean);
+
+    if (_pentacamImportMode === 'laser') {
+      const n = global.CorneaLaserRefractive?.applyPentacamReadings?.(selected) || 0;
+      global.closeEmrModal('pentacamImportModal');
+      alert(n ? `Applied ${n} Pentacam reading(s) to laser refractive work-up.` : 'Import failed.');
+      return;
+    }
+
+    const kcPatientId = global._kcSelectedPatientId;
+    if (!kcPatientId) { alert('No KC patient selected.'); return; }
+
+    let imported = 0;
+    let cloudErrors = 0;
+
+    for (const reading of selected) {
+      const row = global.CorneaPentacamImport.toKcTopoRow(reading, kcPatientId);
+      try {
+        await saveTopoRow(row, kcPatientId);
+        imported++;
+      } catch (_) {
+        cloudErrors++;
+      }
+    }
+
+    if (document.getElementById('pentacamImportToLaser')?.checked && global.CorneaLaserRefractive?.applyPentacamReadings) {
+      global.CorneaLaserRefractive.applyPentacamReadings(selected);
+    }
+
+    await recomputeLocalProgression(kcPatientId);
+    global.closeEmrModal('pentacamImportModal');
+    await refreshCaches();
+    viewKcPatientDetail(kcPatientId);
+    updateKcOverviewStats();
+    renderKcPatientsTable();
+
+    let msg = `Imported ${imported} Pentacam topography reading(s) into KC registry.`;
+    if (cloudErrors) msg += ` ${cloudErrors} failed to sync to cloud (saved locally).`;
+    alert(msg);
+  };
 
   global.CorneaKcCxl = {
     STORE_KC_PATIENTS,
@@ -720,13 +928,14 @@
       }
     },
 
+    syncWithCloud,
+    refreshUi,
+
     async init() {
       if (!global.db) return;
-      await refreshCaches();
-      if (apiEnabled()) await pullFromCloud();
-      await refreshCaches();
-      updateKcOverviewStats();
-      renderKcPatientsTable();
+      if (apiEnabled()) await syncWithCloud();
+      else await refreshCaches();
+      refreshUi();
     },
 
     openLinkedModule(which) {

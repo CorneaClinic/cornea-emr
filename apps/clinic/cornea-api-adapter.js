@@ -495,12 +495,54 @@
     });
   }
 
+  async function refreshKcRegistryCloud() {
+    if (!global.CorneaKcCxl?.syncWithCloud) return;
+    try {
+      await global.CorneaKcCxl.syncWithCloud();
+      const kcTab = document.getElementById('kcRegistryTab');
+      if (kcTab?.classList.contains('active')) {
+        global.CorneaKcCxl.refreshUi?.();
+      }
+    } catch (err) {
+      console.warn('[CorneaApi] KC registry cloud sync failed:', err);
+    }
+  }
+
+  async function refreshKeratitisCloud() {
+    if (!global.CorneaKeratitis?.init) return;
+    try {
+      const ukTab = document.getElementById('keratitisTab');
+      await global.CorneaKeratitis.init();
+      if (!ukTab?.classList.contains('active')) {
+        /* init already refreshed data; avoid panel flicker when tab inactive */
+      }
+    } catch (err) {
+      console.warn('[CorneaApi] Keratitis registry cloud sync failed:', err);
+    }
+  }
+
+  async function refreshKpGraftCloud() {
+    if (!global.CorneaKpGraftOutcomes?.syncFromCloud) return;
+    try {
+      await global.CorneaKpGraftOutcomes.syncFromCloud();
+    } catch (err) {
+      console.warn('[CorneaApi] KP graft outcomes cloud sync failed:', err);
+    }
+  }
+
+  async function refreshModuleCloudData() {
+    await refreshModuleCloudData();
+    await refreshKeratitisCloud();
+    await refreshKpGraftCloud();
+  }
+
   async function bootstrapCloudUi(self) {
     if (!global.db || !global.CorneaSync) return;
     if (global.CorneaSync._bootstrapped) {
       global.CorneaSync.onInboundChanges = (summary) => self.handleInboundSyncChanges(summary);
       if (!global.CorneaSync.longPollActive) global.CorneaSync.startLongPoll();
       await global.CorneaSync.syncAll().catch(() => {});
+      await refreshModuleCloudData();
       return;
     }
     global.CorneaSync._bootstrapped = true;
@@ -524,6 +566,7 @@
       global.CorneaClinicalMedia.loadLibrary().catch(() => {});
       global.CorneaClinicalMedia.loadTimeline().catch(() => {});
     }
+    await refreshModuleCloudData();
     updateCloudHeader(true);
   }
 

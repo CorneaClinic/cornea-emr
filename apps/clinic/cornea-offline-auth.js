@@ -43,27 +43,27 @@
   const ROLE_SECTIONS = Object.freeze({
     administrator: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: true, kc_registry: true, clinical_media: true, database: true, user_admin: true
+      keratoplasty: true, keratitis_ulcer: true, kc_registry: true, clinical_media: true, database: true, user_admin: true
     },
     consultant: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: true, kc_registry: true, clinical_media: true, database: false, user_admin: false
+      keratoplasty: true, keratitis_ulcer: true, kc_registry: true, clinical_media: true, database: false, user_admin: false
     },
     resident: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: true, kc_registry: true, clinical_media: true, database: false, user_admin: false
+      keratoplasty: true, keratitis_ulcer: true, kc_registry: true, clinical_media: true, database: false, user_admin: false
     },
     nurse: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: false, kc_registry: true, clinical_media: true, database: false, user_admin: false
+      keratoplasty: false, keratitis_ulcer: true, kc_registry: true, clinical_media: true, database: false, user_admin: false
     },
     technician: {
       dashboard: true, patient_form: true, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: false, kc_registry: true, clinical_media: true, database: false, user_admin: false
+      keratoplasty: false, keratitis_ulcer: true, kc_registry: true, clinical_media: true, database: false, user_admin: false
     },
     receptionist: {
       dashboard: true, patient_form: false, records: true, audit_trail: true, patient_flow: true,
-      keratoplasty: false, kc_registry: false, clinical_media: false, database: false, user_admin: false
+      keratoplasty: false, keratitis_ulcer: false, kc_registry: false, clinical_media: false, database: false, user_admin: false
     }
   });
 

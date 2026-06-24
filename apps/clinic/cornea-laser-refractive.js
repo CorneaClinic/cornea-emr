@@ -352,7 +352,11 @@
       <div id="lrPanelRefraction" class="lr-panel${state.activeTab === 'refraction' ? ' active' : ''}">${renderFields(T().REFRACTION_FIELDS, w.refraction.od, w.refraction.os, w.refraction.shared, 'lr-rx')}</div>
       <div id="lrPanelCorneal" class="lr-panel${state.activeTab === 'corneal' ? ' active' : ''}"><h4 class="lr-panel-title">Corneal Evaluation</h4>${renderFields(T().CORNEAL_FIELDS, w.corneal.od, w.corneal.os, w.corneal.shared, 'lr-cor')}</div>
       <div id="lrPanelOcularSurface" class="lr-panel${state.activeTab === 'ocularSurface' ? ' active' : ''}"><h4 class="lr-panel-title">Tear Film & Ocular Surface</h4>${renderFields(T().OCULAR_SURFACE_FIELDS, w.ocularSurface.od, w.ocularSurface.os, w.ocularSurface.shared, 'lr-os')}</div>
-      <div id="lrPanelTopography" class="lr-panel${state.activeTab === 'topography' ? ' active' : ''}"><h4 class="lr-panel-title">Topography & Tomography</h4>${renderFields(T().TOPOGRAPHY_FIELDS, w.topography.od, w.topography.os, w.topography.shared, 'lr-topo')}${renderImagesPanel()}</div>
+      <div id="lrPanelTopography" class="lr-panel${state.activeTab === 'topography' ? ' active' : ''}"><h4 class="lr-panel-title">Topography & Tomography</h4>
+        <div class="lr-toolbar no-print" style="margin-bottom:10px;">
+          <button type="button" class="btn-secondary btn-sm" data-lr-action="pentacam-import"><i class="fa-solid fa-file-import"></i> Import Pentacam CSV</button>
+        </div>
+        ${renderFields(T().TOPOGRAPHY_FIELDS, w.topography.od, w.topography.os, w.topography.shared, 'lr-topo')}${renderImagesPanel()}</div>
       <div id="lrPanelAberrometry" class="lr-panel${state.activeTab === 'aberrometry' ? ' active' : ''}"><h4 class="lr-panel-title">Aberrometry</h4>${renderFields(T().ABERROMETRY_FIELDS, w.aberrometry.od, w.aberrometry.os, w.aberrometry.shared, 'lr-ab')}</div>
       <div id="lrPanelRisk" class="lr-panel${state.activeTab === 'risk' ? ' active' : ''}">${renderRiskPanel()}</div>
       <div id="lrPanelPlanning" class="lr-panel${state.activeTab === 'planning' ? ' active' : ''}">${renderPlanningPanel()}</div>
@@ -509,6 +513,12 @@
     });
     root.querySelector('[data-lr-action="copy-od-os"]')?.addEventListener('click', copyOdToOs);
     root.querySelector('[data-lr-action="export"]')?.addEventListener('click', exportJson);
+    root.querySelector('[data-lr-action="pentacam-import"]')?.addEventListener('click', () => {
+      global.openLaserPentacamImport?.();
+    });
+    root.querySelector('[data-lr-action="pentacam-import"]')?.addEventListener('click', () => {
+      global.openLaserPentacamImport?.();
+    });
     root.querySelectorAll('[data-lr-print]').forEach((btn) => btn.addEventListener('click', () => printDoc(btn.dataset.lrPrint)));
     root.querySelector('[data-lr-action="sx-add"]')?.addEventListener('click', saveSurgeryRecord);
     root.querySelector('[data-lr-action="fu-add"]')?.addEventListener('click', saveFollowUpVisit);
@@ -696,6 +706,23 @@
       if (show === true) setSectionVisible(true);
       else if (show === false) setSectionVisible(false);
       else setSectionVisible(document.getElementById('section-laser-refractive')?.hidden !== false);
+    },
+    applyPentacamReadings(readings) {
+      if (!readings?.length || !global.CorneaPentacamImport) return 0;
+      collectFromDom();
+      const patches = global.CorneaPentacamImport.toLaserWorkupPatches(readings);
+      state.workup.topography = state.workup.topography || { od: {}, os: {}, shared: {}, images: [] };
+      state.workup.corneal = state.workup.corneal || { od: {}, os: {} };
+      state.workup.topography.device = patches.topography.device || 'Pentacam';
+      state.workup.topography.od = { ...state.workup.topography.od, ...patches.topography.od };
+      state.workup.topography.os = { ...state.workup.topography.os, ...patches.topography.os };
+      state.workup.corneal.od = { ...state.workup.corneal.od, ...patches.corneal.od };
+      state.workup.corneal.os = { ...state.workup.corneal.os, ...patches.corneal.os };
+      state.activeTab = 'topography';
+      syncHiddenField();
+      setSectionVisible(true);
+      buildPanels();
+      return readings.length;
     },
     formatReadOnly
   };

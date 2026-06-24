@@ -12,6 +12,11 @@ function renderKpPatientReadOnly(p) {
     window._kpSelectedPatientId = p.id;
     panel.hidden = false;
     if (title) title.textContent = (p.kpFullName || 'Patient') + ' · ' + (p.kpPatientId || '');
+    const graftPanel = document.getElementById('kpGraftOutcomesDetail');
+    if (graftPanel) graftPanel.hidden = false;
+    if (typeof window.renderKpGraftOutcomes === 'function') {
+        window.renderKpGraftOutcomes(p.id, p.uuid);
+    }
     renderEmrReadOnlyGrid('kpPatientReadOnlyContent', [
         { label: 'Patient ID', value: p.kpPatientId }, { label: 'Full Name', value: p.kpFullName },
         { label: 'Age', value: p.kpAge }, { label: 'Gender', value: p.kpGender }, { label: 'Phone', value: p.kpPhone },
@@ -538,6 +543,7 @@ window.initKeratoplastyTab = async function() {
     if (!window.db) return;
     try {
         _kpPatientsCache = await kpDbGetAll(STORE_KP_PATIENTS);
+        window._kpPatientsCache = _kpPatientsCache;
         _kpTissuesCache = await kpDbGetAll(STORE_KP_TISSUES);
         await refreshKpPatientMatches();
         renderKpPatientsTable();

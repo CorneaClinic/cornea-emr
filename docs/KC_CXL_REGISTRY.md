@@ -51,7 +51,7 @@ Permissions: `kc:read`, `kc:write` (clinical senior roles).
 
 - `cornea-laser-refractive.js` — per-visit ectasia screening (import source)
 - `cornea-scleral-lens.js` — KC fitting (linked from registry)
-- Project 4 — Pentacam CSV import (future)
+- Project 4 — Pentacam CSV import → see [PENTACAM_IMPORT.md](PENTACAM_IMPORT.md)
 
 ## Deploy
 

@@ -2586,6 +2586,10 @@
     }
     .kp-stat .val { font-size: 1.5rem; font-weight: 700; color: var(--primary-mid); }
     .kp-stat .lbl { font-size: 0.72rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: .04em; margin-top: 4px; }
+    .kp-ecd-chart { display: flex; align-items: flex-end; gap: 8px; min-height: 100px; padding: 8px 0; }
+    .kp-ecd-bar { display: flex; flex-direction: column; align-items: center; gap: 4px; flex: 1; max-width: 48px; }
+    .kp-ecd-bar span { display: block; width: 100%; max-width: 32px; background: linear-gradient(180deg, var(--primary-mid), var(--primary)); border-radius: 4px 4px 0 0; min-height: 4px; }
+    .kp-ecd-bar small { font-size: 0.65rem; color: var(--text-muted); }
     .badge {
         display: inline-block; padding: 3px 10px; border-radius: 20px;
         font-size: 0.72rem; font-weight: 600; white-space: nowrap;
@@ -3058,6 +3062,9 @@
         </button>
         <button type="button" class="nav-item" onclick="switchTab('keratoplastyTab')" data-tab="keratoplastyTab" data-emr-section="keratoplasty" id="nav-keratoplastyTab" aria-controls="keratoplastyTab">
             <i class="fa-solid fa-hand-holding-medical" aria-hidden="true"></i> Keratoplasty
+        </button>
+        <button type="button" class="nav-item" onclick="switchTab('keratitisTab')" data-tab="keratitisTab" data-emr-section="keratitis_ulcer" id="nav-keratitisTab" aria-controls="keratitisTab">
+            <i class="fa-solid fa-virus" aria-hidden="true"></i> Keratitis &amp; Ulcer
         </button>
         <button type="button" class="nav-item" onclick="switchTab('kcRegistryTab')" data-tab="kcRegistryTab" data-emr-section="kc_registry" id="nav-kcRegistryTab" aria-controls="kcRegistryTab">
             <i class="fa-solid fa-chart-line" aria-hidden="true"></i> KC &amp; CXL
@@ -4644,6 +4651,20 @@
                                 </div>
                             </div>
                             <div id="kpPatientReadOnlyContent" class="emr-readonly-content"></div>
+                            <div id="kpGraftOutcomesDetail" class="emr-readonly-shell mt-4" hidden>
+                                <div class="emr-toolbar">
+                                    <div class="emr-toolbar-title">Graft outcomes</div>
+                                    <div class="emr-toolbar-actions no-print">
+                                        <button type="button" class="btn-primary btn-sm" onclick="openKpGraftExamModal()"><i class="fa-solid fa-plus"></i> Post-graft exam</button>
+                                        <button type="button" class="btn-secondary btn-sm" onclick="openKpRejectionModal()"><i class="fa-solid fa-triangle-exclamation"></i> Rejection episode</button>
+                                    </div>
+                                </div>
+                                <div id="kpGraftEcdTrend" class="mb-3"></div>
+                                <h4 style="margin:12px 0 8px;">Post-graft exams</h4>
+                                <div class="table-scroll"><table class="records-table"><thead><tr><th>Date</th><th>Eye</th><th>ECD</th><th>Clarity</th><th>IOP</th><th>BCVA</th><th>Interval</th></tr></thead><tbody id="kpGraftExamsBody"></tbody></table></div>
+                                <h4 style="margin:20px 0 8px;">Rejection episodes</h4>
+                                <div class="table-scroll"><table class="records-table"><thead><tr><th>Onset</th><th>Eye</th><th>Type</th><th>Outcome</th><th>Resolved</th><th>Treatment</th></tr></thead><tbody id="kpGraftRejectionsBody"></tbody></table></div>
+                            </div>
                         </div>
                         <div class="kp-filters no-print">
                             <div class="form-group"><label>Procedure</label><select id="kpFilterProcedure" onchange="filterKpPatientsTable()"><option value="">All</option></select></div>
@@ -4774,6 +4795,52 @@
             </div>
         </div>
 
+        <!-- ===== KERATITIS & ULCER SERVICE TAB ===== -->
+        <div id="keratitisTab" class="tab-content" role="tabpanel" aria-labelledby="nav-keratitisTab" aria-hidden="true">
+            <div class="kp-subnav no-print uk-subnav" role="tablist">
+                <button type="button" class="kp-subnav-btn uk-subnav-btn active" data-uk-panel="ukOverviewPanel" onclick="switchUkPanel('ukOverviewPanel')"><i class="fa-solid fa-chart-pie"></i> Overview</button>
+                <button type="button" class="kp-subnav-btn uk-subnav-btn" data-uk-panel="ukCasesPanel" onclick="switchUkPanel('ukCasesPanel')"><i class="fa-solid fa-users"></i> Ulcer cases</button>
+            </div>
+            <div id="ukOverviewPanel" class="kp-panel uk-panel active">
+                <div class="kp-stats-grid">
+                    <div class="kp-stat"><div class="val" id="ukStatTotal">0</div><div class="lbl">Total cases</div></div>
+                    <div class="kp-stat"><div class="val" id="ukStatActive">0</div><div class="lbl">Active</div></div>
+                    <div class="kp-stat"><div class="val" id="ukStatHealing">0</div><div class="lbl">Healing</div></div>
+                    <div class="kp-stat"><div class="val" id="ukStatResolved">0</div><div class="lbl">Resolved</div></div>
+                </div>
+                <p class="form-hint" style="margin-top:16px;">Structured microbial keratitis workflow — presentation, cultures, antimicrobial plan, and serial daily ulcer monitoring.</p>
+            </div>
+            <div id="ukCasesPanel" class="kp-panel uk-panel">
+                <div class="card section-theme-kp-patients">
+                    <div class="card-header">
+                        <div class="card-header-left"><div class="card-icon orange"><i class="fa-solid fa-virus"></i></div><span class="card-title">Corneal ulcer cases</span></div>
+                        <div class="emr-toolbar-actions no-print">
+                            <button type="button" class="btn-primary btn-sm" onclick="CorneaKeratitis.openCaseModal('new')"><i class="fa-solid fa-plus"></i> New case</button>
+                        </div>
+                        <div class="search-box no-print" style="max-width:220px;"><i class="fa-solid fa-magnifying-glass"></i><input type="text" id="ukCaseSearch" placeholder="Search…" onkeyup="CorneaKeratitis.init()"></div>
+                    </div>
+                    <div class="card-body">
+                        <div id="ukCaseDetail" class="emr-readonly-shell mb-4" hidden>
+                            <div class="emr-toolbar">
+                                <div class="emr-toolbar-title" id="ukCaseDetailTitle">Case detail</div>
+                                <div class="emr-toolbar-actions no-print">
+                                    <button type="button" class="btn-secondary btn-sm" onclick="CorneaKeratitis.openCaseModal('edit')">Edit</button>
+                                    <button type="button" class="btn-primary btn-sm" onclick="CorneaKeratitis.openAssessModal()">Daily assessment</button>
+                                    <button type="button" class="btn-primary btn-sm" onclick="CorneaKeratitis.openCultureModal()">Culture result</button>
+                                </div>
+                            </div>
+                            <h4 style="margin:12px 0 8px;">Daily assessments</h4>
+                            <div class="table-scroll"><table class="records-table"><thead><tr><th>Date</th><th>Ulcer mm</th><th>BCVA</th><th>Healing</th><th>Pain</th></tr></thead><tbody id="ukAssessBody"></tbody></table></div>
+                            <h4 style="margin:20px 0 8px;">Microbiology</h4>
+                            <div class="table-scroll"><table class="records-table"><thead><tr><th>Date</th><th>Specimen</th><th>Gram</th><th>Organism</th><th>Sensitivity</th></tr></thead><tbody id="ukCultureBody"></tbody></table></div>
+                        </div>
+                        <div class="kp-filters no-print"><div class="form-group"><label>Status</label><select id="ukFilterStatus" onchange="CorneaKeratitis.init()"><option value="">All</option><option>Active</option><option>Healing</option><option>Resolved</option><option>Referred</option></select></div></div>
+                        <div class="table-scroll"><table class="records-table"><thead><tr><th>ID</th><th>Name</th><th>Eye</th><th>Etiology</th><th>Status</th><th>Presented</th><th class="no-print">Actions</th></tr></thead><tbody id="ukCasesBody"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ===== KC & CXL REGISTRY TAB ===== -->
         <div id="kcRegistryTab" class="tab-content" role="tabpanel" aria-labelledby="nav-kcRegistryTab" aria-hidden="true">
             <div class="kp-subnav no-print" role="tablist" aria-label="KC registry sections">
@@ -4818,6 +4885,7 @@
                                 <div class="emr-toolbar-actions no-print">
                                     <button type="button" class="btn-secondary btn-sm" onclick="openKcPatientModal('edit')"><i class="fa-solid fa-pen"></i> Edit</button>
                                     <button type="button" class="btn-primary btn-sm" onclick="openKcTopoModal('new')"><i class="fa-solid fa-chart-area"></i> Add topography</button>
+                                    <button type="button" class="btn-secondary btn-sm" onclick="openKcPentacamImport()"><i class="fa-solid fa-file-import"></i> Import Pentacam CSV</button>
                                     <button type="button" class="btn-primary btn-sm" onclick="openKcCxlModal('new')"><i class="fa-solid fa-sun"></i> Record CXL</button>
                                 </div>
                             </div>
@@ -4975,6 +5043,162 @@
     </div>
 </div>
 
+<div id="kpGraftExamModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-md" role="dialog" aria-modal="true" aria-labelledby="kpGraftExamModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="kpGraftExamModalTitle"><i class="fa-solid fa-microscope"></i> Post-graft exam</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('kpGraftExamModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="kpGraftExamPatientId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label class="required" for="kpGraftExamEye">Eye</label>
+                    <select id="kpGraftExamEye" required><option value="">—</option><option>OD</option><option>OS</option></select>
+                </div>
+                <div class="form-group"><label class="required" for="kpGraftExamDate">Exam date</label><input type="date" id="kpGraftExamDate" required /></div>
+                <div class="form-group"><label for="kpGraftExamInterval">Post-op interval</label>
+                    <select id="kpGraftExamInterval"><option value="">—</option><option>1 week</option><option>1 month</option><option>3 months</option><option>6 months</option><option>1 year</option><option>Other</option></select>
+                </div>
+                <div class="form-group"><label for="kpGraftExamBcva">BCVA</label><input type="text" id="kpGraftExamBcva" placeholder="e.g. 6/12" /></div>
+                <div class="form-group"><label for="kpGraftExamIop">IOP (mmHg)</label><input type="number" id="kpGraftExamIop" min="0" max="80" step="1" /></div>
+                <div class="form-group"><label for="kpGraftExamEcd">Endothelial count</label><input type="number" id="kpGraftExamEcd" min="0" step="1" placeholder="cells/mm²" /></div>
+                <div class="form-group"><label for="kpGraftExamClarity">Graft clarity</label>
+                    <select id="kpGraftExamClarity"><option value="">—</option><option>Clear</option><option>Mild haze</option><option>Haze</option><option>Edematous</option></select>
+                </div>
+                <div class="form-group span-2"><label for="kpGraftExamMeds">Medications</label><input type="text" id="kpGraftExamMeds" /></div>
+                <div class="form-group span-2"><label for="kpGraftExamNotes">Notes</label><textarea id="kpGraftExamNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('kpGraftExamModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="saveKpGraftExam()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="kpRejectionModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-md" role="dialog" aria-modal="true" aria-labelledby="kpRejectionModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="kpRejectionModalTitle"><i class="fa-solid fa-triangle-exclamation"></i> Rejection episode</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('kpRejectionModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="kpRejPatientId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label class="required" for="kpRejEye">Eye</label>
+                    <select id="kpRejEye" required><option value="">—</option><option>OD</option><option>OS</option></select>
+                </div>
+                <div class="form-group"><label class="required" for="kpRejOnset">Onset date</label><input type="date" id="kpRejOnset" required /></div>
+                <div class="form-group"><label for="kpRejType">Rejection type</label>
+                    <select id="kpRejType"><option value="">—</option><option>Endothelial</option><option>Epithelial</option><option>Stromal</option><option>Mixed</option></select>
+                </div>
+                <div class="form-group"><label for="kpRejGrade">Grade</label>
+                    <select id="kpRejGrade"><option value="">—</option><option>Mild</option><option>Moderate</option><option>Severe</option></select>
+                </div>
+                <div class="form-group"><label for="kpRejOutcome">Outcome</label>
+                    <select id="kpRejOutcome"><option>Active</option><option>Resolved</option><option>Failed</option></select>
+                </div>
+                <div class="form-group"><label for="kpRejResolved">Resolved date</label><input type="date" id="kpRejResolved" /></div>
+                <div class="form-group span-2"><label for="kpRejTreatment">Treatment</label><input type="text" id="kpRejTreatment" /></div>
+                <div class="form-group span-2"><label for="kpRejNotes">Notes</label><textarea id="kpRejNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('kpRejectionModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="saveKpRejection()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="ukCaseModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="ukCaseModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="ukCaseModalTitle"><i class="fa-solid fa-virus"></i> Corneal ulcer case</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('ukCaseModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="ukRecordId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label for="ukCaseId">Case ID</label><input type="text" id="ukCaseId" readonly /></div>
+                <div class="form-group"><label class="required" for="ukFullName">Full name</label><input type="text" id="ukFullName" required /></div>
+                <div class="form-group"><label for="ukEye">Eye</label>
+                    <select id="ukEye"><option value="">—</option><option>OD</option><option>OS</option></select>
+                </div>
+                <div class="form-group"><label for="ukPresentationDate">Presentation date</label><input type="date" id="ukPresentationDate" /></div>
+                <div class="form-group"><label for="ukEtiology">Etiology</label>
+                    <select id="ukEtiology"><option value="">—</option><option>Bacterial</option><option>Fungal</option><option>Viral (HSV)</option><option>Viral (HZV)</option><option>Acanthamoeba</option><option>Mixed</option><option>Unknown</option></select>
+                </div>
+                <div class="form-group"><label for="ukContactLens">Contact lens wearer</label>
+                    <select id="ukContactLens"><option value="">—</option><option>No</option><option>Yes</option></select>
+                </div>
+                <div class="form-group"><label for="ukStatus">Status</label>
+                    <select id="ukStatus"><option>Active</option><option>Healing</option><option>Resolved</option><option>Referred</option></select>
+                </div>
+                <div class="form-group"><label for="ukEmrMrn">EMR MRN (optional)</label><input type="text" id="ukEmrMrn" /></div>
+                <div class="form-group span-2"><label for="ukAntimicrobialPlan">Antimicrobial plan</label><textarea id="ukAntimicrobialPlan" rows="2"></textarea></div>
+                <div class="form-group span-2"><label for="ukNotes">Notes</label><textarea id="ukNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('ukCaseModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="CorneaKeratitis.saveCase()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="ukAssessModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-md" role="dialog" aria-modal="true" aria-labelledby="ukAssessModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="ukAssessModalTitle"><i class="fa-solid fa-calendar-day"></i> Daily assessment</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('ukAssessModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="ukAssessCaseId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label for="ukAssessDate">Date</label><input type="date" id="ukAssessDate" /></div>
+                <div class="form-group"><label for="ukAssessSize">Ulcer size (mm)</label><input type="number" id="ukAssessSize" step="0.1" min="0" /></div>
+                <div class="form-group"><label for="ukAssessBcva">BCVA</label><input type="text" id="ukAssessBcva" /></div>
+                <div class="form-group"><label for="ukAssessHealing">Healing status</label>
+                    <select id="ukAssessHealing"><option value="">—</option><option>Improved</option><option>Unchanged</option><option>Worse</option></select>
+                </div>
+                <div class="form-group"><label for="ukAssessPain">Pain (0–10)</label><input type="number" id="ukAssessPain" min="0" max="10" /></div>
+                <div class="form-group span-2"><label for="ukAssessNotes">Notes</label><textarea id="ukAssessNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('ukAssessModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="CorneaKeratitis.saveAssessment()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="ukCultureModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-md" role="dialog" aria-modal="true" aria-labelledby="ukCultureModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="ukCultureModalTitle"><i class="fa-solid fa-flask"></i> Culture result</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('ukCultureModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="ukCultureCaseId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label for="ukCultureDate">Specimen date</label><input type="date" id="ukCultureDate" /></div>
+                <div class="form-group"><label for="ukSpecimen">Specimen type</label>
+                    <select id="ukSpecimen"><option value="">—</option><option>Corneal scrape</option><option>Tear film</option><option>Contact lens</option><option>Biopsy</option></select>
+                </div>
+                <div class="form-group"><label for="ukGram">Gram stain</label>
+                    <select id="ukGram"><option value="">—</option><option>Gram positive</option><option>Gram negative</option><option>Gram variable</option><option>No organisms</option><option>Not done</option></select>
+                </div>
+                <div class="form-group"><label for="ukOrganism">Organism</label><input type="text" id="ukOrganism" /></div>
+                <div class="form-group span-2"><label for="ukSensitivity">Sensitivity</label><textarea id="ukSensitivity" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('ukCultureModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="CorneaKeratitis.saveCulture()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
 <div id="kcPatientModal" class="emr-modal-overlay" aria-hidden="true">
     <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="kcPatientModalTitle">
         <div class="emr-modal-header">
@@ -5037,6 +5261,30 @@
         <div class="emr-modal-footer">
             <button type="button" class="btn-secondary" onclick="closeEmrModal('kcTopoModal')">Cancel</button>
             <button type="button" class="btn-primary" onclick="saveKcTopo()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="pentacamImportModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="pentacamImportModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="pentacamImportModalTitle"><i class="fa-solid fa-file-import"></i> Import Pentacam CSV</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('pentacamImportModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <p class="form-hint">Supports Pentacam <strong>chamber.csv</strong>, <strong>BAD.CSV</strong>, and common exports (comma or semicolon). Maps Kmax, Kmean, pachymetry, BAD-D, and ABCD to topography fields.</p>
+            <div class="form-group">
+                <label for="pentacamImportFile">CSV file</label>
+                <input type="file" id="pentacamImportFile" accept=".csv,.txt,.dif,text/csv" onchange="onPentacamFileSelected(this)" />
+            </div>
+            <div id="pentacamImportLaserRow" class="form-group">
+                <label><input type="checkbox" id="pentacamImportToLaser" /> Also apply to current visit laser refractive work-up</label>
+            </div>
+            <div id="pentacamImportPreview" class="mt-3"><p class="text-muted">No file selected.</p></div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('pentacamImportModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="commitKcPentacamImport()"><i class="fa-solid fa-file-import"></i> Import selected</button>
         </div>
     </div>
 </div>
@@ -5270,7 +5518,11 @@
 <script src="cornea-anterior-segment.js"></script>
 <script src="js/anterior-drawing.js"></script>
 <script src="js/keratoplasty.js"></script>
+<script src="cornea-kp-graft-outcomes.js"></script>
+<script src="cornea-keratitis-taxonomy.js"></script>
+<script src="cornea-keratitis.js"></script>
 <script src="cornea-kc-cxl-taxonomy.js"></script>
+<script src="cornea-pentacam-import.js"></script>
 <script src="cornea-kc-cxl.js"></script>
 <script src="cornea-media-blob-store.js"></script>
 <script src="cornea-clinical-media.js"></script>
