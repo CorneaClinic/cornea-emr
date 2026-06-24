@@ -196,6 +196,22 @@
     return report;
   }
 
+  async function enrichAiReportFromCloud() {
+    if (!global.CorneaEctasiaAI || !global.__corneaCloudMode) return;
+    if (state.workup.aiAdvisor?.lastReport?.ectasiaAi?.source === 'cloud') return;
+    const metrics = global.CorneaEctasiaAI.metricsFromWorkup(state.workup);
+    const analysis = await global.CorneaEctasiaAI.analyze(metrics);
+    const base = state.workup.aiAdvisor?.lastReport || getAiReport();
+    const merged = global.CorneaEctasiaAI.mergeIntoAdvisorReport(base, analysis);
+    state.workup.aiAdvisor.lastReport = merged;
+    const root = document.getElementById('laserRefractiveBuilder');
+    const col = root?.querySelector('.lr-planner-column');
+    if (col && global.CorneaLaserRefractiveAdvisor) {
+      col.innerHTML = global.CorneaLaserRefractiveAdvisor.renderPanel(merged, state.workup.aiAdvisor);
+      bindAiPlannerButtons(root);
+    }
+  }
+
   let plannerRefreshTimer = null;
 
   function refreshAiPlannerPanel() {
@@ -205,6 +221,7 @@
     const report = getAiReport();
     col.innerHTML = global.CorneaLaserRefractiveAdvisor.renderPanel(report, state.workup.aiAdvisor);
     bindAiPlannerButtons(root);
+    enrichAiReportFromCloud().catch(() => {});
   }
 
   let plannerKeyBound = false;

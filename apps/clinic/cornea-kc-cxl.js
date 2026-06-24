@@ -276,6 +276,26 @@
     if (global.CorneaClinicalMedia?.loadPatientTimeline && p.kcEmrPatientMrn) {
       global.CorneaClinicalMedia.loadPatientTimeline(p.kcEmrPatientMrn, { category: 'topography' }).catch(() => {});
     }
+
+    refreshKcEctasiaAi(p, topo);
+  }
+
+  async function refreshKcEctasiaAi(p, topoRows) {
+    const el = document.getElementById('kcEctasiaAiPanel');
+    if (!el || !global.CorneaEctasiaAI) return;
+    if (!topo.length) {
+      el.innerHTML = '<p class="form-hint">Add topography readings to run ectasia AI analysis.</p>';
+      return;
+    }
+    el.innerHTML = '<p class="form-hint"><i class="fa-solid fa-spinner fa-spin"></i> Analyzing topography…</p>';
+    const metrics = global.CorneaEctasiaAI.metricsFromKcPatient(p, topoRows || topo);
+    try {
+      const analysis = await global.CorneaEctasiaAI.analyze(metrics);
+      el.innerHTML = global.CorneaEctasiaAI.renderPanel(analysis);
+      el.querySelector('.ectasia-refresh-btn')?.addEventListener('click', () => refreshKcEctasiaAi(p, topoRows || topo));
+    } catch (err) {
+      el.innerHTML = `<p class="form-hint">Ectasia analysis failed: ${global.escapeHtml?.(err.message) || err.message}</p>`;
+    }
   }
 
   global.viewKcPatientDetail = function (id) {

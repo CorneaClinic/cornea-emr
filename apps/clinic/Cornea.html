@@ -2775,6 +2775,28 @@
         justify-content: flex-end;
         margin-top: 16px;
     }
+
+    .ectasia-ai-panel {
+        margin: 12px 0;
+        padding: 14px;
+        border-radius: 10px;
+        border: 1px solid #e0e0e0;
+        background: #fafafa;
+    }
+    .ectasia-ai-panel.ectasia-tier-high { border-color: #ef9a9a; background: #ffebee; }
+    .ectasia-ai-panel.ectasia-tier-moderate { border-color: #ffe082; background: #fff8e1; }
+    .ectasia-ai-panel.ectasia-tier-low { border-color: #a5d6a7; background: #e8f5e9; }
+    .ectasia-ai-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .ectasia-ai-header h4 { margin: 0; font-size: 1rem; }
+    .ectasia-score-badge { font-weight: 700; font-size: 1.1rem; padding: 4px 10px; border-radius: 8px; background: rgba(0,0,0,0.06); }
+    .ectasia-tier-banner { display: flex; gap: 12px; align-items: center; margin: 8px 0; }
+    .ectasia-cxl-rec { margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.6); border-radius: 8px; }
+    .ectasia-urgency { margin-left: 8px; font-size: 0.75rem; padding: 2px 8px; border-radius: 4px; }
+    .ectasia-urgency-high { background: #c62828; color: #fff; }
+    .ectasia-urgency-medium { background: #f57f17; color: #fff; }
+    .ectasia-urgency-low { background: #2e7d32; color: #fff; }
+    .ectasia-registry-badge { font-size: 0.7rem; color: #1565c0; }
+    .lr-ai-ectasia .ectasia-ai-panel { margin-top: 12px; }
     .emr-modal-sm { max-width: 480px; }
     .emr-modal-md { max-width: 640px; }
     .emr-modal-lg { max-width: 860px; }
@@ -4941,6 +4963,7 @@
                                 </div>
                             </div>
                             <div id="kcProgressionSummary" class="form-hint" style="margin:12px 0;padding:10px;background:#f5f8fc;border-radius:8px;"></div>
+                            <div id="kcEctasiaAiPanel" class="no-print"></div>
                             <div id="kcModuleLinks" class="emr-toolbar-actions no-print" style="margin-bottom:12px;flex-wrap:wrap;gap:8px;"></div>
                             <h4 style="margin:16px 0 8px;">Topography timeline</h4>
                             <div class="table-scroll">
@@ -5578,6 +5601,7 @@
 <script src="cornea-research-analytics.js"></script>
 <script src="cornea-kc-cxl-taxonomy.js"></script>
 <script src="cornea-pentacam-import.js"></script>
+<script src="cornea-ectasia-ai.js"></script>
 <script src="cornea-kc-cxl.js"></script>
 <script src="cornea-media-blob-store.js"></script>
 <script src="cornea-clinical-media.js"></script>

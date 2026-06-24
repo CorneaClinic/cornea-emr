@@ -283,6 +283,11 @@
       disclaimer: 'AI Clinical Decision Support — surgeon makes final decision.'
     };
     report.patientCounseling = generatePatientCounseling(report);
+    if (global.CorneaEctasiaAI) {
+      const metrics = global.CorneaEctasiaAI.metricsFromWorkup(workup);
+      const topoAi = global.CorneaEctasiaAI.analyzeLocal(metrics);
+      return global.CorneaEctasiaAI.mergeIntoAdvisorReport(report, topoAi);
+    }
     return report;
   }
 
@@ -328,6 +333,7 @@
         <p><strong>RSB:</strong> ${escapeHtml(calc.residualStromalBed ?? '—')} µm · <strong>PTA:</strong> ${escapeHtml(calc.ptaPercent ?? '—')}% · <strong>Ablation:</strong> ${escapeHtml(calc.ablationDepth ?? '—')} µm</p>
         <p><strong>Ectasia:</strong> ${escapeHtml(report.ectasiaRisk?.level || '—')} · <strong>Dry eye:</strong> ${escapeHtml(report.dryEyeRisk?.level || '—')}</p>
       </div>
+      ${report.ectasiaAi ? `<div class="lr-ai-ectasia">${global.CorneaEctasiaAI?.renderPanel(report.ectasiaAi, { refreshButton: false }) || ''}</div>` : ''}
       <div class="lr-ai-reasoning-box"><strong>Clinical reasoning</strong><p>${escapeHtml(report.clinicalReasoning || '')}</p></div>
       ${report.contraindications?.length ? `<div class="lr-ai-safety"><strong>Contraindications</strong><ul>${report.contraindications.map((c) => `<li>${escapeHtml(c)}</li>`).join('')}</ul></div>` : ''}
       ${report.majorRiskFactors?.length ? `<div class="lr-ai-top"><strong>Major risks</strong><ul>${report.majorRiskFactors.map((p) => `<li>${escapeHtml(p)}</li>`).join('')}</ul></div>` : ''}
