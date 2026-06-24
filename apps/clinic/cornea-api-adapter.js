@@ -795,6 +795,17 @@
           if (data.id != null && !Number.isNaN(data.id)) {
             existingForSave = await idbGet(STORE_PATIENTS, data.id);
           }
+          if (existingForSave) {
+            if (existingForSave.uuid && !data.uuid) data.uuid = existingForSave.uuid;
+            if (existingForSave.revision != null) data.revision = existingForSave.revision;
+            if (existingForSave.client_mutation_id) {
+              data.client_mutation_id = existingForSave.client_mutation_id;
+            }
+          }
+          if (global.CorneaRecordLock) {
+            const allowSave = await global.CorneaRecordLock.beforeSaveVisit(data);
+            if (!allowSave) return;
+          }
           if (window.CorneaSectionAttribution && existingForSave) {
             window.CorneaSectionAttribution.applyBeforeSave(data, existingForSave);
           }
@@ -1070,6 +1081,9 @@
 
       const records = await idbGetAll(STORE_PATIENTS);
       const sorted = records.sort((a, b) => (b.lastModified || '').localeCompare(a.lastModified || ''));
+      const lockMap = global.CorneaRecordLock
+        ? await global.CorneaRecordLock.fetchVisitLockMap()
+        : new Map();
 
       body.innerHTML = sorted.length ? sorted.map((r) => {
         const syncIcon = r.sync_status === 'synced'
@@ -1077,9 +1091,13 @@
           : r.sync_status === 'conflict'
             ? '<i class="fa-solid fa-triangle-exclamation" title="Conflict"></i>'
             : '<i class="fa-solid fa-clock" title="Pending sync"></i>';
+        const lock = r.uuid ? lockMap.get(r.uuid) : null;
+        const lockIcon = lock
+          ? `<i class="fa-solid fa-user-lock record-lock-indicator" title="Editing: ${escapeHtml(lock.lockedByName || 'another user')}"></i>`
+          : '';
         return `
         <tr>
-          <td><span class="patient-id-badge">${escapeHtml(r.patientId || '—')}</span> ${syncIcon}</td>
+          <td><span class="patient-id-badge">${escapeHtml(r.patientId || '—')}</span> ${syncIcon} ${lockIcon}</td>
           <td>${escapeHtml(r.fullName || 'Unnamed')}</td>
           <td>${escapeHtml(r.visitDate || '')}</td>
           <td>${escapeHtml(r.phone || '—')}</td>

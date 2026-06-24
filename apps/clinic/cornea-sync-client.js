@@ -1074,7 +1074,7 @@
         return `
           <div style="border:1px solid #ffcdd2;border-radius:8px;padding:12px;margin-bottom:10px;">
             <div style="font-weight:600;margin-bottom:4px;">${this.escapeHtml(this.conflictLabel(item))}</div>
-            <div style="font-size:0.8rem;color:#666;margin-bottom:10px;">Your edit from ${this.escapeHtml(when)} clashed with a newer change on the server.</div>
+            <div style="font-size:0.8rem;color:#666;margin-bottom:10px;">Your edit from ${this.escapeHtml(when)} clashed with a newer change on the server. If another clinician was editing this visit, coordinate before forcing your version.</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
               <button data-choice="local" data-id="${this.escapeHtml(item.mutation_id)}" style="padding:6px 14px;border-radius:6px;border:1px solid #1565c0;background:#1565c0;color:#fff;cursor:pointer;font-size:0.85rem;">Keep my version</button>
               <button data-choice="server" data-id="${this.escapeHtml(item.mutation_id)}" style="padding:6px 14px;border-radius:6px;border:1px solid #bbb;background:#fff;color:#333;cursor:pointer;font-size:0.85rem;">Use server version</button>
