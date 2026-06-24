@@ -13,6 +13,7 @@
     flowTab: 'patient_flow',
     keratoplastyTab: 'keratoplasty',
     keratitisTab: 'keratitis_ulcer',
+    researchTab: 'research_analytics',
     kcRegistryTab: 'kc_registry',
     clinicalMediaTab: 'clinical_media',
     databaseTab: 'database'

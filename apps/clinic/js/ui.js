@@ -15,6 +15,7 @@ var PAGE_META = {
     databaseTab:  { title: 'Database Management', subtitle: 'Export, import & manage local data' },
     keratoplastyTab: { title: 'Keratoplasty Register', subtitle: 'Patient register, tissue inventory & matching' },
     keratitisTab: { title: 'Keratitis & Ulcer Service', subtitle: 'Microbial keratitis workflow, cultures & daily monitoring' },
+    researchTab: { title: 'Research & Outcomes', subtitle: 'Registry analytics, cohort export & graft survival' },
     kcRegistryTab: { title: 'KC & CXL Registry', subtitle: 'Keratoconus programme, serial topography & cross-linking' },
     clinicalMediaTab: { title: 'Clinical Media', subtitle: 'Imaging library, timeline & comparison' }
 };
@@ -160,6 +161,9 @@ window.switchTab = function(tabId) {
     }
     if (tabId === 'keratitisTab' && typeof initKeratitisTab === 'function') {
         initKeratitisTab();
+    }
+    if (tabId === 'researchTab' && typeof initResearchTab === 'function') {
+        initResearchTab();
     }
     if (tabId === 'kcRegistryTab' && typeof initKcRegistry === 'function') {
         initKcRegistry();

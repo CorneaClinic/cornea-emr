@@ -7,6 +7,7 @@ import followupsRouter, { visitFollowupRouter } from './followups.js';
 import keratoplastyPatientsRouter from './keratoplasty-patients.js';
 import kpGraftOutcomesRouter from './kp-graft-outcomes.js';
 import keratitisRegistryRouter from './keratitis-registry.js';
+import researchAnalyticsRouter from './research-analytics.js';
 import kcRegistryRouter from './kc-registry.js';
 import cornealTissuesRouter from './corneal-tissues.js';
 import syncRouter from './sync.js';
@@ -53,6 +54,7 @@ router.use('/keratoplasty-patients/:id/media', createEntityMediaRouter({
 router.use('/keratoplasty-patients', kpGraftOutcomesRouter);
 router.use('/keratoplasty-patients', keratoplastyPatientsRouter);
 router.use('/keratitis-registry', keratitisRegistryRouter);
+router.use('/research-analytics', researchAnalyticsRouter);
 router.use('/kc-registry', kcRegistryRouter);
 router.use('/corneal-tissues/:id/media', createEntityMediaRouter({
   entityType: 'corneal_tissue',

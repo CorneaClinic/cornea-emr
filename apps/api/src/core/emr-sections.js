@@ -12,6 +12,7 @@ export const EMR_SECTIONS = Object.freeze([
   'keratoplasty',
   'kc_registry',
   'keratitis_ulcer',
+  'research_analytics',
   'clinical_media',
   'database',
   'user_admin'
@@ -28,6 +29,7 @@ export const EMR_SECTION_LABELS = Object.freeze({
   keratoplasty: 'Keratoplasty Register',
   kc_registry: 'KC & CXL Registry',
   keratitis_ulcer: 'Keratitis & Ulcer Service',
+  research_analytics: 'Research & Outcomes Analytics',
   clinical_media: 'Clinical Media Library',
   database: 'Database & export/import',
   user_admin: 'User & section access (admin)'
@@ -44,6 +46,7 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratoplasty: true,
     kc_registry: true,
     keratitis_ulcer: true,
+    research_analytics: true,
     clinical_media: true,
     database: true,
     user_admin: true
@@ -57,6 +60,7 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratoplasty: true,
     kc_registry: true,
     keratitis_ulcer: true,
+    research_analytics: true,
     clinical_media: true,
     database: false,
     user_admin: false
@@ -70,6 +74,7 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratoplasty: true,
     kc_registry: true,
     keratitis_ulcer: true,
+    research_analytics: true,
     clinical_media: true,
     database: false,
     user_admin: false
@@ -83,6 +88,7 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratoplasty: true,
     kc_registry: true,
     keratitis_ulcer: true,
+    research_analytics: true,
     clinical_media: true,
     database: false,
     user_admin: false

@@ -648,6 +648,20 @@
       return api(path, options);
     },
 
+    async downloadBlob(path) {
+      const headers = {
+        'X-Device-Id': localStorage.getItem('corneaEmr_deviceId') || ''
+      };
+      if (token) headers.Authorization = `Bearer ${token}`;
+      const res = await fetch(`${baseUrl}${path}`, { headers, credentials: 'include' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const message = body.error?.message || body.error || res.statusText;
+        throw new Error(typeof message === 'string' ? message : `Download failed (${res.status})`);
+      }
+      return res.blob();
+    },
+
     async logout() {
       await logout();
     },

@@ -3066,6 +3066,9 @@
         <button type="button" class="nav-item" onclick="switchTab('keratitisTab')" data-tab="keratitisTab" data-emr-section="keratitis_ulcer" id="nav-keratitisTab" aria-controls="keratitisTab">
             <i class="fa-solid fa-virus" aria-hidden="true"></i> Keratitis &amp; Ulcer
         </button>
+        <button type="button" class="nav-item" onclick="switchTab('researchTab')" data-tab="researchTab" data-emr-section="research_analytics" id="nav-researchTab" aria-controls="researchTab">
+            <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Research
+        </button>
         <button type="button" class="nav-item" onclick="switchTab('kcRegistryTab')" data-tab="kcRegistryTab" data-emr-section="kc_registry" id="nav-kcRegistryTab" aria-controls="kcRegistryTab">
             <i class="fa-solid fa-chart-line" aria-hidden="true"></i> KC &amp; CXL
         </button>
@@ -4841,6 +4844,41 @@
             </div>
         </div>
 
+        <!-- ===== RESEARCH ANALYTICS TAB (Project 6) ===== -->
+        <div id="researchTab" class="tab-content" role="tabpanel" aria-labelledby="nav-researchTab" aria-hidden="true">
+            <p id="raCloudHint" class="form-hint" style="margin-bottom:16px;">Sign in to cloud to load institute-wide registry analytics and CSV export.</p>
+            <div class="kp-stats-grid">
+                <div class="kp-stat"><div class="val" id="raKcTotal">0</div><div class="lbl">KC enrolled</div></div>
+                <div class="kp-stat"><div class="val" id="raKcProgression">0</div><div class="lbl">KC progression</div></div>
+                <div class="kp-stat"><div class="val" id="raCxlTotal">0</div><div class="lbl">CXL procedures</div></div>
+                <div class="kp-stat"><div class="val" id="raUkTotal">0</div><div class="lbl">Ulcer cases</div></div>
+                <div class="kp-stat"><div class="val" id="raUkResolved">0</div><div class="lbl">Ulcers resolved</div></div>
+                <div class="kp-stat"><div class="val" id="raKpCompleted">0</div><div class="lbl">KP completed</div></div>
+            </div>
+            <div class="card section-theme-kp-patients" style="margin-top:20px;">
+                <div class="card-header">
+                    <div class="card-header-left"><div class="card-icon purple"><i class="fa-solid fa-heart-pulse"></i></div><span class="card-title">Graft survival summary</span></div>
+                </div>
+                <div class="card-body">
+                    <p><strong>Overall survival:</strong> <span id="raGraftSurvival">—</span> · <strong>Failed:</strong> <span id="raGraftFailed">0</span> · <strong>Post-graft exams:</strong> <span id="raGraftExams">0</span> · <strong>Rejections:</strong> <span id="raRejections">0</span></p>
+                    <div id="raGraftSurvivalChart"></div>
+                    <p class="form-hint">Kaplan-Meier-style checkpoints at 1, 3, 6, 12, 24, 36 months post-op (simplified; requires cloud registry data).</p>
+                </div>
+            </div>
+            <div class="card section-theme-kp-patients" style="margin-top:20px;">
+                <div class="card-header">
+                    <div class="card-header-left"><div class="card-icon orange"><i class="fa-solid fa-table"></i></div><span class="card-title">Cohort builder</span></div>
+                    <div class="emr-toolbar-actions no-print">
+                        <select id="raCohortSelect" onchange="CorneaResearchAnalytics.refreshCohort()" style="margin-right:8px;"></select>
+                        <button type="button" class="btn-primary btn-sm" onclick="CorneaResearchAnalytics.exportCohort()"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div class="table-scroll"><table class="records-table"><thead id="raCohortHead"></thead><tbody id="raCohortBody"></tbody></table></div>
+                </div>
+            </div>
+        </div>
+
         <!-- ===== KC & CXL REGISTRY TAB ===== -->
         <div id="kcRegistryTab" class="tab-content" role="tabpanel" aria-labelledby="nav-kcRegistryTab" aria-hidden="true">
             <div class="kp-subnav no-print" role="tablist" aria-label="KC registry sections">
@@ -5521,6 +5559,7 @@
 <script src="cornea-kp-graft-outcomes.js"></script>
 <script src="cornea-keratitis-taxonomy.js"></script>
 <script src="cornea-keratitis.js"></script>
+<script src="cornea-research-analytics.js"></script>
 <script src="cornea-kc-cxl-taxonomy.js"></script>
 <script src="cornea-pentacam-import.js"></script>
 <script src="cornea-kc-cxl.js"></script>

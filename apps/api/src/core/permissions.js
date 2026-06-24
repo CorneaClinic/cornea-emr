@@ -68,6 +68,10 @@ export const PERMISSIONS = Object.freeze({
 
   KERATITIS_WRITE: 'keratitis:write',
 
+  RESEARCH_READ: 'research:read',
+
+  RESEARCH_EXPORT: 'research:export',
+
   MEDIA_READ: 'media:read',
 
   MEDIA_WRITE: 'media:write',
@@ -119,6 +123,10 @@ const CLINICAL_SENIOR = Object.freeze([
   PERMISSIONS.KERATITIS_READ,
 
   PERMISSIONS.KERATITIS_WRITE,
+
+  PERMISSIONS.RESEARCH_READ,
+
+  PERMISSIONS.RESEARCH_EXPORT,
 
   PERMISSIONS.MEDIA_READ,
 
