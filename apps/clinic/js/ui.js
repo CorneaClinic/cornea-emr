@@ -157,7 +157,12 @@ window.switchTab = function(tabId) {
         if (window.CorneaOfflineAuth?.renderOfflineUsersAdmin) window.CorneaOfflineAuth.renderOfflineUsersAdmin();
     }
     if (tabId === 'keratoplastyTab') {
-        initKeratoplastyTab();
+        if (typeof window.switchKpPanel === 'function') {
+            const activeBtn = document.querySelector('#keratoplastyTab .kp-subnav-btn.active[data-kp-panel]');
+            const panelId = activeBtn?.getAttribute('data-kp-panel') || 'kpOverviewPanel';
+            window.switchKpPanel(panelId);
+        }
+        if (typeof initKeratoplastyTab === 'function') initKeratoplastyTab();
     }
     if (tabId === 'keratitisTab' && typeof initKeratitisTab === 'function') {
         initKeratitisTab();

@@ -2576,6 +2576,10 @@
     .kp-subnav-btn.active { background: var(--primary-mid); color: #fff; }
     .kp-panel { display: none; }
     .kp-panel.active { display: block; }
+    /* Keratoplasty-only sub-panels (scoped — do not share toggle with KC/Keratitis) */
+    #keratoplastyTab .kp-tab-panel { display: none; }
+    #keratoplastyTab .kp-tab-panel.active { display: block; }
+    #keratoplastyTab .kp-tab-panel[hidden] { display: none !important; }
     .kp-stats-grid {
         display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
         gap: 12px; margin-bottom: 20px;
@@ -4628,22 +4632,22 @@
         <!-- ===== KERATOPLASTY REGISTER TAB ===== -->
         <div id="keratoplastyTab" class="tab-content" role="tabpanel" aria-labelledby="nav-keratoplastyTab" aria-hidden="true">
             <div class="kp-subnav no-print" role="tablist" aria-label="Keratoplasty sections">
-                <button type="button" class="kp-subnav-btn active" data-kp-panel="kpOverviewPanel" onclick="switchKpPanel('kpOverviewPanel')">
+                <button type="button" class="kp-subnav-btn active" data-kp-panel="kpOverviewPanel" aria-selected="true">
                     <i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Overview
                 </button>
-                <button type="button" class="kp-subnav-btn" data-kp-panel="kpPatientsPanel" onclick="switchKpPanel('kpPatientsPanel')">
+                <button type="button" class="kp-subnav-btn" data-kp-panel="kpPatientsPanel" aria-selected="false">
                     <i class="fa-solid fa-user-injured" aria-hidden="true"></i> Patient Register
                 </button>
-                <button type="button" class="kp-subnav-btn" data-kp-panel="kpTissuePanel" onclick="switchKpPanel('kpTissuePanel')">
+                <button type="button" class="kp-subnav-btn" data-kp-panel="kpTissuePanel" aria-selected="false">
                     <i class="fa-solid fa-eye-dropper" aria-hidden="true"></i> Tissue Inventory
                 </button>
-                <button type="button" class="kp-subnav-btn" data-kp-panel="kpMatchPanel" onclick="switchKpPanel('kpMatchPanel')">
+                <button type="button" class="kp-subnav-btn" data-kp-panel="kpMatchPanel" aria-selected="false">
                     <i class="fa-solid fa-link" aria-hidden="true"></i> Matching Engine
                 </button>
             </div>
 
             <!-- Overview -->
-            <div id="kpOverviewPanel" class="kp-panel active">
+            <div id="kpOverviewPanel" class="kp-panel kp-tab-panel active">
                 <div class="kp-stats-grid" id="kpStatsGrid">
                     <div class="kp-stat"><div class="val" id="kpStatPatients">0</div><div class="lbl">Total Patients</div></div>
                     <div class="kp-stat"><div class="val" id="kpStatWaiting">0</div><div class="lbl">Waiting</div></div>
@@ -4669,7 +4673,7 @@
             </div>
 
             <!-- Patient Register -->
-            <div id="kpPatientsPanel" class="kp-panel">
+            <div id="kpPatientsPanel" class="kp-panel kp-tab-panel" hidden>
                 <div class="card section-theme-kp-patients">
                     <div class="card-header">
                         <div class="card-header-left">
@@ -4736,7 +4740,7 @@
             </div>
 
             <!-- Tissue Inventory -->
-            <div id="kpTissuePanel" class="kp-panel">
+            <div id="kpTissuePanel" class="kp-panel kp-tab-panel" hidden>
                 <div class="card section-theme-kp-tissue">
                     <div class="card-header">
                         <div class="card-header-left">
@@ -4786,7 +4790,7 @@
             </div>
 
             <!-- Matching Engine -->
-            <div id="kpMatchPanel" class="kp-panel">
+            <div id="kpMatchPanel" class="kp-panel kp-tab-panel" hidden>
                 <div class="card mb-4 section-theme-kp-match">
                     <div class="card-header">
                         <div class="card-header-left">

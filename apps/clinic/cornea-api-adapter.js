@@ -172,7 +172,7 @@
     }
     if (user && global.CorneaOfflineAuth) {
       global.__corneaCloudMode = true;
-      global.CorneaOfflineAuth.initAfterCloudCheck(true);
+      void global.CorneaOfflineAuth.initAfterCloudCheck(true);
     } else if (!user) {
       global.CorneaAuthEnv?.lockUi?.();
     }
@@ -344,6 +344,7 @@
       try {
         await CorneaApi.enable({ baseUrl: base, email, password });
         global.CorneaAuthEnv?.unlockUi?.();
+        dismissAuthModalOverlay(document.getElementById('corneaCloudLoginModal'));
         closeLoginModal(true);
       } catch (e) {
         if (errEl) { errEl.textContent = e.message || 'Sign in failed'; errEl.style.display = 'block'; }
@@ -531,7 +532,7 @@
   }
 
   async function refreshModuleCloudData() {
-    await refreshModuleCloudData();
+    await refreshKcRegistryCloud();
     await refreshKeratitisCloud();
     await refreshKpGraftCloud();
   }
@@ -753,7 +754,11 @@
         this.patchGlobals();
         showCloudBadge(true);
 
-        await ensureCloudBootstrap(this);
+        try {
+          await ensureCloudBootstrap(this);
+        } catch (bootstrapErr) {
+          console.warn('[CorneaApi] Cloud bootstrap failed after login (app remains usable):', bootstrapErr);
+        }
 
         if (typeof global.updateDiagnosisIcdStatusMessage === 'function') {
           global.updateDiagnosisIcdStatusMessage();

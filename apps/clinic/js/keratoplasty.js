@@ -1,10 +1,8 @@
 /**
  * Cornea Clinic — keratoplasty register, tissue inventory & matching
  * Phase 1 extraction from Cornea.html
+ * Store names: use globals from js/storage.js (var STORE_KP_* — do not redeclare here).
  */
-const STORE_KP_PATIENTS = 'kpPatients';
-const STORE_KP_TISSUES = 'kpTissues';
-
 function renderKpPatientReadOnly(p) {
     const panel = document.getElementById('kpPatientReadOnlyDetail');
     const title = document.getElementById('kpPatientReadOnlyTitle');
@@ -59,8 +57,8 @@ function renderKpTissueReadOnly(t) {
         { label: 'Serology HBV', value: t.kpSerologyHbv },
         { label: 'Serology HCV', value: t.kpSerologyHcv }
     ]);
-    if (global.CorneaEyeBank) {
-        global.CorneaEyeBank.renderTissueTraceability(t);
+    if (window.CorneaEyeBank) {
+        window.CorneaEyeBank.renderTissueTraceability(t);
     }
 }
 
@@ -540,16 +538,40 @@ async function kpNextId(storeName, prefix) {
 }
 
 window.switchKpPanel = function(panelId) {
-    document.querySelectorAll('.kp-panel').forEach(p => p.classList.remove('active'));
-    document.querySelectorAll('.kp-subnav-btn').forEach(b => b.classList.remove('active'));
-    const panel = document.getElementById(panelId);
-    if (panel) panel.classList.add('active');
-    const btn = document.querySelector(`.kp-subnav-btn[data-kp-panel="${panelId}"]`);
-    if (btn) btn.classList.add('active');
+    if (!panelId) return;
+    const root = document.getElementById('keratoplastyTab');
+    if (!root) return;
+
+    root.querySelectorAll('.kp-tab-panel').forEach((panel) => {
+        const on = panel.id === panelId;
+        panel.classList.toggle('active', on);
+        panel.hidden = !on;
+    });
+
+    root.querySelectorAll('.kp-subnav-btn[data-kp-panel]').forEach((btn) => {
+        const on = btn.getAttribute('data-kp-panel') === panelId;
+        btn.classList.toggle('active', on);
+        btn.setAttribute('aria-selected', on ? 'true' : 'false');
+    });
+
     if (panelId === 'kpMatchPanel') populateKpMatchPatientSelect();
 };
 
+function bindKpSubnavOnce() {
+    if (bindKpSubnavOnce._bound) return;
+    bindKpSubnavOnce._bound = true;
+    const root = document.getElementById('keratoplastyTab');
+    if (!root) return;
+    root.addEventListener('click', (e) => {
+        const btn = e.target.closest('.kp-subnav-btn[data-kp-panel]');
+        if (!btn || !root.contains(btn)) return;
+        e.preventDefault();
+        window.switchKpPanel(btn.getAttribute('data-kp-panel'));
+    });
+}
+
 window.initKeratoplastyTab = async function() {
+    bindKpSubnavOnce();
     if (!window.db) return;
     try {
         _kpPatientsCache = await kpDbGetAll(STORE_KP_PATIENTS);
@@ -783,7 +805,7 @@ function renderKpTissuesTable() {
             <td>${escapeHtml(t.kpTherapeuticGrade||'—')}</td>
             <td>${day != null ? 'Day ' + day : '—'}</td>
             <td>${escapeHtml(t.kpExpiryDate||'—')}</td>
-            <td>${kpBadgeStatus(t.kpTissueStatus, 'tissue')} ${global.CorneaEyeBank?.quarantineBadge?.(t.kpQuarantineStatus) || ''}</td>
+            <td>${kpBadgeStatus(t.kpTissueStatus, 'tissue')} ${window.CorneaEyeBank?.quarantineBadge?.(t.kpQuarantineStatus) || ''}</td>
             <td style="font-size:0.78rem;">${escapeHtml(procs)}</td>
             <td class="no-print records-actions">
                 <button type="button" class="btn-info btn-sm" onclick="viewKpTissueReadOnly(${t.id})"><i class="fa-solid fa-eye"></i></button>
@@ -1111,3 +1133,9 @@ window.exportKpTissuesCsv = function() {
     ]);
     kpDownloadCsv('Corneal_Tissue_' + new Date().toISOString().split('T')[0] + '.csv', headers, rows);
 };
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bindKpSubnavOnce, { once: true });
+} else {
+    bindKpSubnavOnce();
+}
