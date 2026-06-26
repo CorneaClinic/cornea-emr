@@ -52,6 +52,8 @@
 
   let previewBlobUrl = null;
 
+  const thumbBlobUrls = new Map();
+
 
 
   function revokePreviewBlob() {
@@ -63,6 +65,64 @@
       previewBlobUrl = null;
 
     }
+
+  }
+
+
+
+  function revokeThumbBlobs() {
+
+    thumbBlobUrls.forEach((url) => URL.revokeObjectURL(url));
+
+    thumbBlobUrls.clear();
+
+  }
+
+
+
+  function itemNeedsCloudUpload(item) {
+
+    if (item.serverAssetId) return false;
+
+    return Boolean(item.dataUrl || item.blobLocalId);
+
+  }
+
+
+
+  let mediaReadyWaiters = [];
+
+
+
+  function notifyMediaReady() {
+
+    const waiters = mediaReadyWaiters.splice(0);
+
+    waiters.forEach((resolve) => resolve());
+
+  }
+
+
+
+  async function hasLocalPendingMediaBlobs() {
+
+    for (const item of state.items) {
+
+      if (!itemNeedsCloudUpload(item)) continue;
+
+      if (item.dataUrl) return true;
+
+      if (item.blobLocalId && global.CorneaMediaBlobStore) {
+
+        const rec = await global.CorneaMediaBlobStore.getBlob(item.blobLocalId);
+
+        if (rec?.blob) return true;
+
+      }
+
+    }
+
+    return false;
 
   }
 
@@ -129,6 +189,350 @@
     previewBlobUrl = URL.createObjectURL(blob);
 
     return previewBlobUrl;
+
+  }
+
+
+
+  async function resolveItemUrlForThumb(item) {
+
+    if (item.dataUrl) return item.dataUrl;
+
+    if (thumbBlobUrls.has(item.localId)) return thumbBlobUrls.get(item.localId);
+
+    if (item.blobLocalId && global.CorneaMediaBlobStore) {
+
+      const rec = await global.CorneaMediaBlobStore.getBlob(item.blobLocalId);
+
+      if (rec?.blob) {
+
+        const url = URL.createObjectURL(rec.blob);
+
+        thumbBlobUrls.set(item.localId, url);
+
+        return url;
+
+      }
+
+    }
+
+    const baseUrl = getBaseUrl();
+
+    const token = getToken();
+
+    if (!item.serverAssetId || !baseUrl || !token) return null;
+
+    const res = await fetch(`${baseUrl}/api/v1/media/${item.serverAssetId}/content`, {
+
+      headers: { Authorization: `Bearer ${token}` }
+
+    });
+
+    if (!res.ok) return null;
+
+    const blob = await res.blob();
+
+    const url = URL.createObjectURL(blob);
+
+    thumbBlobUrls.set(item.localId, url);
+
+    return url;
+
+  }
+
+
+
+  async function hydrateListThumbnails() {
+
+    const list = document.getElementById('visitMediaList');
+
+    if (!list) return;
+
+    for (const item of state.items) {
+
+      if (!isImageItem(item)) continue;
+
+      const row = list.querySelector(`.visit-media-item[data-local-id="${item.localId}"]`);
+
+      if (!row) continue;
+
+      const thumbEl = row.querySelector('.visit-media-thumb');
+
+      if (!thumbEl || thumbEl.tagName === 'IMG') continue;
+
+      try {
+
+        const url = await resolveItemUrlForThumb(item);
+
+        if (!url) continue;
+
+        const img = document.createElement('img');
+
+        img.src = url;
+
+        img.alt = '';
+
+        img.className = 'visit-media-thumb';
+
+        thumbEl.replaceWith(img);
+
+      } catch (_) { /* ignore */ }
+
+    }
+
+  }
+
+
+
+  async function loadStateFromRecordId(recordId) {
+
+    if (!recordId || !global.db) return false;
+
+    const id = parseInt(String(recordId), 10);
+
+    if (Number.isNaN(id)) return false;
+
+    const record = await new Promise((resolve) => {
+
+      const req = global.db.transaction(['patients'], 'readonly').objectStore('patients').get(id);
+
+      req.onsuccess = () => resolve(req.result || null);
+
+      req.onerror = () => resolve(null);
+
+    });
+
+    if (!record?.visitMediaJSON) return false;
+
+    try {
+
+      const parsed = JSON.parse(record.visitMediaJSON);
+
+      state.items = Array.isArray(parsed.items) ? parsed.items : [];
+
+      syncHiddenField();
+
+      return state.items.some((i) => itemNeedsCloudUpload(i));
+
+    } catch {
+
+      return false;
+
+    }
+
+  }
+
+
+
+  async function waitForVisitOnServer(visitUuid, maxAttempts = 6) {
+
+    const baseUrl = getBaseUrl();
+
+    const token = getToken();
+
+    if (!baseUrl || !token || !visitUuid) return false;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+
+      const res = await fetch(`${baseUrl}/api/v1/visits/${visitUuid}`, {
+
+        headers: { Authorization: `Bearer ${token}` }
+
+      });
+
+      if (res.ok) return true;
+
+      if (res.status !== 404) return false;
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
+
+    }
+
+    return false;
+
+  }
+
+
+
+  function reconcileMediaWithRemote(localItems, remoteItems) {
+
+    const remoteByKey = new Map();
+
+    remoteItems.forEach((r) => {
+
+      const key = `${r.filename}|${r.size}`;
+
+      remoteByKey.set(key, r);
+
+    });
+
+    const merged = [];
+
+    const seenServerIds = new Set();
+
+    for (const item of localItems) {
+
+      if (item.serverAssetId) {
+
+        merged.push(item);
+
+        seenServerIds.add(item.serverAssetId);
+
+        continue;
+
+      }
+
+      const key = `${item.filename}|${item.size}`;
+
+      const match = remoteByKey.get(key);
+
+      if (match) {
+
+        const adopted = {
+
+          ...item,
+
+          serverAssetId: match.serverAssetId,
+
+          uploadedAt: match.uploadedAt,
+
+          syncStatus: 'synced'
+
+        };
+
+        delete adopted.blobLocalId;
+
+        delete adopted.dataUrl;
+
+        if (item.blobLocalId && global.CorneaMediaBlobStore) {
+
+          global.CorneaMediaBlobStore.deleteBlob(item.blobLocalId).catch(() => {});
+
+        }
+
+        merged.push(adopted);
+
+        seenServerIds.add(match.serverAssetId);
+
+      } else {
+
+        merged.push(item);
+
+      }
+
+    }
+
+    remoteItems.forEach((r) => {
+
+      if (!seenServerIds.has(r.serverAssetId)) merged.push(r);
+
+    });
+
+    return merged;
+
+  }
+
+
+
+  function parseDuplicateAssetId(message) {
+
+    const msg = String(message || '');
+
+    const match = msg.match(/,\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)/i);
+
+    return match ? match[1] : null;
+
+  }
+
+
+
+  async function readVisitRecordForMedia() {
+
+    syncHiddenField();
+
+    const visitMediaJSON = document.getElementById('visitMediaJSON')?.value;
+
+    if (!visitMediaJSON || !global.db) return null;
+
+    const recordId = document.getElementById('currentRecordId')?.value;
+
+    if (!recordId) return null;
+
+    const id = parseInt(String(recordId), 10);
+
+    if (Number.isNaN(id)) return null;
+
+    const existing = await new Promise((resolve) => {
+
+      const req = global.db.transaction(['patients'], 'readonly').objectStore('patients').get(id);
+
+      req.onsuccess = () => resolve(req.result || null);
+
+      req.onerror = () => resolve(null);
+
+    });
+
+    if (!existing) return null;
+
+    existing.visitMediaJSON = visitMediaJSON;
+
+    return existing;
+
+  }
+
+
+
+  /** Update local IndexedDB only — does not enqueue a cloud sync (safe when opening records). */
+
+  async function patchVisitMediaLocal() {
+
+    const existing = await readVisitRecordForMedia();
+
+    if (!existing) return false;
+
+    await new Promise((resolve, reject) => {
+
+      const req = global.db.transaction(['patients'], 'readwrite').objectStore('patients').put(existing);
+
+      req.onsuccess = () => resolve();
+
+      req.onerror = () => reject(req.error);
+
+    });
+
+    return true;
+
+  }
+
+
+
+  /** Push updated visitMediaJSON to cloud after files were uploaded on this device. */
+
+  async function syncVisitMediaToCloud() {
+
+    const existing = await readVisitRecordForMedia();
+
+    if (!existing) return false;
+
+    if (global.CorneaSync?.enqueueVisitMediaPatch) {
+
+      await global.CorneaSync.enqueueVisitMediaPatch(existing);
+
+      return true;
+
+    }
+
+    await new Promise((resolve, reject) => {
+
+      const req = global.db.transaction(['patients'], 'readwrite').objectStore('patients').put(existing);
+
+      req.onsuccess = () => resolve();
+
+      req.onerror = () => reject(req.error);
+
+    });
+
+    return true;
 
   }
 
@@ -268,13 +672,21 @@
 
   function getToken() {
 
-    return localStorage.getItem('corneaEmr_apiToken') || '';
+    return global.CorneaApi?.getToken?.()
+
+      || localStorage.getItem('corneaEmr_apiToken')
+
+      || '';
 
   }
 
 
 
   function getBaseUrl() {
+
+    const fromApi = global.CorneaApi?.getBaseUrl?.();
+
+    if (fromApi) return String(fromApi).replace(/\/$/, '');
 
     return (localStorage.getItem('corneaEmr_apiBase') || '').replace(/\/$/, '');
 
@@ -326,6 +738,24 @@
 
 
 
+  function serializeMediaItem(item) {
+    const out = {
+      localId: item.localId,
+      category: item.category,
+      eye: item.eye || '',
+      label: item.label || '',
+      filename: item.filename || '',
+      mimeType: item.mimeType || '',
+      size: item.size || 0,
+      serverAssetId: item.serverAssetId || null,
+      uploadedAt: item.uploadedAt || null,
+      syncStatus: item.syncStatus || null
+    };
+    if (item.blobLocalId && !item.serverAssetId) out.blobLocalId = item.blobLocalId;
+    if (!item.serverAssetId && item.dataUrl) out.dataUrl = item.dataUrl;
+    return out;
+  }
+
   function syncHiddenField() {
 
     const el = document.getElementById('visitMediaJSON');
@@ -334,25 +764,11 @@
 
     const payload = {
 
-      items: state.items.map((item) => {
-
-        const copy = { ...item };
-
-        if (copy.serverAssetId) {
-
-          delete copy.dataUrl;
-
-          delete copy.blobLocalId;
-
-        }
-
-        return copy;
-
-      })
+      items: state.items.map((item) => serializeMediaItem(item))
 
     };
 
-    el.value = JSON.stringify(payload);
+    el.value = (global.safeJsonStringify || JSON.stringify)(payload);
 
   }
 
@@ -412,7 +828,11 @@
 
         ? '<span class="visit-media-badge synced"><i class="fa-solid fa-cloud"></i> Synced</span>'
 
-        : '<span class="visit-media-badge pending"><i class="fa-solid fa-clock"></i> Pending sync</span>';
+        : item.syncStatus === 'failed'
+
+          ? `<span class="visit-media-badge failed" title="${escapeHtml(item.uploadError || 'Upload failed')}"><i class="fa-solid fa-triangle-exclamation"></i> Upload failed</span>`
+
+          : '<span class="visit-media-badge pending"><i class="fa-solid fa-clock"></i> Pending sync</span>';
 
       return `<div class="visit-media-item" data-local-id="${escapeHtml(item.localId)}">
 
@@ -440,6 +860,14 @@
 
           </button>
 
+          ${!item.serverAssetId ? `<button type="button" class="btn-secondary btn-sm visit-media-retry-btn" title="Retry cloud upload"
+
+            onclick="CorneaVisitMedia.retryUpload('${escapeHtml(item.localId)}')">
+
+            <i class="fa-solid fa-rotate-right"></i> Retry sync
+
+          </button>` : ''}
+
           <button type="button" class="btn-danger btn-sm visit-media-remove" title="Remove"
 
             onclick="CorneaVisitMedia.removeItem('${escapeHtml(item.localId)}')">
@@ -453,6 +881,8 @@
       </div>`;
 
     }).join('');
+
+    hydrateListThumbnails();
 
   }
 
@@ -478,7 +908,19 @@
 
     const token = getToken();
 
-    if (!baseUrl || !token || !visitUuid) return false;
+    if (!baseUrl || !token) {
+
+      throw new Error('Sign in to Cloud to upload photos');
+
+    }
+
+    if (!visitUuid) {
+
+      throw new Error('Save the visit first so it can sync to the cloud');
+
+    }
+
+
 
     let blob = null;
 
@@ -492,11 +934,23 @@
 
     if (!blob && item.dataUrl) blob = await dataUrlToBlob(item.dataUrl);
 
-    if (!blob) return false;
+    if (!blob) {
+
+      throw new Error(`Local copy of "${item.filename}" is missing — re-attach the file`);
+
+    }
+
+
+
+    const mimeType = item.mimeType || blob.type || (isPdfItem(item) ? 'application/pdf' : 'image/jpeg');
+
+    const uploadBlob = (!blob.type || blob.type !== mimeType) ? new Blob([blob], { type: mimeType }) : blob;
+
+
 
     const form = new FormData();
 
-    form.append('file', blob, item.filename);
+    form.append('file', uploadBlob, item.filename);
 
     form.append('category', apiCategory(item.category));
 
@@ -520,45 +974,113 @@
 
 
 
-    const res = await fetch(`${baseUrl}/api/v1/visits/${visitUuid}/media`, {
+    const postUpload = async () => {
 
-      method: 'POST',
+      const res = await fetch(`${baseUrl}/api/v1/visits/${visitUuid}/media`, {
 
-      headers: { Authorization: `Bearer ${token}` },
+        method: 'POST',
 
-      body: form
+        headers: { Authorization: `Bearer ${token}` },
 
-    });
+        body: form
+
+      });
 
 
 
-    if (!res.ok) {
+      if (!res.ok) {
 
-      const body = await res.json().catch(() => ({}));
+        const body = await res.json().catch(() => ({}));
 
-      throw new Error(body.error?.message || body.message || `Upload failed (${res.status})`);
+        const msg = body.error?.message || body.message || `Upload failed (${res.status})`;
+
+        const duplicateId = parseDuplicateAssetId(msg);
+
+        if (duplicateId) {
+
+          item.serverAssetId = duplicateId;
+
+          item.uploadedAt = new Date().toISOString();
+
+          item.syncStatus = 'synced';
+
+          delete item.uploadError;
+
+          delete item.dataUrl;
+
+          if (item.blobLocalId && global.CorneaMediaBlobStore) {
+
+            await global.CorneaMediaBlobStore.deleteBlob(item.blobLocalId);
+
+            delete item.blobLocalId;
+
+          }
+
+          return true;
+
+        }
+
+        if (res.status === 404) {
+
+          throw new Error('Visit is not on the server yet — save and sync the visit, then try again');
+
+        }
+
+        throw new Error(msg);
+
+      }
+
+
+
+      const body = await res.json();
+
+      item.serverAssetId = body.data?.id || null;
+
+      if (!item.serverAssetId) {
+
+        throw new Error('Upload succeeded but server did not return an asset id');
+
+      }
+
+      item.uploadedAt = new Date().toISOString();
+
+      item.syncStatus = 'synced';
+
+      delete item.uploadError;
+
+      delete item.dataUrl;
+
+      if (item.blobLocalId && global.CorneaMediaBlobStore) {
+
+        await global.CorneaMediaBlobStore.deleteBlob(item.blobLocalId);
+
+        delete item.blobLocalId;
+
+      }
+
+      return true;
+
+    };
+
+
+
+    try {
+
+      return await postUpload();
+
+    } catch (err) {
+
+      if (String(err.message || '').includes('not on the server yet')) {
+
+        const ready = await waitForVisitOnServer(visitUuid);
+
+        if (ready) return await postUpload();
+
+      }
+
+      throw err;
 
     }
-
-
-
-    const body = await res.json();
-
-    item.serverAssetId = body.data?.id || null;
-
-    item.uploadedAt = new Date().toISOString();
-
-    delete item.dataUrl;
-
-    if (item.blobLocalId && global.CorneaMediaBlobStore) {
-
-      await global.CorneaMediaBlobStore.deleteBlob(item.blobLocalId);
-
-      delete item.blobLocalId;
-
-    }
-
-    return true;
 
   }
 
@@ -580,7 +1102,13 @@
 
     const token = getToken();
 
-    if (!baseUrl || !token || !visitUuid) return;
+    if (!baseUrl || !token || !visitUuid) {
+
+      notifyMediaReady();
+
+      return;
+
+    }
 
 
 
@@ -592,7 +1120,13 @@
 
       });
 
-      if (!res.ok) return;
+      if (!res.ok) {
+
+        notifyMediaReady();
+
+        return;
+
+      }
 
       const body = await res.json();
 
@@ -622,23 +1156,29 @@
 
       const pending = state.items.filter((i) => !i.serverAssetId);
 
-      const merged = [...pending];
-
-      remote.forEach((r) => {
-
-        if (!merged.some((m) => m.serverAssetId === r.serverAssetId)) merged.push(r);
-
-      });
-
-      state.items = merged;
+      state.items = reconcileMediaWithRemote(pending, remote);
 
       renderList();
 
       syncHiddenField();
 
+      if (remote.length > 0) {
+
+        patchVisitMediaLocal().catch((err) => {
+
+          console.warn('[CorneaVisitMedia] Could not cache remote media list locally', err);
+
+        });
+
+      }
+
+      notifyMediaReady();
+
     } catch (err) {
 
       console.warn('[CorneaVisitMedia] Could not load remote media', err);
+
+      notifyMediaReady();
 
     }
 
@@ -651,6 +1191,8 @@
     reset() {
 
       revokePreviewBlob();
+
+      revokeThumbBlobs();
 
       state = { items: [] };
 
@@ -712,6 +1254,8 @@
 
       revokePreviewBlob();
 
+      revokeThumbBlobs();
+
       state = { items: [] };
 
       try {
@@ -734,7 +1278,85 @@
 
       const uuid = data?.uuid || getVisitUuid();
 
-      if (uuid) loadFromServer(uuid);
+      const recordId = data?.id;
+
+
+
+      if (uuid) {
+
+        loadFromServer(uuid).then(async () => {
+
+          if (await hasLocalPendingMediaBlobs()) {
+
+            const result = await CorneaVisitMedia.flushPendingUploads(uuid, { recordId });
+
+            if (result.uploaded > 0) {
+
+              await syncVisitMediaToCloud();
+
+            } else if (result.failed > 0) {
+
+              console.warn('[CorneaVisitMedia] Pending uploads on open:', (result.errors || []).join('; '));
+
+            }
+
+          }
+
+        }).catch((err) => {
+
+          console.warn('[CorneaVisitMedia] Remote media load/upload', err);
+
+          notifyMediaReady();
+
+        });
+
+      } else {
+
+        notifyMediaReady();
+
+      }
+
+    },
+
+
+
+    awaitMediaReady() {
+
+      return new Promise((resolve) => {
+
+        mediaReadyWaiters.push(resolve);
+
+        setTimeout(resolve, 10000);
+
+      });
+
+    },
+
+
+
+    async openReadOnlyPreview(data, index) {
+
+      try {
+
+        const uuid = data?.uuid || document.getElementById('currentRecordUuid')?.value?.trim() || getVisitUuid();
+
+        if (uuid) await loadFromServer(uuid);
+
+        const item = state.items[index];
+
+        if (!item) return;
+
+        revokePreviewBlob();
+
+        await showPreviewModal(item);
+
+      } catch (err) {
+
+        console.warn('[CorneaVisitMedia] Preview failed', err);
+
+        alert('Could not load preview: ' + (err?.message || err));
+
+      }
 
     },
 
@@ -880,13 +1502,55 @@
 
         try {
 
-          await CorneaVisitMedia.flushPendingUploads(uuid);
+          const result = await CorneaVisitMedia.flushPendingUploads(uuid);
+
+          if (result.failed > 0) {
+
+            const detail = (result.errors || []).slice(0, 2).join('\n');
+
+            alert('Photo saved on this device but cloud upload failed.\n\n' + (detail || 'Use Retry sync on the photo row.'));
+
+          }
 
         } catch (err) {
 
           console.warn('[CorneaVisitMedia] Upload deferred:', err.message);
 
         }
+
+      }
+
+    },
+
+
+
+    async retryUpload(localId) {
+
+      const item = state.items.find((i) => i.localId === localId);
+
+      if (!item || item.serverAssetId) return;
+
+      item.syncStatus = 'pending';
+
+      delete item.uploadError;
+
+      renderList();
+
+      const uuid = getVisitUuid();
+
+      if (!uuid) {
+
+        alert('Save the visit first so it can sync to the cloud.');
+
+        return;
+
+      }
+
+      const result = await CorneaVisitMedia.flushPendingUploads(uuid);
+
+      if (result.failed > 0) {
+
+        alert((result.errors || ['Upload failed']).join('\n'));
 
       }
 
@@ -908,11 +1572,25 @@
 
 
 
-    async flushPendingUploads(visitUuid) {
+    async flushPendingUploads(visitUuid, options = {}) {
 
       const uuid = visitUuid || getVisitUuid();
 
-      if (!uuid || !getBaseUrl() || !getToken()) return { uploaded: 0, failed: 0 };
+      const recordId = options.recordId || document.getElementById('currentRecordId')?.value;
+
+      if (!uuid || !getBaseUrl() || !getToken()) {
+
+        return { uploaded: 0, failed: 0, skipped: true, reason: 'not_signed_in' };
+
+      }
+
+
+
+      if (!state.items.some((i) => itemNeedsCloudUpload(i)) && recordId) {
+
+        await loadStateFromRecordId(recordId);
+
+      }
 
 
 
@@ -920,21 +1598,43 @@
 
       let failed = 0;
 
+      const errors = [];
+
       for (const item of state.items) {
 
-        if (item.serverAssetId || !item.dataUrl) continue;
+        if (!itemNeedsCloudUpload(item)) continue;
 
         try {
 
-          await uploadItem(item, uuid);
+          const ok = await uploadItem(item, uuid);
 
-          uploaded++;
+          if (ok) {
+
+            uploaded++;
+
+          } else {
+
+            failed++;
+
+            item.syncStatus = 'failed';
+
+            item.uploadError = 'Upload did not complete';
+
+            errors.push(item.uploadError);
+
+          }
 
         } catch (err) {
 
           failed++;
 
-          console.warn('[CorneaVisitMedia] Upload failed:', item.filename, err.message);
+          item.syncStatus = 'failed';
+
+          item.uploadError = err.message || 'Upload failed';
+
+          errors.push(`${item.filename}: ${item.uploadError}`);
+
+          console.warn('[CorneaVisitMedia] Upload failed:', item.filename, item.uploadError);
 
         }
 
@@ -944,9 +1644,27 @@
 
       syncHiddenField();
 
-      return { uploaded, failed };
+      if (uploaded > 0) {
+
+        await patchVisitMediaLocal();
+
+        await syncVisitMediaToCloud();
+
+      } else if (failed > 0 && recordId) {
+
+        await patchVisitMediaLocal();
+
+      }
+
+      return { uploaded, failed, errors, skipped: false };
 
     },
+
+
+
+    syncVisitMediaToCloud,
+
+    patchVisitMediaLocal,
 
 
 
@@ -1050,13 +1768,7 @@
 
           const idx = Number(btn.getAttribute('data-ro-index')) || 0;
 
-          const item = items[idx];
-
-          if (!item) return;
-
-          revokePreviewBlob();
-
-          await showPreviewModal(item);
+          await CorneaVisitMedia.openReadOnlyPreview(data, idx);
 
         });
 

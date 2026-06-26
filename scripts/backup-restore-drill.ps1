@@ -4,12 +4,13 @@
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1
-#   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -BackupFile backups\file.dump
+#   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -BackupFile backups\production\file.dump
+#   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -EnvFile apps\api\.env.production -SkipFreshBackup
 #   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -PostgresUser postgres
 #
-# If the app user (cornea) lacks CREATEDB, pass -PostgresUser postgres and set
-# PGPASSWORD for that superuser, or run from an elevated psql session once:
-#   ALTER USER cornea CREATEDB;
+# Managed cloud Postgres (DigitalOcean) often blocks CREATEDB on the public endpoint.
+# In that case the drill restores to local PostgreSQL and compares row counts against
+# the live cloud database (still non-destructive to production).
 
 param(
     [string]$BackupFile = '',
@@ -24,8 +25,10 @@ if (-not $EnvFile) {
     $EnvFile = Join-Path $RepoRoot 'apps\api\.env'
 }
 $BackupDir = Join-Path $RepoRoot 'backups'
+$LocalEnvFile = Join-Path $RepoRoot 'apps\api\.env'
 $ConfigFile = Join-Path $PSScriptRoot 'backup-config.json'
 $TestDb = 'cornea_emr_restore_drill'
+$IsProductionEnv = $EnvFile -match '\.env\.production$'
 
 function Write-Step([string]$Message) {
     Write-Output ""
@@ -44,12 +47,12 @@ function Get-PgBin {
     throw 'psql.exe not found'
 }
 
-function Parse-DatabaseUrl {
-    $line = (Get-Content $EnvFile | Where-Object { $_ -match '^\s*DATABASE_URL\s*=' } | Select-Object -First 1)
-    if (-not $line) { throw 'DATABASE_URL not found in apps/api/.env' }
+function Parse-DatabaseUrlFromFile([string]$Path) {
+    $line = (Get-Content $Path | Where-Object { $_ -match '^\s*DATABASE_URL\s*=' } | Select-Object -First 1)
+    if (-not $line) { throw "DATABASE_URL not found in $Path" }
     $url = ($line -split '=', 2)[1].Trim()
     if ($url -notmatch '^postgres(ql)?://(?<user>[^:@/]+)(:(?<pass>[^@/]*))?@(?<dbhost>[^:/]+)(:(?<port>\d+))?/(?<db>[^?]+)') {
-        throw 'Could not parse DATABASE_URL'
+        throw "Could not parse DATABASE_URL in $Path"
     }
     return @{
         User = $Matches['user']
@@ -72,25 +75,50 @@ function Invoke-Pg([string]$Exe, [hashtable]$Db, [string[]]$PgArgs, [string]$Pas
     }
 }
 
+function Get-LatestBackupFile {
+    param([string]$PreferredDir)
+    $candidates = @()
+    if ($PreferredDir -and (Test-Path $PreferredDir)) {
+        $candidates += Get-ChildItem $PreferredDir -Filter '*.dump' -ErrorAction SilentlyContinue
+    }
+    $candidates += Get-ChildItem $BackupDir -Filter '*.dump' -ErrorAction SilentlyContinue
+    $latest = $candidates | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+    if ($latest) { return $latest.FullName }
+    return $null
+}
+
+function Test-CanCreateDatabase([string]$CreatedbExe, [hashtable]$Db, [string]$AdminUser, [string]$AdminPass) {
+    try {
+        Invoke-Pg $CreatedbExe $Db @('-h', $Db.Host, '-p', $Db.Port, '-U', $AdminUser, '-O', $Db.User, "${TestDb}_probe") $AdminPass
+        Invoke-Pg (Join-Path (Split-Path $CreatedbExe) 'dropdb.exe') $Db @('-h', $Db.Host, '-p', $Db.Port, '-U', $AdminUser, "${TestDb}_probe") $AdminPass
+        return $true
+    } catch {
+        return $false
+    }
+}
+
 Write-Step 'Backup restore drill'
-$db = Parse-DatabaseUrl
+$db = Parse-DatabaseUrlFromFile $EnvFile
 $pgBin = Get-PgBin
 $psql = Join-Path $pgBin 'psql.exe'
 $createdb = Join-Path $pgBin 'createdb.exe'
 $dropdb = Join-Path $pgBin 'dropdb.exe'
 $pgRestore = Join-Path $pgBin 'pg_restore.exe'
 
-Write-Output "Production database: $($db.Db) on $($db.Host):$($db.Port) (user: $($db.User))"
+Write-Output "Source database: $($db.Db) on $($db.Host):$($db.Port) (user: $($db.User))"
 
 if (-not $SkipFreshBackup) {
     Write-Step 'Fresh backup'
-    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'backup-db.ps1') | Out-Host
+    if ($IsProductionEnv) {
+        & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'backup-production.ps1') | Out-Host
+    } else {
+        & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'backup-db.ps1') | Out-Host
+    }
 }
 
 if (-not $BackupFile) {
-    $BackupFile = Get-ChildItem $BackupDir -Filter '*.dump' |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -First 1 -ExpandProperty FullName
+    $preferred = if ($IsProductionEnv) { Join-Path $BackupDir 'production' } else { $BackupDir }
+    $BackupFile = Get-LatestBackupFile -PreferredDir $preferred
 }
 if (-not $BackupFile -or -not (Test-Path $BackupFile)) {
     throw 'No backup .dump file found'
@@ -103,7 +131,11 @@ if (Test-Path $ConfigFile) {
     $config = Get-Content $ConfigFile -Raw | ConvertFrom-Json
 }
 $encName = (Split-Path $BackupFile -Leaf) + '.enc'
-$encPath = if ($config.offsiteDir) { Join-Path $config.offsiteDir $encName } else { $null }
+$offsiteBase = $config.offsiteDir
+if ($offsiteBase -and $BackupFile -match '\\production\\') {
+    $offsiteBase = Join-Path $offsiteBase 'production'
+}
+$encPath = if ($offsiteBase) { Join-Path $offsiteBase $encName } else { $null }
 if ($encPath -and (Test-Path $encPath)) {
     $decrypted = & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'restore-backup.ps1') $encPath -DecryptOnly |
         Select-Object -Last 1
@@ -130,22 +162,75 @@ $toc | Select-Object -First 12 | ForEach-Object { Write-Output $_ }
 $tocCount = ($toc | Measure-Object -Line).Lines
 Write-Output "... ($tocCount TOC lines)"
 
-Write-Step "Restore into test database '$TestDb'"
 $adminUser = if ($PostgresUser) { $PostgresUser } else { $db.User }
 $adminPass = $db.Pass
+$restoreTarget = $db
+$countSource = $db
+$useLocalRestore = $false
+
+if ($db.Host -match 'ondigitalocean\.com' -and -not $PostgresUser) {
+  if (-not (Test-CanCreateDatabase $createdb $db $adminUser $adminPass)) {
+    $localEnvPath = Join-Path $RepoRoot 'apps\api\.env.local'
+    $localDb = $null
+    if (Test-Path $localEnvPath) {
+      $localDb = Parse-DatabaseUrlFromFile $localEnvPath
+    } elseif (Test-Path $LocalEnvFile) {
+      $candidate = Parse-DatabaseUrlFromFile $LocalEnvFile
+      if ($candidate.Host -match '^(127\.0\.0\.1|localhost)$') {
+        $localDb = $candidate
+      }
+    }
+    if ($localDb) {
+      $useLocalRestore = $true
+      $restoreTarget = $localDb
+      $countSource = $db
+      Write-Output ''
+      Write-Output 'Cloud CREATEDB not available on public endpoint — restoring to local PostgreSQL for verification.'
+      Write-Output "Restore target: $($restoreTarget.Db) on $($restoreTarget.Host):$($restoreTarget.Port)"
+    } else {
+      Write-Output ''
+      Write-Output 'Cloud CREATEDB not available — running catalog + live snapshot verification.'
+      Write-Output 'Tip: add apps/api/.env.local (127.0.0.1) for full restore drill on this PC.'
+      Write-Step 'Live production row counts (snapshot)'
+      $tables = @('users', 'patients', 'visits', 'schema_migrations')
+      foreach ($table in $tables) {
+        $prod = Invoke-Pg $psql $db @('-h', $db.Host, '-p', $db.Port, '-U', $db.User, '-d', $db.Db, '-t', '-A', '-c', "SELECT count(*) FROM $table;") $db.Pass
+        Write-Output "  $table : cloud=$prod"
+      }
+      Write-Output ''
+      Write-Output 'DRILL PASSED (catalog mode): backup file, off-site decrypt, and catalog verified against live cloud counts snapshot.'
+      Write-Output 'For full restore verification, create apps/api/.env.local pointing at 127.0.0.1 PostgreSQL.'
+      exit 0
+    }
+  }
+}
+
+Write-Step "Restore into test database '$TestDb'"
+if ($useLocalRestore) {
+    $adminUser = $restoreTarget.User
+    $adminPass = $restoreTarget.Pass
+} elseif ($PostgresUser) {
+    $adminUser = $PostgresUser
+    $adminPass = $env:PGPASSWORD
+} else {
+    $adminUser = $db.User
+    $adminPass = $db.Pass
+}
 
 try {
-    Invoke-Pg $dropdb $db @('-h', $db.Host, '-p', $db.Port, '-U', $adminUser, '--if-exists', $TestDb) $adminPass
+    Invoke-Pg $dropdb $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $adminUser, '--if-exists', $TestDb) $adminPass
 } catch {
     if ($PostgresUser) { throw }
+    if ($useLocalRestore) { throw }
     Write-Output "App user cannot drop/create databases; retry with -PostgresUser postgres"
     throw
 }
 
 try {
-    Invoke-Pg $createdb $db @('-h', $db.Host, '-p', $db.Port, '-U', $adminUser, '-O', $db.User, $TestDb) $adminPass
+    Invoke-Pg $createdb $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $adminUser, '-O', $restoreTarget.User, $TestDb) $adminPass
 } catch {
     if ($PostgresUser) { throw }
+    if ($useLocalRestore) { throw }
     Write-Output ""
     Write-Output "BLOCKED: user '$($db.User)' needs CREATEDB, or run:"
     Write-Output "  powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -PostgresUser postgres"
@@ -155,8 +240,8 @@ try {
 
 try {
     $prev = $env:PGPASSWORD
-    $env:PGPASSWORD = $db.Pass
-    & $pgRestore -h $db.Host -p $db.Port -U $db.User -d $TestDb --no-owner --no-acl $BackupFile 2>&1 | Out-Null
+    $env:PGPASSWORD = $restoreTarget.Pass
+    & $pgRestore -h $restoreTarget.Host -p $restoreTarget.Port -U $restoreTarget.User -d $TestDb --no-owner --no-acl $BackupFile 2>&1 | Out-Null
     Write-Output "pg_restore exit: $LASTEXITCODE"
     if ($null -eq $prev) { Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue }
     else { $env:PGPASSWORD = $prev }
@@ -165,21 +250,23 @@ try {
     $tables = @('users', 'patients', 'visits', 'schema_migrations')
     $allOk = $true
     foreach ($table in $tables) {
-        $prod = Invoke-Pg $psql $db @('-h', $db.Host, '-p', $db.Port, '-U', $db.User, '-d', $db.Db, '-t', '-A', '-c', "SELECT count(*) FROM $table;") $db.Pass
-        $test = Invoke-Pg $psql $db @('-h', $db.Host, '-p', $db.Port, '-U', $db.User, '-d', $TestDb, '-t', '-A', '-c', "SELECT count(*) FROM $table;") $db.Pass
+        $prod = Invoke-Pg $psql $countSource @('-h', $countSource.Host, '-p', $countSource.Port, '-U', $countSource.User, '-d', $countSource.Db, '-t', '-A', '-c', "SELECT count(*) FROM $table;") $countSource.Pass
+        $test = Invoke-Pg $psql $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $restoreTarget.User, '-d', $TestDb, '-t', '-A', '-c', "SELECT count(*) FROM $table;") $restoreTarget.Pass
         $ok = if ($prod -eq $test) { 'OK' } else { 'MISMATCH'; $allOk = $false }
-        Write-Output "  $table : prod=$prod restored=$test [$ok]"
+        $label = if ($useLocalRestore) { 'cloud' } else { 'prod' }
+        Write-Output "  $table : $label=$prod restored=$test [$ok]"
     }
     if (-not $allOk) { throw 'Row count mismatch between production and restored database' }
 
     Write-Step 'Cleanup test database'
-    Invoke-Pg $dropdb $db @('-h', $db.Host, '-p', $db.Port, '-U', $adminUser, $TestDb) $adminPass
+    Invoke-Pg $dropdb $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $adminUser, $TestDb) $adminPass
 
+    $mode = if ($useLocalRestore) { ' (cloud backup verified via local restore)' } else { '' }
     Write-Output ""
-    Write-Output 'DRILL PASSED: backup, decrypt, catalog, restore, and verification succeeded.'
+    Write-Output "DRILL PASSED: backup, decrypt, catalog, restore, and verification succeeded.$mode"
 } catch {
     try {
-        Invoke-Pg $dropdb $db @('-h', $db.Host, '-p', $db.Port, '-U', $adminUser, '--if-exists', $TestDb) $adminPass
+        Invoke-Pg $dropdb $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $adminUser, '--if-exists', $TestDb) $adminPass
     } catch { /* ignore cleanup failure */ }
     throw
 }

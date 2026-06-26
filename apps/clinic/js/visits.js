@@ -11,30 +11,45 @@ window.saveToDatabase = async function() {
     }
     if (!window.db) { alert("Database not ready."); return; }
     const form = document.getElementById('patientForm');
-    if (!form || !form.checkValidity()) {
-        if (form) form.reportValidity();
-        return;
-    }
+    if (!form) return;
 
     window.syncMedicalAdviceJSON();
 
-    if (window.CorneaVisitMedia) {
-        window.CorneaVisitMedia.syncToHiddenField();
+    try {
+        if (window.CorneaVisitMedia) {
+            window.CorneaVisitMedia.syncToHiddenField();
+        }
+
+        window.CorneaAnteriorSegment?.syncToLegacyFields?.();
+        window.CorneaPosteriorSegment?.syncToLegacyFields?.();
+
+        if (window.CorneaContactLens) {
+            window.CorneaContactLens.syncToHiddenField();
+        }
+
+        if (window.CorneaScleralLens) {
+            window.CorneaScleralLens.syncToHiddenField();
+        }
+
+        if (window.CorneaLaserRefractive) {
+            window.CorneaLaserRefractive.syncToHiddenField();
+        }
+    } catch (syncErr) {
+        alert('Error preparing record for save: ' + (syncErr?.message || syncErr));
+        return;
     }
 
-    window.CorneaAnteriorSegment?.syncToLegacyFields?.();
-    window.CorneaPosteriorSegment?.syncToLegacyFields?.();
-
-    if (window.CorneaContactLens) {
-        window.CorneaContactLens.syncToHiddenField();
+    if (typeof window.normalizePatientAgeFields === 'function') {
+        window.normalizePatientAgeFields();
     }
-
-    if (window.CorneaScleralLens) {
-        window.CorneaScleralLens.syncToHiddenField();
+    if (typeof window.validatePatientAgeFields === 'function' && !window.validatePatientAgeFields()) {
+        const ageEl = document.getElementById('ageValue');
+        if (ageEl) ageEl.reportValidity();
+        return;
     }
-
-    if (window.CorneaLaserRefractive) {
-        window.CorneaLaserRefractive.syncToHiddenField();
+    if (!form.checkValidity()) {
+        form.reportValidity();
+        return;
     }
 
     const data = {};
@@ -254,7 +269,11 @@ window.clearForm = function(ask = true) {
     if (!ask || confirm('Are you sure you want to clear the form?')) {
         const form = document.getElementById('patientForm');
         if (form) form.reset();
+        const ageValueInput = document.getElementById('ageValue');
+        const ageUnitInput = document.getElementById('ageUnit');
         const ageInput = document.getElementById('age');
+        if (ageValueInput) ageValueInput.value = '';
+        if (ageUnitInput) ageUnitInput.value = 'years';
         if (ageInput) ageInput.value = '';
         const idField = document.getElementById('currentRecordId');
         if (idField) idField.value = '';
@@ -276,6 +295,7 @@ window.clearForm = function(ask = true) {
         if (window.CorneaLaserRefractive) window.CorneaLaserRefractive.reset();
         window._patientVisitsCache = [];
         window._lastAutofillPatientId = '';
+        window._ageManuallyEdited = false;
         window._currentViewRecordId = null;
         setPatientIdAutofillHint('', false);
         renderPatientReadOnly(null);

@@ -11,6 +11,17 @@ defaults:
     working-directory: apps/api
 
 jobs:
+  clinic-globals:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Clinic global store collision check
+        run: node scripts/check-clinic-globals.mjs
+        working-directory: .
+
   test:
     runs-on: ubuntu-latest
 
@@ -64,3 +75,57 @@ jobs:
           done
           npm run verify:sync
           kill $API_PID || true
+
+  e2e-playwright:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: cornea
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: cornea_emr_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U cornea -d cornea_emr_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      CI: true
+      NODE_ENV: test
+      DATABASE_URL: postgres://cornea:test@127.0.0.1:5432/cornea_emr_test
+      JWT_SECRET: ci-jwt-secret-at-least-32-characters-long!!
+      SECRETS_ENCRYPTION_KEY: ci-encryption-key-32-characters-min!!
+      CORS_ORIGIN: http://127.0.0.1:8080
+      E2E_PASSWORD: Playwright-E2e-Test1!
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/api/package-lock.json
+
+      - name: Install API dependencies
+        run: npm ci
+        working-directory: apps/api
+
+      - name: Install root dependencies (Playwright)
+        run: npm ci
+        working-directory: .
+
+      - name: Install Chromium for Playwright
+        run: npx playwright install chromium --with-deps
+        working-directory: .
+
+      - name: Playwright regression suite
+        run: npm run test:e2e
+        working-directory: .

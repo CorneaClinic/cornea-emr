@@ -274,7 +274,12 @@
     const urlEl = document.getElementById('corneaLoginApiUrl');
     const emailEl = document.getElementById('corneaLoginEmail');
     const passEl = document.getElementById('corneaLoginPassword');
-    if (urlEl) urlEl.value = opts.baseUrl || localStorage.getItem(STORAGE_BASE) || DEFAULT_API_BASE;
+    if (urlEl) {
+      const initialBase = opts.baseUrl || localStorage.getItem(STORAGE_BASE) || DEFAULT_API_BASE;
+      urlEl.value = initialBase;
+      urlEl.setAttribute('data-prefill-base', initialBase);
+      delete urlEl.dataset.userEdited;
+    }
     if (emailEl) emailEl.value = opts.email || localStorage.getItem(STORAGE_EMAIL) || '';
     if (passEl) passEl.value = '';
     if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
@@ -317,7 +322,9 @@
     if (bindLoginModalOnce._bound) return;
     bindLoginModalOnce._bound = true;
     ensureLoginModal();
-    document.getElementById('corneaLoginApiUrl')?.addEventListener('change', () => refreshLoginApiStatus());
+    const apiUrlInput = document.getElementById('corneaLoginApiUrl');
+    apiUrlInput?.addEventListener('change', () => refreshLoginApiStatus());
+    apiUrlInput?.addEventListener('input', () => { apiUrlInput.dataset.userEdited = '1'; });
     document.getElementById('corneaLoginOfflineBtn')?.addEventListener('click', () => {
       beginOfflineFallbackFromCloudModal();
     });
@@ -340,16 +347,23 @@
         return;
       }
       const submitBtn = document.getElementById('corneaLoginSubmitBtn');
-      if (submitBtn) submitBtn.disabled = true;
+      const submitLabel = submitBtn?.innerHTML;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Signing in…';
+      }
       try {
         await CorneaApi.enable({ baseUrl: base, email, password });
-        global.CorneaAuthEnv?.unlockUi?.();
         dismissAuthModalOverlay(document.getElementById('corneaCloudLoginModal'));
         closeLoginModal(true);
+        global.CorneaAuthEnv?.unlockUi?.();
       } catch (e) {
         if (errEl) { errEl.textContent = e.message || 'Sign in failed'; errEl.style.display = 'block'; }
       } finally {
-        if (submitBtn) submitBtn.disabled = false;
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          if (submitLabel) submitBtn.innerHTML = submitLabel;
+        }
       }
     });
   }
@@ -587,6 +601,24 @@
     };
   }
 
+  /** Run initial sync/bootstrap without blocking sign-in or page unlock. */
+  function scheduleCloudBootstrap(self) {
+    void ensureCloudBootstrap(self).catch((err) => {
+      console.warn('[CorneaApi] Cloud bootstrap failed (app remains usable):', err);
+    });
+  }
+
+  function syncLoginModalApiUrl(url) {
+    const urlEl = document.getElementById('corneaLoginApiUrl');
+    const overlay = document.getElementById('corneaCloudLoginModal');
+    if (!urlEl || !url || !overlay?.classList.contains('is-open')) return;
+    const prefill = urlEl.getAttribute('data-prefill-base');
+    if (!urlEl.dataset.userEdited && (prefill == null || urlEl.value === prefill)) {
+      urlEl.value = url;
+      urlEl.setAttribute('data-prefill-base', url);
+    }
+  }
+
   function bindSyncClient() {
     if (!global.CorneaSync || !token) return;
     global.CorneaSync.init(api);
@@ -645,6 +677,8 @@
 
     getBaseUrl: () => baseUrl,
 
+    getToken: () => token || localStorage.getItem(STORAGE_TOKEN) || '',
+
     async request(path, options = {}) {
       return api(path, options);
     },
@@ -681,16 +715,30 @@
         global.CorneaAuthEnv?.clearOfflineFallback?.();
       }
       const preferred = (opts.baseUrl || localStorage.getItem(STORAGE_BASE) || '').replace(/\/$/, '');
-      baseUrl = await resolveApiBase(preferred || null);
-      localStorage.setItem(STORAGE_BASE, baseUrl);
       token = localStorage.getItem(STORAGE_TOKEN);
+      const promptLogin = opts.prompt !== false;
+      let loginPromise = null;
+      const startLoginModal = (base) => {
+        if (!loginPromise && promptLogin) {
+          loginPromise = openLoginModal({ baseUrl: base });
+        }
+        return loginPromise;
+      };
 
-      const probe = await probeApi(baseUrl);
-      if (probe.healthy || probe.reachable) {
-        global.CorneaAuthEnv?.clearOfflineFallback?.();
+      // Show sign-in immediately — do not wait for API health probes.
+      if (!token && promptLogin) {
+        startLoginModal(preferred || DEFAULT_API_BASE);
       }
 
+      const baseUrlPromise = resolveApiBase(preferred || null);
+
       if (token) {
+        baseUrl = await baseUrlPromise;
+        localStorage.setItem(STORAGE_BASE, baseUrl);
+        const probe = await probeApi(baseUrl);
+        if (probe.healthy || probe.reachable) {
+          global.CorneaAuthEnv?.clearOfflineFallback?.();
+        }
         try {
           const me = await api('/api/v1/auth/me');
           global.__corneaCloudMode = true;
@@ -698,11 +746,7 @@
           this.patchGlobals();
           showCloudBadge(true);
           await promptPasswordChangeIfNeeded(me.user);
-          try {
-            await ensureCloudBootstrap(this);
-          } catch (bootstrapErr) {
-            console.warn('[CorneaApi] Cloud bootstrap failed after session restore (app remains usable):', bootstrapErr);
-          }
+          scheduleCloudBootstrap(this);
           console.info('[CorneaApi] Restored cloud session:', baseUrl);
           return true;
         } catch (_) {
@@ -711,12 +755,21 @@
         }
       }
 
+      baseUrl = await baseUrlPromise;
+      localStorage.setItem(STORAGE_BASE, baseUrl);
+      syncLoginModalApiUrl(baseUrl);
+      void probeApi(baseUrl).then((probe) => {
+        if (probe.healthy || probe.reachable) {
+          global.CorneaAuthEnv?.clearOfflineFallback?.();
+        }
+      });
+
       updateCloudHeader(false);
 
-      if (opts.prompt !== false) {
+      if (promptLogin) {
         // Public site: always show cloud sign-in first. Offline mode is only entered
         // when the user explicitly chooses "Continue offline" in the cloud modal.
-        const signedIn = await openLoginModal({ baseUrl });
+        const signedIn = await startLoginModal(baseUrl);
         if (signedIn === 'offline') {
           return false;
         }
@@ -753,12 +806,7 @@
 
         this.patchGlobals();
         showCloudBadge(true);
-
-        try {
-          await ensureCloudBootstrap(this);
-        } catch (bootstrapErr) {
-          console.warn('[CorneaApi] Cloud bootstrap failed after login (app remains usable):', bootstrapErr);
-        }
+        scheduleCloudBootstrap(this);
 
         if (typeof global.updateDiagnosisIcdStatusMessage === 'function') {
           global.updateDiagnosisIcdStatusMessage();
@@ -783,19 +831,50 @@
 
       global.saveToDatabase = async function () {
         const form = document.getElementById('patientForm');
-        if (!form || !form.checkValidity()) {
-          if (form) form.reportValidity();
-          return;
-        }
+        if (!form) return;
         if (typeof global.syncMedicalAdviceJSON === 'function') {
           global.syncMedicalAdviceJSON();
         }
-        if (global.CorneaVisitMedia) {
-          global.CorneaVisitMedia.syncToHiddenField();
+        try {
+          if (global.CorneaVisitMedia) {
+            global.CorneaVisitMedia.syncToHiddenField();
+          }
+          window.CorneaAnteriorSegment?.syncToLegacyFields?.();
+          window.CorneaPosteriorSegment?.syncToLegacyFields?.();
+          window.CorneaContactLens?.syncToHiddenField?.();
+          window.CorneaScleralLens?.syncToHiddenField?.();
+          window.CorneaLaserRefractive?.syncToHiddenField?.();
+        } catch (syncErr) {
+          alert('Error preparing record for save: ' + syncErr.message);
+          return;
+        }
+        if (typeof global.normalizePatientAgeFields === 'function') {
+          global.normalizePatientAgeFields();
+        }
+        if (typeof global.validatePatientAgeFields === 'function' && !global.validatePatientAgeFields()) {
+          const ageEl = document.getElementById('ageValue');
+          if (ageEl) ageEl.reportValidity();
+          return;
+        }
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
         }
 
         try {
           const data = collectFormData();
+          if (data.id == null) {
+            const currentId = document.getElementById('currentRecordId')?.value
+              || (global._currentViewRecordId != null ? String(global._currentViewRecordId) : '');
+            if (currentId) {
+              const parsed = parseInt(String(currentId), 10);
+              if (!Number.isNaN(parsed)) data.id = parsed;
+            }
+          }
+          if (!data.uuid) {
+            const uuidVal = document.getElementById('currentRecordUuid')?.value?.trim();
+            if (uuidVal) data.uuid = uuidVal;
+          }
           let existingForSave = null;
           if (data.id != null && !Number.isNaN(data.id)) {
             existingForSave = await idbGet(STORE_PATIENTS, data.id);
@@ -857,9 +936,22 @@
             }
           }
           if (saved.uuid && global.CorneaVisitMedia) {
-            global.CorneaVisitMedia.flushPendingUploads(saved.uuid).catch((e) => {
+            try {
+              const mediaResult = await global.CorneaVisitMedia.flushPendingUploads(saved.uuid, { recordId: saved.id });
+              if (mediaResult.uploaded > 0) {
+                await global.CorneaVisitMedia.syncVisitMediaToCloud?.();
+                await sync().syncNow({ pushFirst: true });
+              } else if (mediaResult.failed > 0) {
+                const detail = (mediaResult.errors || []).slice(0, 3).join('\n');
+                alert(
+                  'The visit was saved but one or more photos could not upload to the cloud.\n\n' +
+                  (detail || 'Open the visit again and check the photo status.') +
+                  '\n\nEdit the visit and use Retry sync on the photo row.'
+                );
+              }
+            } catch (e) {
               console.warn('[CorneaVisitMedia]', e.message);
-            });
+            }
           }
         } catch (e) {
           alert('Error saving record: ' + e.message);
@@ -884,13 +976,25 @@
 
       global.viewRecordReadOnly = async function (id, target) {
         try {
-          const data = await idbGet(STORE_PATIENTS, id);
+          let data = await idbGet(STORE_PATIENTS, id);
           if (!data) throw new Error('Record not found locally');
+          if (global.CorneaSync?.prepareVisitForViewOnly) {
+            try {
+              data = await global.CorneaSync.prepareVisitForViewOnly(id) || data;
+            } catch (prepErr) {
+              console.warn('[CorneaSync] prepareVisitForViewOnly', prepErr);
+            }
+          }
           global._currentViewRecordId = data.id;
           document.getElementById('currentRecordId').value = data.id;
           const uuidEl = document.getElementById('currentRecordUuid');
           if (uuidEl) uuidEl.value = data.uuid || '';
           global.populateFormFromData(data);
+          if (global.CorneaVisitMedia?.awaitMediaReady) {
+            await global.CorneaVisitMedia.awaitMediaReady();
+            const mediaJson = document.getElementById('visitMediaJSON')?.value;
+            if (mediaJson) data.visitMediaJSON = mediaJson;
+          }
           if (typeof global.refreshPatientVisitHistory === 'function') {
             await global.refreshPatientVisitHistory();
           }
@@ -993,6 +1097,8 @@
             patientId: v.patientId,
             fullName: v.fullName || '',
             age: v.age || '',
+            ageValue: v.ageValue != null && v.ageValue !== '' ? v.ageValue : (v.age || ''),
+            ageUnit: v.ageUnit || 'years',
             sex: v.sex || '',
             phone: v.phone || '',
             address: v.address || '',

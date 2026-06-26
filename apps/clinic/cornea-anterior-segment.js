@@ -139,7 +139,7 @@
     });
     const jsonEl = $(JSON_FIELD);
     if (jsonEl) {
-      jsonEl.value = JSON.stringify({
+      jsonEl.value = (global.safeJsonStringify || JSON.stringify)({
         version: 1,
         state,
         updatedAt: new Date().toISOString()

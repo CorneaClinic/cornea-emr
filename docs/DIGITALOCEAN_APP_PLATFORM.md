@@ -39,6 +39,22 @@ DigitalOcean built the **repo root** (`package.json` with only Wrangler). The AP
 | `AUTH_COOKIE_SECURE` | `true` |
 | `AUTH_EXPOSE_REFRESH_IN_BODY` | `false` |
 
+### Clinical image storage (required for photo sync)
+
+Photo uploads use **DigitalOcean Spaces** (S3-compatible). Set these at **App level** (Settings → App-Level Environment Variables):
+
+| Variable | Example | Notes |
+|----------|---------|--------|
+| `MEDIA_STORAGE_PROVIDER` | `s3` | Run time |
+| `MEDIA_S3_BUCKET` | `corneaclinic-storage` | **Exact name** — a typo like `EDIA_S3_BUCKET` breaks uploads |
+| `MEDIA_S3_ENDPOINT` | `https://sgp1.digitaloceanspaces.com` | Match your Spaces region |
+| `MEDIA_S3_REGION` | `sgp1` | |
+| `MEDIA_S3_ACCESS_KEY_ID` | (secret) | Spaces API key |
+| `MEDIA_S3_SECRET_ACCESS_KEY` | (secret) | Spaces secret |
+| `MEDIA_S3_FORCE_PATH_STYLE` | `false` | For DO Spaces |
+
+Create the bucket in [Spaces](https://cloud.digitalocean.com/spaces) before first upload. If uploads fail with `MEDIA_S3_BUCKET is required`, run `scripts/fix-do-media-bucket-env.ps1` or fix the variable name in the dashboard.
+
 Managed PostgreSQL on DigitalOcean uses SSL. The API auto-configures SSL for `*.ondigitalocean.com` hosts. If you still see `SELF_SIGNED_CERT_IN_CHAIN`, add:
 
 | `DATABASE_SSL_REJECT_UNAUTHORIZED` | `false` | Run time | No |

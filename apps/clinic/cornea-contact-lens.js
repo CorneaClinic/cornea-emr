@@ -70,7 +70,7 @@
 
     if (!el) return;
 
-    el.value = JSON.stringify({ version: 1, activeTab: state.activeTab, fit: state.fit, history: state.history });
+    el.value = (global.safeJsonStringify || JSON.stringify)({ version: 1, activeTab: state.activeTab, fit: state.fit, history: state.history });
 
   }
 

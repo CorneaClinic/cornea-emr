@@ -90,7 +90,7 @@
     if (!el) return;
     const risk = T().computeRisk?.(state.workup);
     const planning = T().computePlanning?.(state.workup);
-    el.value = JSON.stringify({
+    el.value = (global.safeJsonStringify || JSON.stringify)({
       version: 1,
       activeTab: state.activeTab,
       workup: state.workup,

@@ -3,6 +3,99 @@
  * Phase 3 extraction from Cornea.html
  */
 window._lastAutofillPatientId = '';
+window._ageManuallyEdited = false;
+
+/** JSON.stringify that skips circular refs, Files, and DOM nodes (prevents save failures). */
+window.safeJsonStringify = function safeJsonStringify(value) {
+    const seen = new WeakSet();
+    return JSON.stringify(value, (key, val) => {
+        if (typeof val === 'object' && val !== null) {
+            if (seen.has(val)) return undefined;
+            seen.add(val);
+            if (typeof Blob !== 'undefined' && val instanceof Blob) return undefined;
+            if (typeof File !== 'undefined' && val instanceof File) return undefined;
+            if (typeof Node !== 'undefined' && val instanceof Node) return undefined;
+        }
+        return val;
+    });
+};
+
+window.normalizePatientAgeFields = function normalizePatientAgeFields() {
+    const valueEl = document.getElementById('ageValue');
+    const unitEl = document.getElementById('ageUnit');
+    const ageEl = document.getElementById('age');
+    if (!valueEl || !unitEl || !ageEl) return;
+    const raw = String(valueEl.value || '').trim().replace(/,/g, '.');
+    const num = raw === '' ? NaN : Number(raw);
+    const unit = unitEl.value || 'years';
+    if (!Number.isFinite(num) || num < 0) {
+        ageEl.value = '';
+        return;
+    }
+    let years = num;
+    if (unit === 'months') years = num / 12;
+    else if (unit === 'days') years = num / 365.25;
+    ageEl.value = String(Math.round(years * 100) / 100);
+};
+
+window.validatePatientAgeFields = function validatePatientAgeFields() {
+    const valueEl = document.getElementById('ageValue');
+    const unitEl = document.getElementById('ageUnit');
+    if (!valueEl || !unitEl) return true;
+    const raw = String(valueEl.value || '').trim().replace(/,/g, '.');
+    if (!raw) {
+        valueEl.setCustomValidity('Please enter age as a number.');
+        return false;
+    }
+    const num = Number(raw);
+    if (!Number.isFinite(num) || num < 0) {
+        valueEl.setCustomValidity('Age must be a valid number (0 or greater).');
+        return false;
+    }
+    const unit = unitEl.value || 'years';
+    let years = num;
+    if (unit === 'months') years = num / 12;
+    else if (unit === 'days') years = num / 365.25;
+    if (years > 150) {
+        valueEl.setCustomValidity('Age cannot exceed 150 years.');
+        return false;
+    }
+    valueEl.setCustomValidity('');
+    return true;
+};
+
+window.formatAgeDisplay = function formatAgeDisplay(record) {
+    if (!record) return '';
+    if (record.ageValue != null && record.ageValue !== '' && record.ageUnit) {
+        const n = Number(record.ageValue);
+        if (Number.isFinite(n)) {
+            const label = record.ageUnit === 'months' ? 'mo' : record.ageUnit === 'days' ? 'days' : 'yrs';
+            return `${n} ${label}`;
+        }
+    }
+    if (record.age != null && record.age !== '') return `${record.age} yrs`;
+    return '';
+};
+
+function applyPatientAgeToForm(data) {
+    const valueEl = document.getElementById('ageValue');
+    const unitEl = document.getElementById('ageUnit');
+    const ageEl = document.getElementById('age');
+    if (!valueEl || !unitEl || !ageEl) return;
+    if (data.ageValue != null && data.ageValue !== '') {
+        valueEl.value = data.ageValue;
+        unitEl.value = data.ageUnit || 'years';
+    } else if (data.age != null && data.age !== '') {
+        valueEl.value = data.age;
+        unitEl.value = 'years';
+    } else {
+        valueEl.value = '';
+        unitEl.value = 'years';
+        ageEl.value = '';
+        return;
+    }
+    window.normalizePatientAgeFields();
+}
 
 function emrRoValue(val) {
     const s = val != null ? String(val).trim() : '';
@@ -129,28 +222,33 @@ function collectFormDataObject() {
     window.CorneaContactLens?.syncToHiddenField?.();
     window.CorneaScleralLens?.syncToHiddenField?.();
     window.CorneaLaserRefractive?.syncToHiddenField?.();
+    window.CorneaVisitMedia?.syncToHiddenField?.();
+    window.normalizePatientAgeFields?.();
     const form = document.getElementById('patientForm');
     if (!form) return {};
     const data = {};
+    const skipIds = new Set(['visitMediaFileInput', 'currentRecordId', 'currentRecordUuid']);
     form.querySelectorAll('input, textarea, select').forEach(input => {
+        if (skipIds.has(input.id)) return;
         if (input.type === 'radio') {
             if (input.checked) data[input.name] = input.value;
         } else if (input.type === 'checkbox' && input.id) {
             data[input.id] = input.checked;
+        } else if (input.type === 'file') {
+            return;
         } else if (input.id) {
             data[input.id] = input.value;
         }
     });
-    // Hidden form fields hold edit identity; IndexedDB uses numeric `id` as keyPath.
-    const rawId = data.currentRecordId;
+    // Hidden identity fields live outside the scanned value map (skipIds); read from DOM.
+    const rawId = document.getElementById('currentRecordId')?.value
+        || (window._currentViewRecordId != null ? String(window._currentViewRecordId) : '');
     if (rawId && data.id == null) {
         const parsed = parseInt(String(rawId), 10);
         if (!Number.isNaN(parsed)) data.id = parsed;
     }
-    delete data.currentRecordId;
-    const rawUuid = data.currentRecordUuid;
+    const rawUuid = document.getElementById('currentRecordUuid')?.value?.trim() || '';
     if (rawUuid && !data.uuid) data.uuid = rawUuid;
-    delete data.currentRecordUuid;
     return data;
 }
 
@@ -165,10 +263,15 @@ function populateFormFromData(data) {
             const m = today.getMonth() - d.getMonth();
             if (m < 0 || (m === 0 && today.getDate() < d.getDate())) derivedAge--;
             data.age = derivedAge;
+            data.ageValue = derivedAge;
+            data.ageUnit = 'years';
         }
     }
+    applyPatientAgeToForm(data);
+    window._ageManuallyEdited = false;
     Object.keys(data).forEach(key => {
         if (key === 'currentRecordId' || key === 'currentRecordUuid' || key === 'id') return;
+        if (key === 'age' || key === 'ageValue' || key === 'ageUnit') return;
         const el = document.getElementById(key);
         if (el) {
             if (el.type === 'checkbox') {
@@ -488,10 +591,13 @@ function setPatientIdAutofillHint(message, visible = true) {
 
 function applyPatientInfoFromVisit(record) {
     if (!record) return;
-    PATIENT_INFO_AUTOFILL_FIELDS.forEach((id) => {
+    ['fullName', 'phone', 'address'].forEach((id) => {
         const el = document.getElementById(id);
         if (el && record[id] != null) el.value = record[id];
     });
+    if (!window._ageManuallyEdited) {
+        applyPatientAgeToForm(record);
+    }
     if (record.sex) {
         document.querySelectorAll('input[name="sex"]').forEach((r) => {
             r.checked = r.value === record.sex;
@@ -579,7 +685,7 @@ function buildVisitSummaryHtml(record) {
         <dl class="visit-summary-dl">
             ${row('Visit date', formatVisitDisplayDate(record.visitDate))}
             ${row('Patient', record.fullName)}
-            ${row('Age / Sex', (record.age ? record.age + ' yrs' : '') + (record.sex ? (record.age ? ', ' : '') + record.sex : '') || '—')}
+            ${row('Age / Sex', (window.formatAgeDisplay(record) || '') + (record.sex ? ((window.formatAgeDisplay(record) || record.age) ? ', ' : '') + record.sex : '') || '—')}
             ${row('Chief complaint', record.chiefComplaint)}
             ${row('Duration', record.durationSymptoms)}
             ${row('Diagnosis', record.diagnosis)}
@@ -715,7 +821,22 @@ window.openVisitFromHistory = function(recordId) {
     if (recordId) window.editRecord(recordId);
 };
 
+function setupAgeFieldListeners() {
+    const valueEl = document.getElementById('ageValue');
+    const unitEl = document.getElementById('ageUnit');
+    if (!valueEl || valueEl.dataset.ageBound) return;
+    valueEl.dataset.ageBound = '1';
+    const onAgeEdit = () => {
+        window._ageManuallyEdited = true;
+        valueEl.setCustomValidity('');
+        window.normalizePatientAgeFields?.();
+    };
+    valueEl.addEventListener('input', onAgeEdit);
+    unitEl?.addEventListener('change', onAgeEdit);
+}
+
 function setupVisitHistoryListeners() {
+    setupAgeFieldListeners();
     const patientIdEl = document.getElementById('patientId');
     if (patientIdEl && !patientIdEl.dataset.visitHistoryBound) {
         patientIdEl.dataset.visitHistoryBound = '1';

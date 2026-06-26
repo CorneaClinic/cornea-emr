@@ -6,6 +6,7 @@ apps/api/.env
 apps/api/.env.local
 apps/api/.env.production
 apps/api/digitalocean-upload.env
+scripts/do-db-config.json
 
 # Dependencies & runtime
 node_modules/
@@ -29,3 +30,10 @@ Thumbs.db
 
 # Cloudflare Tunnel (machine-specific credentials path)
 infra/cloudflared-config.yml
+
+# Playwright
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+e2e/.auth/credentials.json

@@ -44,12 +44,52 @@ This verifies tools, folders, encryption key, scheduled tasks, and runs a restor
 ### Production (cloud) backup — required for live data
 
 1. Open [DigitalOcean](https://cloud.digitalocean.com) → **Databases** → your PostgreSQL cluster.
-2. **Connection details** → copy the **connection string** (with password).
-3. Create `apps/api/.env.production` (never commit):
+2. **Connection details** → choose **Public network** (not VPC / private).
+   - **Public host** looks like `db-pgsql-....ondigitalocean.com` — use this for clinic PC backups.
+   - **Private host** looks like `private-db-pgsql-....ondigitalocean.com` — only reachable from App Platform / Droplets in the same VPC. It will **time out** from your Windows PC.
+3. **Settings** → **Trusted sources** → add your clinic PC public IP (or your App Platform app if backups run in cloud).
+4. Create `apps/api/.env.production` (never commit):
 
 ```env
-DATABASE_URL=postgresql://doadmin:YOUR_PASSWORD@your-host.ondigitalocean.com:25060/defaultdb?sslmode=require
+DATABASE_URL=postgresql://YOUR_USER:YOUR_PASSWORD@db-pgsql-....ondigitalocean.com:25060/defaultdb?sslmode=require
 ```
+
+Use the user/password from **Public network** connection details (e.g. `Corneaclinic` or `doadmin` — whichever DO shows for that endpoint).
+
+### Dynamic IP (ISP changes your public IP often)
+
+If `pg_dump` or `backup-production.ps1` works one day and times out the next, your IP left DigitalOcean **Trusted sources**.
+
+**Recommended layers (use more than one):**
+
+| Layer | What it does |
+|-------|----------------|
+| **A — DO managed backups** | DigitalOcean → Databases → your cluster → **Backups**. Runs automatically; no clinic PC IP needed. |
+| **B — Auto-update firewall** | Script updates trusted IP before each backup (below). |
+| **C — Cloud-side backup** | Run `pg_dump` from App Platform / a small Droplet in the same VPC (uses private DB host; no PC IP). |
+
+#### B — Auto-update trusted IP (clinic PC backups)
+
+1. DigitalOcean → **API** → **Generate New Token** (read/write).
+2. Databases → your cluster → copy **cluster UUID** from the URL or Overview.
+3. Copy `scripts/do-db-config.json.example` → `scripts/do-db-config.json` and set `databaseId`.
+4. Store token in your Windows user environment (never commit):
+
+```powershell
+[Environment]::SetEnvironmentVariable('DIGITALOCEAN_API_TOKEN', 'dop_v1_YOUR_TOKEN', 'User')
+```
+
+5. Test:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\update-do-db-trusted-ip.ps1
+```
+
+6. `backup-production.ps1` calls this automatically when `do-db-config.json` exists.
+
+The script **keeps** App Platform / droplet firewall rules and **replaces** `ip_addr` rules with your current public IP (+ any `extraTrustedIps` in config).
+
+**Do not** open the database to `0.0.0.0/0` — that exposes PHI to the entire internet.
 
 4. Test:
 

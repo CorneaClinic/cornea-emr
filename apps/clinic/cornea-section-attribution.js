@@ -114,7 +114,7 @@
   }
 
   function snapshotsEqual(a, b) {
-    return JSON.stringify(a) === JSON.stringify(b);
+    return (global.safeJsonStringify || JSON.stringify)(a) === (global.safeJsonStringify || JSON.stringify)(b);
   }
 
   function enrichFormData(data) {

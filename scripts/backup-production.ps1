@@ -3,11 +3,17 @@
 #
 # Usage:
 #   powershell -ExecutionPolicy Bypass -File scripts\backup-production.ps1
+#   powershell -ExecutionPolicy Bypass -File scripts\backup-production.ps1 -SkipFirewallUpdate
+
+param(
+    [switch]$SkipFirewallUpdate
+)
 
 $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $ProdEnv = Join-Path $RepoRoot 'apps\api\.env.production'
 $Example = Join-Path $RepoRoot 'apps\api\.env.production.example'
+$DoConfig = Join-Path $PSScriptRoot 'do-db-config.json'
 
 if (-not (Test-Path $ProdEnv)) {
     Write-Host ""
@@ -22,6 +28,10 @@ if (-not (Test-Path $ProdEnv)) {
         Write-Host "See template: apps\api\.env.production.example"
     }
     exit 1
+}
+
+if (-not $SkipFirewallUpdate -and (Test-Path $DoConfig)) {
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'update-do-db-trusted-ip.ps1') -ConfigFile $DoConfig
 }
 
 & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'backup-db.ps1') `

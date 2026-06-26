@@ -1,0 +1,5 @@
+{
+  "apiTokenEnvVar": "DIGITALOCEAN_API_TOKEN",
+  "databaseId": "YOUR_DATABASE_CLUSTER_UUID",
+  "extraTrustedIps": []
+}

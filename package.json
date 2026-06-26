@@ -14,9 +14,22 @@
     "docker:up": "docker compose -f infra/docker-compose.yml up -d postgres",
     "docker:down": "docker compose -f infra/docker-compose.yml down",
     "clinic:dev": "node apps/clinic/clinic-server.js",
-    "deploy:clinic": "wrangler deploy"
+    "deploy:clinic": "wrangler deploy",
+    "debug:global": "node scripts/global-debug.mjs",
+    "debug:deep": "node scripts/deep-verify-http.mjs",
+    "debug:all": "npm run test:unit && npm run debug:global && npm run debug:deep",
+    "check:clinic-globals": "node scripts/check-clinic-globals.mjs",
+    "phase0:status": "node scripts/log-stabilization-status.mjs --drill-partial",
+    "test:unit": "npm test --prefix apps/api",
+    "test:api-live": "npm run verify:api --prefix apps/api",
+    "test:api-sync": "npm run verify:sync --prefix apps/api",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:staging": "playwright test e2e/staging-smoke.spec.js",
+    "e2e:setup": "node apps/api/scripts/e2e-playwright-setup.js"
   },
   "devDependencies": {
+    "@playwright/test": "^1.52.0",
     "docx": "^9.7.1",
     "wrangler": "^4.100.0"
   }

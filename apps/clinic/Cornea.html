@@ -892,6 +892,7 @@
     }
     .visit-media-badge.synced { background: #e8f5e9; color: #2e7d32; }
     .visit-media-badge.pending { background: #fff8e1; color: #f57f17; }
+    .visit-media-badge.failed { background: #ffebee; color: #c62828; }
     .visit-media-empty {
         text-align: center;
         padding: 24px 16px;
@@ -1374,6 +1375,26 @@
         transition: all var(--transition);
         appearance: none;
         width: 100%;
+    }
+
+    .age-input-row {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+    }
+
+    /* Override global input width:100% — flex children need explicit sizing or the unit select can cover the value field */
+    .age-input-row #ageValue {
+        flex: 1 1 0;
+        width: 0;
+        min-width: 4.5rem;
+    }
+
+    .age-input-row #ageUnit {
+        flex: 0 0 auto;
+        width: auto;
+        min-width: 7rem;
+        max-width: 40%;
     }
 
     input:focus, select:focus, textarea:focus {
@@ -3353,8 +3374,16 @@
                             <input type="text" id="fullName" placeholder="Patient full name" required />
                         </div>
                         <div class="form-group">
-                            <label class="required" for="age">Age</label>
-                            <input type="number" id="age" min="0" max="150" placeholder="Years" required />
+                            <label class="required" for="ageValue">Age</label>
+                            <div class="age-input-row">
+                                <input type="text" inputmode="numeric" id="ageValue" name="ageValue" placeholder="e.g. 45" required autocomplete="off" />
+                                <select id="ageUnit" aria-label="Age unit">
+                                    <option value="years" selected>Years</option>
+                                    <option value="months">Months</option>
+                                    <option value="days">Days</option>
+                                </select>
+                            </div>
+                            <input type="hidden" id="age" />
                         </div>
                         <div class="form-group">
                             <label class="required" id="sexLabel">Sex</label>
@@ -5718,9 +5747,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         localStorage.removeItem('corneaClinic_icdClientSecret');
     } catch (_) { /* ignore */ }
     const isPublic = window.CorneaAuthEnv?.isPublicDeployment?.() === true;
+    const cloudQuery = new URLSearchParams(window.location.search).get('cloud') === '1';
     let cloudConnected = false;
     try {
-        cloudConnected = await CorneaApi.tryConnect({ prompt: isPublic });
+        cloudConnected = await CorneaApi.tryConnect({
+            prompt: isPublic || cloudQuery,
+            forceCloud: cloudQuery || undefined
+        });
     } catch (err) {
         console.warn('[CorneaApi] Cloud mode unavailable — using offline authentication.', err);
         if (window.__corneaCloudMode) cloudConnected = true;

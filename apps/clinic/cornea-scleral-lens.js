@@ -48,7 +48,7 @@
     if (!el) return;
     const recs = T().computeRecommendations?.(state.fit) || [];
     state.fit.finalDesign.shared = { ...state.fit.finalDesign.shared, ...T().suggestFinalDesign?.(state.fit) };
-    el.value = JSON.stringify({
+    el.value = (global.safeJsonStringify || JSON.stringify)({
       version: 1,
       currentStep: state.currentStep,
       completedSteps: state.completedSteps,

@@ -1,0 +1,20 @@
+# Postgres for local Playwright E2E (matches GitHub Actions credentials).
+# Usage: docker compose -f infra/docker-compose.e2e.yml up -d
+#        $env:DATABASE_URL="postgres://cornea:test@127.0.0.1:5433/cornea_emr_test"
+#        npm run test:e2e
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: cornea-emr-e2e-db
+    environment:
+      POSTGRES_USER: cornea
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: cornea_emr_test
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cornea -d cornea_emr_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

@@ -259,7 +259,7 @@
       if (entry.operation === 'upsert' && entry.local_id != null) {
         const all = await promisifyRequest(store.getAll());
         const existing = all.find((i) =>
-          i.status === 'pending' &&
+          (i.status === 'pending' || i.status === 'error') &&
           i.operation === 'upsert' &&
           i.entity_type === entry.entity_type &&
           i.local_id === entry.local_id
@@ -322,6 +322,74 @@
       await promisifyRequest(store.delete(mutationId));
     },
 
+    async clearQueueForLocalRecord(entityType, localId) {
+      if (localId == null) return 0;
+      const store = tx([STORE_SYNC_QUEUE], 'readwrite').objectStore(STORE_SYNC_QUEUE);
+      const all = await promisifyRequest(store.getAll());
+      let removed = 0;
+      for (const item of all) {
+        if (item.entity_type === entityType && item.local_id === localId) {
+          await promisifyRequest(store.delete(item.mutation_id));
+          removed++;
+        }
+      }
+      return removed;
+    },
+
+    /**
+     * View-only open: drop stale outbound sync for this visit and pull the server copy.
+     * Prevents repeat conflicts when another device saved the record (e.g. clinical photos).
+     */
+    async prepareVisitForViewOnly(localId) {
+      if (localId == null || !global.db) return null;
+
+      const conflicts = (await this.getConflicts()).filter(
+        (i) => i.entity_type === 'visit' && i.local_id === localId
+      );
+      let serverState = null;
+      let serverRevision = null;
+      for (const c of conflicts) {
+        const ss = c.conflict?.serverState || c.conflict?.details?.serverState;
+        const sr = c.conflict?.serverRevision ?? c.conflict?.details?.serverRevision;
+        if (ss) {
+          serverState = ss;
+          serverRevision = sr ?? ss.revision;
+        }
+      }
+
+      await this.clearQueueForLocalRecord('visit', localId);
+
+      {
+        const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
+        if (serverState) {
+          await promisifyRequest(store.put({
+            ...serverState,
+            id: localId,
+            uuid: serverState.uuid || serverState.entityId,
+            revision: serverRevision ?? serverState.revision ?? 0,
+            sync_status: 'synced'
+          }));
+        } else {
+          const record = await promisifyRequest(store.get(localId));
+          if (record && (record.sync_status === 'conflict' || record.sync_status === 'pending')) {
+            record.sync_status = 'synced';
+            await promisifyRequest(store.put(record));
+          }
+        }
+      }
+
+      if (this.api) {
+        try {
+          await this.pull();
+        } catch (err) {
+          console.warn('[CorneaSync] prepareVisitForViewOnly pull', err.message);
+        }
+      }
+
+      const readStore = tx([STORE_PATIENTS], 'readonly').objectStore(STORE_PATIENTS);
+      return promisifyRequest(readStore.get(localId));
+    },
+
     async markQueueError(mutationId, error, attempts) {
       const store = tx([STORE_SYNC_QUEUE], 'readwrite').objectStore(STORE_SYNC_QUEUE);
       const item = await promisifyRequest(store.get(mutationId));
@@ -382,6 +450,8 @@
         : `${count} records were changed on another device while you edited them.`;
       console.warn('[CorneaSync]', msg);
 
+      if (document.getElementById('corneaSyncConflictPanel')) return;
+
       let toast = document.getElementById('corneaSyncToast');
       if (toast) toast.remove();
       toast = document.createElement('div');
@@ -394,6 +464,27 @@
       };
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 15000);
+    },
+
+    async refreshOpenVisitAfterSync(localId, serverState) {
+      const currentId = document.getElementById('currentRecordId')?.value;
+      if (!currentId || String(currentId) !== String(localId) || !serverState) return;
+      if (typeof global.populateFormFromData === 'function') {
+        global.populateFormFromData(serverState);
+      }
+      if (typeof global.renderPatientReadOnly === 'function') {
+        global.renderPatientReadOnly(serverState, 'patientReadOnlyContent');
+      }
+    },
+
+    groupConflicts(conflicts) {
+      const groups = new Map();
+      for (const item of conflicts) {
+        const key = `${item.entity_type}:${item.local_id ?? item.entity_id ?? item.mutation_id}`;
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(item);
+      }
+      return [...groups.values()];
     },
 
     /**
@@ -432,10 +523,12 @@
             await promisifyRequest(s.delete(item.local_id));
           }
         }
-        await this.removeQueueItem(mutationId);
+        await this.clearQueueForLocalRecord(item.entity_type, item.local_id);
         await this.log('info', 'Conflict resolved: kept server version', { mutationId });
+        await this.refreshOpenVisitAfterSync(item.local_id, serverState);
       } else {
-        // Keep local: clear conflict, retry with the server's revision as base.
+        // Keep local: clear duplicate queue rows, retry one upsert on server revision.
+        await this.clearQueueForLocalRecord(item.entity_type, item.local_id);
         const writeStore = tx([STORE_SYNC_QUEUE], 'readwrite').objectStore(STORE_SYNC_QUEUE);
         item.status = 'pending';
         item.attempts = 0;
@@ -502,6 +595,23 @@
       });
 
       return { ...data, id: savedId };
+    },
+
+    /** Queue a visit payload update (e.g. visitMediaJSON after photo upload) without a full form save. */
+    async enqueueVisitMediaPatch(record) {
+      if (!record?.id) return;
+      record.sync_status = 'pending';
+      record.lastModified = new Date().toISOString();
+      const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
+      await promisifyRequest(store.put(record));
+      await this.enqueue({
+        entityType: 'visit',
+        operation: 'upsert',
+        entityId: record.uuid || null,
+        localId: record.id,
+        baseRevision: record.revision ?? 0,
+        payload: { ...record }
+      });
     },
 
     async deleteVisitLocal(id) {
@@ -882,7 +992,11 @@
         const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
         await promisifyRequest(store.put(record));
         if (global.CorneaVisitMedia && result.entityId) {
-          global.CorneaVisitMedia.flushPendingUploads(result.entityId).catch((err) => {
+          global.CorneaVisitMedia.flushPendingUploads(result.entityId, { recordId: result.localId }).then(async (mediaResult) => {
+            if (mediaResult.uploaded > 0) {
+              await global.CorneaVisitMedia.syncVisitMediaToCloud?.();
+            }
+          }).catch((err) => {
             console.warn('[CorneaVisitMedia] Post-sync upload:', err.message);
           });
         }
@@ -1059,6 +1173,8 @@
       if (overlay) overlay.remove();
       if (!conflicts.length) return;
 
+      const groups = this.groupConflicts(conflicts);
+
       overlay = document.createElement('div');
       overlay.id = 'corneaSyncConflictPanel';
       overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;padding:16px;';
@@ -1069,22 +1185,30 @@
       const card = document.createElement('div');
       card.style.cssText = 'background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:80vh;overflow:auto;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,0.25);font-family:inherit;';
 
-      const rows = conflicts.map((item) => {
+      const rows = groups.map((group) => {
+        const item = group[group.length - 1];
         const when = new Date(item.created_at).toLocaleString();
+        const dupNote = group.length > 1
+          ? `<div style="font-size:0.78rem;color:#888;margin-bottom:8px;">${group.length} pending sync attempts for this record — resolving one fixes all.</div>`
+          : '';
+        const serverHint = `<div style="font-size:0.78rem;color:#1565c0;margin-bottom:8px;">If you only opened this visit to view it (especially photos from another computer), choose <strong>Use server version</strong>.</div>`;
+        const ids = group.map((g) => g.mutation_id).join(',');
         return `
-          <div style="border:1px solid #ffcdd2;border-radius:8px;padding:12px;margin-bottom:10px;">
+          <div style="border:1px solid #ffcdd2;border-radius:8px;padding:12px;margin-bottom:10px;" data-conflict-ids="${this.escapeHtml(ids)}">
             <div style="font-weight:600;margin-bottom:4px;">${this.escapeHtml(this.conflictLabel(item))}</div>
-            <div style="font-size:0.8rem;color:#666;margin-bottom:10px;">Your edit from ${this.escapeHtml(when)} clashed with a newer change on the server. If another clinician was editing this visit, coordinate before forcing your version.</div>
+            ${dupNote}
+            ${serverHint}
+            <div style="font-size:0.8rem;color:#666;margin-bottom:10px;">Your edit from ${this.escapeHtml(when)} clashed with a newer change on the server.</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button data-choice="local" data-id="${this.escapeHtml(item.mutation_id)}" style="padding:6px 14px;border-radius:6px;border:1px solid #1565c0;background:#1565c0;color:#fff;cursor:pointer;font-size:0.85rem;">Keep my version</button>
-              <button data-choice="server" data-id="${this.escapeHtml(item.mutation_id)}" style="padding:6px 14px;border-radius:6px;border:1px solid #bbb;background:#fff;color:#333;cursor:pointer;font-size:0.85rem;">Use server version</button>
+              <button data-choice="local" data-ids="${this.escapeHtml(ids)}" style="padding:6px 14px;border-radius:6px;border:1px solid #1565c0;background:#1565c0;color:#fff;cursor:pointer;font-size:0.85rem;">Keep my version</button>
+              <button data-choice="server" data-ids="${this.escapeHtml(ids)}" style="padding:6px 14px;border-radius:6px;border:1px solid #2e7d32;background:#2e7d32;color:#fff;cursor:pointer;font-size:0.85rem;">Use server version</button>
             </div>
           </div>`;
       }).join('');
 
       card.innerHTML = `
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-          <h3 style="margin:0;font-size:1.05rem;color:#c62828;"><i class="fa-solid fa-triangle-exclamation"></i> Sync conflicts (${conflicts.length})</h3>
+          <h3 style="margin:0;font-size:1.05rem;color:#c62828;"><i class="fa-solid fa-triangle-exclamation"></i> Sync conflicts (${groups.length})</h3>
           <button id="corneaSyncConflictClose" style="border:none;background:none;font-size:1.2rem;cursor:pointer;color:#666;">&times;</button>
         </div>
         ${rows}`;
@@ -1093,11 +1217,24 @@
         const btn = e.target.closest('button[data-choice]');
         if (btn) {
           btn.disabled = true;
-          await this.resolveConflict(btn.dataset.id, btn.dataset.choice);
+          const ids = String(btn.dataset.ids || '').split(',').filter(Boolean);
+          for (const id of ids) {
+            await this.resolveConflict(id, btn.dataset.choice);
+          }
           const remaining = await this.getConflicts();
           overlay.remove();
-          if (remaining.length) await this.showConflictPanel();
-          else if (typeof global.loadRecords === 'function') global.loadRecords();
+          if (remaining.length) {
+            await this.showConflictPanel();
+          } else {
+            try {
+              await this.pull();
+            } catch (_) { /* ignore */ }
+            if (typeof global.loadRecords === 'function') global.loadRecords();
+            const openId = document.getElementById('currentRecordId')?.value;
+            if (openId && typeof global.viewRecordReadOnly === 'function') {
+              global.viewRecordReadOnly(Number(openId)).catch(() => {});
+            }
+          }
           return;
         }
         if (e.target.id === 'corneaSyncConflictClose') overlay.remove();
