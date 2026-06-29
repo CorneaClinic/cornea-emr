@@ -15,6 +15,7 @@
     "reset-admin-password": "node src/db/reset-admin-password-cli.js",
     "verify:sync": "node scripts/e2e-sync-test.js",
     "e2e:playwright-setup": "node scripts/e2e-playwright-setup.js",
+    "e2e:staging-user": "node scripts/setup-staging-e2e-user.js",
     "verify:api": "node scripts/verify-live.js",
     "test:smtp": "node scripts/test-smtp.js",
     "verify:password-reset": "node scripts/verify-password-reset.js",
