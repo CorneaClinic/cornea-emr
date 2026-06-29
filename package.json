@@ -29,7 +29,9 @@
     "test:e2e:staging": "playwright test --config=playwright.staging.config.js",
     "e2e:setup": "node apps/api/scripts/e2e-playwright-setup.js",
     "e2e:staging-user": "powershell -ExecutionPolicy Bypass -File scripts/setup-staging-e2e-user.ps1",
-    "verify:password-reset": "node scripts/verify-production-password-reset.mjs"
+    "verify:password-reset": "node scripts/verify-production-password-reset.mjs",
+    "health:production": "powershell -ExecutionPolicy Bypass -File scripts/production-health-check.ps1",
+    "drill:restore-local": "powershell -ExecutionPolicy Bypass -File scripts/setup-restore-drill-local.ps1"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
