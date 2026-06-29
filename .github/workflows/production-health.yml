@@ -1,0 +1,56 @@
+# G7 — Production health and backup freshness checks (hourly).
+name: Production Health
+
+on:
+  schedule:
+    - cron: '15 * * * *' # :15 past each hour UTC
+  workflow_dispatch:
+
+jobs:
+  health-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: API liveness
+        run: |
+          curl -sf --max-time 30 \
+            "${{ vars.STAGING_API_URL || 'https://corneaclinic-2zfpt.ondigitalocean.app' }}/health/live"
+
+      - name: API readiness (DB)
+        run: |
+          BODY=$(curl -sf --max-time 30 \
+            "${{ vars.STAGING_API_URL || 'https://corneaclinic-2zfpt.ondigitalocean.app' }}/health")
+          echo "$BODY"
+          echo "$BODY" | grep -q '"status":"ok"'
+
+      - name: Clinic UI reachable
+        run: |
+          CODE=$(curl -so /dev/null -w '%{http_code}' --max-time 30 \
+            "${{ vars.STAGING_CLINIC_URL || 'https://corneaclinic.visionemr.net/Cornea' }}/Cornea.html")
+          test "$CODE" = "200"
+
+  staging-smoke:
+    runs-on: ubuntu-latest
+    env:
+      CI: true
+      STAGING_E2E_EMAIL: ${{ secrets.STAGING_E2E_EMAIL }}
+      STAGING_E2E_PASSWORD: ${{ secrets.STAGING_E2E_PASSWORD }}
+      STAGING_CLINIC_URL: ${{ vars.STAGING_CLINIC_URL || 'https://corneaclinic.visionemr.net/Cornea' }}
+      STAGING_API_URL: ${{ vars.STAGING_API_URL || 'https://corneaclinic-2zfpt.ondigitalocean.app' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Staging smoke (login + clinic load)
+        run: |
+          if [ -z "$STAGING_E2E_EMAIL" ] || [ -z "$STAGING_E2E_PASSWORD" ]; then
+            echo "Skipping — STAGING_E2E_* secrets not configured."
+            exit 0
+          fi
+          npm ci
+          npx playwright install chromium --with-deps
+          npm run test:e2e:staging

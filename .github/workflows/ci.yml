@@ -74,6 +74,7 @@ jobs:
             sleep 1
           done
           npm run verify:sync
+          npm run verify:sync-matrix
           kill $API_PID || true
 
   e2e-playwright:

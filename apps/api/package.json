@@ -14,6 +14,7 @@
     "seed": "node src/db/seed-cli.js",
     "reset-admin-password": "node src/db/reset-admin-password-cli.js",
     "verify:sync": "node scripts/e2e-sync-test.js",
+    "verify:sync-matrix": "node scripts/sync-test-matrix.js",
     "e2e:playwright-setup": "node scripts/e2e-playwright-setup.js",
     "e2e:staging-user": "node scripts/setup-staging-e2e-user.js",
     "verify:api": "node scripts/verify-live.js",

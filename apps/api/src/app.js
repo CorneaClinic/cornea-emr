@@ -11,6 +11,7 @@ import { errorHandler } from './core/middleware/errorHandler.js';
 import healthRouter from './routes/health.js';
 import authRouter from './routes/auth.js';
 import v1Router from './routes/v1.js';
+import { createRateLimiter, clientIpKey } from './core/middleware/rateLimit.js';
 
 export function createApp() {
   const app = express();
@@ -49,7 +50,15 @@ export function createApp() {
 
   app.use('/health', healthRouter);
   app.use('/api/v1/auth', authRouter);
-  app.use('/api/v1', v1Router);
+  app.use(
+    '/api/v1',
+    createRateLimiter({
+      windowMs: env.rateLimit.apiWindowMs,
+      max: env.rateLimit.apiMaxPerIp,
+      keyGenerator: clientIpKey
+    }),
+    v1Router
+  );
 
   app.use(notFoundHandler);
   app.use(errorHandler);

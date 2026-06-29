@@ -23,6 +23,7 @@
     "test:unit": "npm test --prefix apps/api",
     "test:api-live": "npm run verify:api --prefix apps/api",
     "test:api-sync": "npm run verify:sync --prefix apps/api",
+    "test:sync-matrix": "npm run verify:sync-matrix --prefix apps/api",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:staging": "playwright test --config=playwright.staging.config.js",

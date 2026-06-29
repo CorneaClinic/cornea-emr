@@ -124,3 +124,22 @@ On first cloud bootstrap (`CorneaSync.migrateExistingRecords`):
 ## Offline guarantee
 
 All read/write UI paths operate against IndexedDB when cloud mode is enabled. Network is only required for background sync — **offline functionality is preserved**.
+
+## Registry sync policy (G5)
+
+Not all clinical data uses the sync queue. This is intentional during Phase 2 stabilization.
+
+| Data domain | Client path | Server path | Offline queue | Conflict policy |
+|-------------|-------------|-------------|---------------|-----------------|
+| Visits / patients | `CorneaSync` queue | `POST /sync/push` | Yes | Server revision wins; client shows conflict badge |
+| KP patients / tissues | `CorneaSync` queue | `POST /sync/push` | Yes | Same as visits |
+| KC / CXL registry | Direct REST | `/api/v1/kc-registry` | No* | `baseRevision` on update → 409 Conflict |
+| Keratitis registry | Direct REST | `/api/v1/keratitis-registry` | No* | Online required for write |
+| Graft outcomes, eye bank | Direct REST | Dedicated routes | No* | Per-module REST semantics |
+
+\*Offline reads may use IndexedDB cache where implemented; writes require connectivity.
+
+**Verification:** `npm run verify:sync-matrix` (CI) exercises sync entities plus KC/keratitis REST create/read.
+
+**Future (Phase 2.1):** extend `sync_queue` for registries OR formalize online-only registry UX when offline.
+
