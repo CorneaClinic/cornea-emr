@@ -78,5 +78,5 @@ jobs:
             echo "Skipping staging smoke — add STAGING_E2E_EMAIL and STAGING_E2E_PASSWORD repository secrets."
             exit 0
           fi
-          npx playwright test e2e/staging-smoke.spec.js
+          npm run test:e2e:staging
         working-directory: .

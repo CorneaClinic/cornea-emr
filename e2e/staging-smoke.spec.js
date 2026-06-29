@@ -1,5 +1,4 @@
 import { test, expect } from '@playwright/test';
-import { signInCloud } from './helpers.js';
 
 const STAGING_EMAIL = process.env.STAGING_E2E_EMAIL || '';
 const STAGING_PASSWORD = process.env.STAGING_E2E_PASSWORD || '';
