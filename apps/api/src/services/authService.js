@@ -513,7 +513,9 @@ export async function requestPasswordReset({ req, email }) {
     [user.id, tokenHash, expiresAt]
   );
 
-  const resetUrl = `${env.auth.clinicPublicUrl.replace(/\/$/, '')}/reset-password.html?token=${resetToken}`;
+  const clinicBase = env.auth.clinicPublicUrl.replace(/\/$/, '');
+  const apiBase = env.auth.appPublicUrl.replace(/\/$/, '');
+  const resetUrl = `${clinicBase}/reset-password.html?token=${encodeURIComponent(resetToken)}&api=${encodeURIComponent(apiBase)}`;
 
   const mailResult = await sendPasswordResetEmail({ to: user.email, resetUrl });
 
