@@ -58,7 +58,8 @@ export function createApp() {
       createRateLimiter({
         windowMs: env.rateLimit.apiWindowMs,
         max: env.rateLimit.apiMaxPerIp,
-        keyGenerator: clientIpKey
+        keyGenerator: clientIpKey,
+        namespace: 'api-v1'
       }),
       v1Router
     );

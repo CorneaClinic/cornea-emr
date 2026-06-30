@@ -162,6 +162,10 @@ export const env = Object.freeze({
     apiWindowMs: parseIntEnv('RATE_LIMIT_API_WINDOW_MS', 60 * 1000),
     apiMaxPerIp: parseIntEnv('RATE_LIMIT_API_MAX_PER_IP', 300)
   }),
+  redis: Object.freeze({
+    url: optional('REDIS_URL', ''),
+    connectTimeoutMs: parseIntEnv('REDIS_CONNECT_TIMEOUT_MS', 5000)
+  }),
   seed: Object.freeze({
     clinicName: optional('SEED_CLINIC_NAME', 'Cornea Clinic'),
     clinicSlug: optional('SEED_CLINIC_SLUG', 'cornea-clinic'),

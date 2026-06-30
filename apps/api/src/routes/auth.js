@@ -24,19 +24,22 @@ router.use(auditContextMiddleware);
 const loginIpLimiter = createRateLimiter({
   windowMs: env.rateLimit.loginWindowMs,
   max: env.rateLimit.loginMaxPerIp,
-  keyGenerator: clientIpKey
+  keyGenerator: clientIpKey,
+  namespace: 'login-ip'
 });
 
 const loginEmailLimiter = createRateLimiter({
   windowMs: env.rateLimit.loginWindowMs,
   max: env.rateLimit.loginMaxPerEmail,
-  keyGenerator: loginEmailKey
+  keyGenerator: loginEmailKey,
+  namespace: 'login-email'
 });
 
 const resetIpLimiter = createRateLimiter({
   windowMs: env.rateLimit.resetWindowMs,
   max: env.rateLimit.resetMaxPerIp,
-  keyGenerator: clientIpKey
+  keyGenerator: clientIpKey,
+  namespace: 'reset-ip'
 });
 
 /**
