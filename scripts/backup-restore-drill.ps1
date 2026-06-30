@@ -168,8 +168,16 @@ $restoreTarget = $db
 $countSource = $db
 $useLocalRestore = $false
 
-if ($db.Host -match 'ondigitalocean\.com' -and -not $PostgresUser) {
-  if (-not (Test-CanCreateDatabase $createdb $db $adminUser $adminPass)) {
+if ($db.Host -match 'ondigitalocean\.com') {
+  $preferLocal = $false
+  if ($PostgresUser -and (Test-Path (Join-Path $RepoRoot 'apps\api\.env.local'))) {
+    $preferLocal = $true
+  } elseif (-not $PostgresUser) {
+    if (-not (Test-CanCreateDatabase $createdb $db $adminUser $adminPass)) {
+      $preferLocal = $true
+    }
+  }
+  if ($preferLocal) {
     $localEnvPath = Join-Path $RepoRoot 'apps\api\.env.local'
     $localDb = $null
     if (Test-Path $localEnvPath) {
@@ -185,11 +193,11 @@ if ($db.Host -match 'ondigitalocean\.com' -and -not $PostgresUser) {
       $restoreTarget = $localDb
       $countSource = $db
       Write-Output ''
-      Write-Output 'Cloud CREATEDB not available on public endpoint — restoring to local PostgreSQL for verification.'
+      Write-Output 'Cloud CREATEDB not available on public endpoint - restoring to local PostgreSQL for verification.'
       Write-Output "Restore target: $($restoreTarget.Db) on $($restoreTarget.Host):$($restoreTarget.Port)"
     } else {
       Write-Output ''
-      Write-Output 'Cloud CREATEDB not available — running catalog + live snapshot verification.'
+      Write-Output 'Cloud CREATEDB not available - running catalog + live snapshot verification.'
       Write-Output 'Tip: add apps/api/.env.local (127.0.0.1) for full restore drill on this PC.'
       Write-Step 'Live production row counts (snapshot)'
       $tables = @('users', 'patients', 'visits', 'schema_migrations')
@@ -206,7 +214,10 @@ if ($db.Host -match 'ondigitalocean\.com' -and -not $PostgresUser) {
 }
 
 Write-Step "Restore into test database '$TestDb'"
-if ($useLocalRestore) {
+if ($useLocalRestore -and $PostgresUser) {
+    $adminUser = $PostgresUser
+    $adminPass = $env:PGPASSWORD
+} elseif ($useLocalRestore) {
     $adminUser = $restoreTarget.User
     $adminPass = $restoreTarget.Pass
 } elseif ($PostgresUser) {
