@@ -9,7 +9,7 @@ const KP_PANELS = [
 ];
 
 test.describe('Keratoplasty sub-panels', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeAll(async ({ page }) => {
     await signInCloud(page);
     await openKeratoplastyTab(page);
   });

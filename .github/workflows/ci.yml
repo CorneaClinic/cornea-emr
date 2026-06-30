@@ -62,6 +62,9 @@ jobs:
       - name: Run migrations
         run: npm run migrate
 
+      - name: Seed CI clinic (required for sync verification)
+        run: node scripts/e2e-playwright-setup.js
+
       - name: Unit tests
         run: npm test
 

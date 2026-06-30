@@ -22,7 +22,8 @@ jobs:
           BODY=$(curl -sf --max-time 30 \
             "${{ vars.STAGING_API_URL || 'https://corneaclinic-2zfpt.ondigitalocean.app' }}/health")
           echo "$BODY"
-          echo "$BODY" | grep -q '"status":"ok"'
+          echo "$BODY" | grep -q '"ok":true'
+          echo "$BODY" | grep -q '"database":{"ok":true'
 
       - name: Clinic UI reachable
         run: |
