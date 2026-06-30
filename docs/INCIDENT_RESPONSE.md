@@ -42,6 +42,20 @@ Use this when the clinic UI, API, sync, or backups behave unexpectedly.
 2. Check managed Postgres CPU/storage; trusted sources if clinic PC backup fails
 3. Restart app instance (DO → Deploy → Force rebuild) only if logs show crash loop
 4. GitHub **Production Health** workflow — last hourly run
+5. GitHub **Alert Drill** workflow (`workflow_dispatch` → mode `fail`) — confirm you receive the failure notification, then run mode `pass`
+
+---
+
+## 7. G7 alerts and monitoring
+
+| Signal | Where | Action on failure |
+|--------|--------|-------------------|
+| API / clinic reachability | **Production Health** (hourly) | DO + Cloudflare checks; see sections 1 and 3 |
+| Staging login smoke | **Production Health** → `staging-smoke` job | Rotate `STAGING_E2E_*` secrets; test with `npm run smoke:staging` |
+| PR regression | **CI** on `main` | Fix failing job before next deploy |
+| Notification path test | **Alert Drill** (manual) | Actions → Alert Drill → Run → `fail`; confirm email/watch notification |
+
+**Local mirror:** `npm run health:production` and `npm run debug:deep`
 
 ---
 

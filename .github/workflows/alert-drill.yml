@@ -1,0 +1,35 @@
+# G7 — Alert drill: verify GitHub notifies you when a workflow fails.
+# Run manually from Actions → Alert Drill → Run workflow → mode: fail
+name: Alert Drill
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'pass = green run; fail = intentional failure to test notifications'
+        required: true
+        default: pass
+        type: choice
+        options:
+          - pass
+          - fail
+
+jobs:
+  drill:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Alert drill instructions
+        run: |
+          echo "G7 alert drill"
+          echo "If mode=fail, this workflow should email/watchers who enabled GitHub Actions failure notifications."
+          echo "Confirm receipt, then re-run with mode=pass."
+
+      - name: Intentional failure (notification test)
+        if: inputs.mode == 'fail'
+        run: |
+          echo "INTENTIONAL G7 ALERT DRILL FAILURE — ignore unless testing notifications."
+          exit 1
+
+      - name: Drill passed
+        if: inputs.mode == 'pass'
+        run: echo "Alert drill pass mode — no notification expected."
