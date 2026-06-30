@@ -108,7 +108,7 @@ async function cleanup(clinicId) {
     [clinicId]
   );
   await db.query(
-    `DELETE FROM keratoplasty_tissues WHERE clinic_id = $1 AND kp_tissue_id LIKE 'E2E-MAT-%'`,
+    `DELETE FROM corneal_tissues WHERE clinic_id = $1 AND kp_tissue_id LIKE 'E2E-MAT-%'`,
     [clinicId]
   );
   await db.query(

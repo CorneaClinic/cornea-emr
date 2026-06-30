@@ -9,13 +9,21 @@ const KP_PANELS = [
 ];
 
 test.describe('Keratoplasty sub-panels', () => {
-  test.beforeAll(async ({ page }) => {
+  /** @type {import('@playwright/test').Page} */
+  let page;
+
+  test.beforeAll(async ({ browser }) => {
+    page = await browser.newPage();
     await signInCloud(page);
     await openKeratoplastyTab(page);
   });
 
+  test.afterAll(async () => {
+    await page?.close();
+  });
+
   for (const panel of KP_PANELS) {
-    test(`switches to ${panel.label}`, async ({ page }) => {
+    test(`switches to ${panel.label}`, async () => {
       await page.locator(`[data-kp-panel="${panel.id}"]`).click();
       const el = page.locator(`#${panel.id}`);
       await expect(el).toHaveClass(/active/);

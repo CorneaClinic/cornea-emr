@@ -70,15 +70,17 @@ jobs:
 
       - name: E2E sync verification
         run: |
+          set -e
           node src/index.js &
           API_PID=$!
-          for i in $(seq 1 30); do
+          trap "kill $API_PID 2>/dev/null || true" EXIT
+          for i in $(seq 1 60); do
             if curl -sf http://127.0.0.1:3000/health/live > /dev/null; then break; fi
+            if [ "$i" -eq 60 ]; then echo "API failed to start"; exit 1; fi
             sleep 1
           done
           npm run verify:sync
           npm run verify:sync-matrix
-          kill $API_PID || true
 
   e2e-playwright:
     runs-on: ubuntu-latest

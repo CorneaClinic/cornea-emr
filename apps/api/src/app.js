@@ -50,15 +50,19 @@ export function createApp() {
 
   app.use('/health', healthRouter);
   app.use('/api/v1/auth', authRouter);
-  app.use(
-    '/api/v1',
-    createRateLimiter({
-      windowMs: env.rateLimit.apiWindowMs,
-      max: env.rateLimit.apiMaxPerIp,
-      keyGenerator: clientIpKey
-    }),
-    v1Router
-  );
+  if (env.nodeEnv === 'test') {
+    app.use('/api/v1', v1Router);
+  } else {
+    app.use(
+      '/api/v1',
+      createRateLimiter({
+        windowMs: env.rateLimit.apiWindowMs,
+        max: env.rateLimit.apiMaxPerIp,
+        keyGenerator: clientIpKey
+      }),
+      v1Router
+    );
+  }
 
   app.use(notFoundHandler);
   app.use(errorHandler);
