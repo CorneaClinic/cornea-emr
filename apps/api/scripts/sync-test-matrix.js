@@ -95,7 +95,7 @@ async function cleanup(clinicId) {
     [clinicId]
   );
   await db.query(
-    `DELETE FROM keratitis_assessments WHERE clinic_id = $1 AND case_id IN
+    `DELETE FROM keratitis_daily_assessments WHERE clinic_id = $1 AND case_id IN
        (SELECT id FROM keratitis_ulcer_cases WHERE clinic_id = $1 AND case_id LIKE 'E2E-MAT-%')`,
     [clinicId]
   );
