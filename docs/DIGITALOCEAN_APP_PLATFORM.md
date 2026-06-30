@@ -55,6 +55,23 @@ Photo uploads use **DigitalOcean Spaces** (S3-compatible). Set these at **App le
 
 Create the bucket in [Spaces](https://cloud.digitalocean.com/spaces) before first upload. If uploads fail with `MEDIA_S3_BUCKET is required`, run `scripts/fix-do-media-bucket-env.ps1` or fix the variable name in the dashboard.
 
+### Rate limiting (G6 — Managed Valkey)
+
+Shared rate-limit counters require **Managed Valkey** (Redis-compatible) in the **same region as Postgres** (`sgp1`).
+
+**Automated (recommended):**
+
+```powershell
+# DIGITALOCEAN_API_TOKEN must be set (user env var)
+npm run setup:do-valkey
+```
+
+This creates `cornea-emr-valkey` (if missing), allows the App Platform app as a trusted source, and sets `REDIS_URL` (secret) on the API.
+
+**Manual:** Databases → Create → **Valkey** → `sgp1` → `db-s-1vcpu-1gb` → Trusted sources → add your App → copy `rediss://` URI → App env `REDIS_URL`.
+
+After deploy, API logs should show: `Redis connected - shared rate limits active`.
+
 Managed PostgreSQL on DigitalOcean uses SSL. The API auto-configures SSL for `*.ondigitalocean.com` hosts. If you still see `SELF_SIGNED_CERT_IN_CHAIN`, add:
 
 | `DATABASE_SSL_REJECT_UNAUTHORIZED` | `false` | Run time | No |

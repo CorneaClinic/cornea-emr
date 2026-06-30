@@ -7,6 +7,7 @@ apps/api/.env.local
 apps/api/.env.production
 apps/api/digitalocean-upload.env
 scripts/do-db-config.json
+scripts/do-valkey-config.json
 
 # Dependencies & runtime
 node_modules/

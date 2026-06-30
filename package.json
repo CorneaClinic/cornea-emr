@@ -32,6 +32,7 @@
     "e2e:staging-user": "powershell -ExecutionPolicy Bypass -File scripts/setup-staging-e2e-user.ps1",
     "verify:password-reset": "node scripts/verify-production-password-reset.mjs",
     "health:production": "powershell -ExecutionPolicy Bypass -File scripts/production-health-check.ps1",
+    "setup:do-valkey": "powershell -ExecutionPolicy Bypass -File scripts/setup-do-valkey.ps1",
     "drill:restore-local": "powershell -ExecutionPolicy Bypass -File scripts/setup-restore-drill-local.ps1"
   },
   "devDependencies": {
