@@ -36,33 +36,52 @@ Write-Host "Clinic: $ClinicUrl"
 Write-Host ''
 
 Test-Endpoint 'API /health/live' {
-    $r = Invoke-WebRequest -Uri "$ApiUrl/health/live" -UseBasicParsing -TimeoutSec 30
-    $j = $r.Content | ConvertFrom-Json
-    return $r.StatusCode -eq 200 -and $j.ok -eq $true
+    $apis = @(
+        'https://corneaclinic-2zfpt.ondigitalocean.app',
+        $ApiUrl
+    ) | ForEach-Object { $_.TrimEnd('/') } | Select-Object -Unique
+    foreach ($base in $apis) {
+        if (-not $base) { continue }
+        try {
+            $r = Invoke-WebRequest -Uri "$base/health/live" -UseBasicParsing -TimeoutSec 30
+            $j = $r.Content | ConvertFrom-Json
+            if ($r.StatusCode -eq 200 -and $j.ok -eq $true) { return $true }
+        } catch { continue }
+    }
+    return $false
 }
 
 Test-Endpoint 'API /health (database)' {
-    $r = Invoke-WebRequest -Uri "$ApiUrl/health" -UseBasicParsing -TimeoutSec 30
-    $j = $r.Content | ConvertFrom-Json
-    return $r.StatusCode -eq 200 -and $j.checks.database.ok -eq $true
+    $apis = @(
+        'https://corneaclinic-2zfpt.ondigitalocean.app',
+        $ApiUrl
+    ) | ForEach-Object { $_.TrimEnd('/') } | Select-Object -Unique
+    foreach ($base in $apis) {
+        if (-not $base) { continue }
+        try {
+            $r = Invoke-WebRequest -Uri "$base/health" -UseBasicParsing -TimeoutSec 30
+            $j = $r.Content | ConvertFrom-Json
+            if ($r.StatusCode -eq 200 -and $j.checks.database.ok -eq $true) { return $true }
+        } catch { continue }
+    }
+    return $false
 }
 
 Test-Endpoint 'Clinic UI reachable' {
     $candidates = @(
+        "$ClinicUrl/health.json",
         $ClinicUrl,
+        "$ClinicUrl/Cornea.html",
+        'https://corneaclinic.visionemr.net/Cornea/health.json',
         'https://corneaclinic.visionemr.net/Cornea',
-        'https://corneaclinic.visionemr.net'
-    ) | ForEach-Object { $_.TrimEnd('/') } | Select-Object -Unique
-    foreach ($base in $candidates) {
-        if (-not $base) { continue }
-        foreach ($suffix in @('', '/Cornea.html')) {
-            $url = "$base$suffix"
-            try {
-                $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30 -MaximumRedirection 5
-                if ($r.StatusCode -eq 200) { return $true }
-            } catch {
-                continue
-            }
+        'https://corneaclinic.visionemr.net/Cornea/Cornea.html'
+    ) | ForEach-Object { $_.TrimEnd('/') } | Where-Object { $_ } | Select-Object -Unique
+    foreach ($url in $candidates) {
+        try {
+            $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30 -MaximumRedirection 5
+            if ($r.StatusCode -eq 200) { return $true }
+        } catch {
+            continue
         }
     }
     return $false

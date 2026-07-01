@@ -10,52 +10,68 @@ on:
     paths:
       - '.github/workflows/production-health.yml'
       - 'scripts/production-health-check.ps1'
+      - 'apps/clinic/health.json'
 
 jobs:
   health-check:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
       - name: API liveness
+        env:
+          STAGING_API_URL: ${{ vars.STAGING_API_URL }}
         run: |
-          curl -sf --max-time 30 \
-            "${{ vars.STAGING_API_URL || 'https://corneaclinic-2zfpt.ondigitalocean.app' }}/health/live"
+          set -e
+          for api in "https://corneaclinic-2zfpt.ondigitalocean.app" "${STAGING_API_URL:-}"; do
+            [ -z "$api" ] && continue
+            base="${api%/}"
+            if curl -sf --max-time 30 "$base/health/live" >/dev/null; then
+              echo "API live OK: $base"
+              exit 0
+            fi
+            echo "API live failed: $base"
+          done
+          exit 1
 
       - name: API readiness (DB)
+        env:
+          STAGING_API_URL: ${{ vars.STAGING_API_URL }}
         run: |
-          BODY=$(curl -sf --max-time 30 \
-            "${{ vars.STAGING_API_URL || 'https://corneaclinic-2zfpt.ondigitalocean.app' }}/health")
-          echo "$BODY"
-          echo "$BODY" | grep -q '"ok":true'
-          echo "$BODY" | grep -q '"database":{"ok":true'
+          set -e
+          for api in "https://corneaclinic-2zfpt.ondigitalocean.app" "${STAGING_API_URL:-}"; do
+            [ -z "$api" ] && continue
+            base="${api%/}"
+            if ! BODY=$(curl -sf --max-time 30 "$base/health" 2>/dev/null); then
+              echo "API health fetch failed: $base"
+              continue
+            fi
+            echo "$BODY"
+            if echo "$BODY" | grep -q '"ok":true' && echo "$BODY" | grep -q '"database":{"ok":true'; then
+              echo "API readiness OK: $base"
+              exit 0
+            fi
+            echo "API health JSON unexpected: $base"
+          done
+          exit 1
 
       - name: Clinic UI reachable
         env:
           STAGING_CLINIC_URL: ${{ vars.STAGING_CLINIC_URL }}
         run: |
-          set -euo pipefail
-          # Always try canonical production URLs; STAGING_CLINIC_URL may be unset or misconfigured.
-          urls=()
-          add_url() {
-            local u="${1%/}"
-            [ -z "$u" ] && return
-            case " ${urls[*]} " in *" $u "*) return ;; esac
-            urls+=("$u")
-          }
-          add_url "${STAGING_CLINIC_URL:-}"
-          add_url "https://corneaclinic.visionemr.net/Cornea"
-          add_url "https://corneaclinic.visionemr.net"
-          ok=0
-          for base in "${urls[@]}"; do
-            for suffix in "" "/Cornea.html"; do
-              target="${base}${suffix}"
-              code=$(curl -sL -o /dev/null -w '%{http_code}' --max-time 30 "$target" || echo "000")
-              echo "$target -> $code"
-              if [ "$code" = "200" ]; then ok=1; break 2; fi
-            done
+          set -e
+          clinic_ok=0
+          for url in \
+            "https://corneaclinic.visionemr.net/Cornea/health.json" \
+            "https://corneaclinic.visionemr.net/Cornea" \
+            "https://corneaclinic.visionemr.net/Cornea/Cornea.html" \
+            "${STAGING_CLINIC_URL:-}" \
+            "${STAGING_CLINIC_URL:+${STAGING_CLINIC_URL%/}/Cornea.html}" \
+            "${STAGING_CLINIC_URL:+${STAGING_CLINIC_URL%/}/health.json}"; do
+            [ -z "$url" ] && continue
+            code=$(curl -sL -o /dev/null -w '%{http_code}' --max-time 30 "$url" || echo "000")
+            echo "$url -> $code"
+            if [ "$code" = "200" ]; then clinic_ok=1; break; fi
           done
-          if [ "$ok" -ne 1 ]; then
+          if [ "$clinic_ok" -ne 1 ]; then
             echo "Clinic UI check failed — no candidate URL returned HTTP 200"
             exit 1
           fi
