@@ -22,6 +22,7 @@ import mediaRouter from './media.js';
 import mediaLibraryRouter from './media-library.js';
 import drawingRouter from './drawing.js';
 import icdRouter from './icd.js';
+import dashboardRouter from './dashboard.js';
 import { createEntityMediaRouter } from './entityMedia.js';
 import { PERMISSIONS } from '../core/permissions.js';
 
@@ -46,6 +47,7 @@ router.use('/visits/:visitId/drawing', drawingRouter);
 router.use('/visits/:visitId/prescriptions', prescriptionsRouter);
 router.use('/visits/:visitId/followup', visitFollowupRouter);
 router.use('/visits', visitsRouter);
+router.use('/dashboard', dashboardRouter);
 router.use('/prescriptions', prescriptionByIdRouter);
 router.use('/followups', followupsRouter);
 router.use('/keratoplasty-patients/:id/media', createEntityMediaRouter({

@@ -1072,6 +1072,10 @@
         if (global.navigator.onLine !== false && sync()) {
           sync().syncNow().catch(() => {});
         }
+
+        if (typeof global.fetchInstituteKpis === 'function') {
+          global.fetchInstituteKpis().catch(() => {});
+        }
       };
 
       global.refreshPatientVisitHistory = async function () {

@@ -3,8 +3,114 @@
  * Phase 4 extraction from Cornea.html
  */
 
+function kpiSet(id, val) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val == null ? '—' : String(val);
+}
+
+window.renderInstituteKpis = function (data) {
+    const section = document.getElementById('instituteKpisSection');
+    const hint = document.getElementById('instituteKpisHint');
+    if (!section) return;
+
+    if (!data) {
+        section.setAttribute('hidden', 'hidden');
+        if (hint) hint.removeAttribute('hidden');
+        return;
+    }
+
+    const v = data.visits || {};
+    const kc = data.registries?.kc || {};
+    const uk = data.registries?.keratitis || {};
+    const kp = data.registries?.keratoplasty || {};
+
+    kpiSet('kpiUniquePatients', v.uniquePatients);
+    kpiSet('kpiVisitsWeek', v.week);
+    kpiSet('kpiKcEnrolled', kc.enrolled);
+    kpiSet('kpiKcActive', kc.active);
+    kpiSet('kpiCxlTotal', kc.cxl);
+    kpiSet('kpiUkActive', uk.active);
+    kpiSet('kpiKpWaiting', kp.waiting);
+    kpiSet('kpiKpEmergency', kp.emergency);
+    kpiSet('kpiTissueAvailable', kp.tissueAvailable);
+
+    const asOf = document.getElementById('instituteKpisAsOf');
+    if (asOf && data.generatedAt) {
+        asOf.textContent = 'As of ' + new Date(data.generatedAt).toLocaleString([], {
+            month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+    }
+
+    section.removeAttribute('hidden');
+    if (hint) hint.setAttribute('hidden', 'hidden');
+};
+
+window.applyCloudVisitStats = function (data) {
+    if (!data?.visits) return;
+    const v = data.visits;
+    const set = (id, text) => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = text;
+    };
+    if (v.uniquePatients != null) set('statTotalPatients', v.uniquePatients);
+    if (v.today != null) set('statTodayVisits', v.today);
+    if (v.sexRatio) {
+        set('statSexRatio', `${v.sexRatio.male || 0} / ${v.sexRatio.female || 0}`);
+    }
+    if (v.lastUpdated) {
+        set('statLastUpdated', new Date(v.lastUpdated).toLocaleDateString([], {
+            month: 'short', day: 'numeric', year: 'numeric'
+        }));
+    }
+
+    const recentBody = document.getElementById('recentActivityBody');
+    if (recentBody && Array.isArray(data.recent)) {
+        const recent = data.recent;
+        if (recent.length === 0) {
+            recentBody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No activity yet. Register your first patient.</p></div></td></tr>`;
+        } else {
+            recentBody.innerHTML = '';
+            recent.forEach((r) => {
+                const row = document.createElement('tr');
+                const viewId = r.legacyLocalId != null ? r.legacyLocalId : r.id;
+                row.innerHTML = `
+                    <td><strong>${escapeHtml(r.fullName ?? '') || 'Unnamed'}</strong></td>
+                    <td><span class="patient-id-badge">${escapeHtml(r.mrn ?? '') || '—'}</span></td>
+                    <td>${escapeHtml(r.visitDate ?? '') || '—'}</td>
+                    <td><button type="button" class="btn-info" onclick="viewRecordReadOnly(${viewId})"><i class="fa-solid fa-eye" aria-hidden="true"></i> View</button></td>
+                `;
+                recentBody.appendChild(row);
+            });
+        }
+    }
+};
+
+window.fetchInstituteKpis = async function () {
+    const api = window.CorneaApi;
+    if (!api?.isEnabled?.()) {
+        window.renderInstituteKpis(null);
+        const hint = document.getElementById('instituteKpisHint');
+        const section = document.getElementById('instituteKpisSection');
+        if (section) section.removeAttribute('hidden');
+        if (hint) hint.removeAttribute('hidden');
+        return;
+    }
+    try {
+        const res = await api.request('/api/v1/dashboard/kpis');
+        const data = res?.data;
+        window.applyCloudVisitStats(data);
+        window.renderInstituteKpis(data);
+    } catch (err) {
+        console.warn('[Dashboard] Institute KPIs:', err);
+        window.renderInstituteKpis(null);
+    }
+};
+
 window.updateDashboardStats = function() {
-    if (!window.db) return;
+    if (!window.db) {
+        window.fetchInstituteKpis().catch(() => {});
+        return;
+    }
     const transaction = window.db.transaction([STORE_NAME], "readonly");
     const store = transaction.objectStore(STORE_NAME);
     const request = store.getAll();
@@ -58,5 +164,7 @@ window.updateDashboardStats = function() {
                 });
             }
         }
+
+        window.fetchInstituteKpis().catch(() => {});
     };
 };
