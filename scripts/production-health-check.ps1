@@ -48,13 +48,21 @@ Test-Endpoint 'API /health (database)' {
 }
 
 Test-Endpoint 'Clinic UI reachable' {
-    $candidates = @($ClinicUrl, "$ClinicUrl/Cornea.html")
-    foreach ($url in $candidates) {
-        try {
-            $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30 -MaximumRedirection 5
-            if ($r.StatusCode -eq 200) { return $true }
-        } catch {
-            continue
+    $candidates = @(
+        $ClinicUrl,
+        'https://corneaclinic.visionemr.net/Cornea',
+        'https://corneaclinic.visionemr.net'
+    ) | ForEach-Object { $_.TrimEnd('/') } | Select-Object -Unique
+    foreach ($base in $candidates) {
+        if (-not $base) { continue }
+        foreach ($suffix in @('', '/Cornea.html')) {
+            $url = "$base$suffix"
+            try {
+                $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30 -MaximumRedirection 5
+                if ($r.StatusCode -eq 200) { return $true }
+            } catch {
+                continue
+            }
         }
     }
     return $false

@@ -5,6 +5,11 @@ on:
   schedule:
     - cron: '15 * * * *' # :15 past each hour UTC
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/production-health.yml'
+      - 'scripts/production-health-check.ps1'
 
 jobs:
   health-check:
@@ -26,16 +31,35 @@ jobs:
           echo "$BODY" | grep -q '"database":{"ok":true'
 
       - name: Clinic UI reachable
+        env:
+          STAGING_CLINIC_URL: ${{ vars.STAGING_CLINIC_URL }}
         run: |
-          CLINIC="${{ vars.STAGING_CLINIC_URL || 'https://corneaclinic.visionemr.net/Cornea' }}"
-          CLINIC="${CLINIC%/}"
+          set -euo pipefail
+          # Always try canonical production URLs; STAGING_CLINIC_URL may be unset or misconfigured.
+          urls=()
+          add_url() {
+            local u="${1%/}"
+            [ -z "$u" ] && return
+            case " ${urls[*]} " in *" $u "*) return ;; esac
+            urls+=("$u")
+          }
+          add_url "${STAGING_CLINIC_URL:-}"
+          add_url "https://corneaclinic.visionemr.net/Cornea"
+          add_url "https://corneaclinic.visionemr.net"
           ok=0
-          for URL in "$CLINIC" "$CLINIC/Cornea.html"; do
-            CODE=$(curl -so /dev/null -w '%{http_code}' -L --max-time 30 "$URL" || echo "000")
-            echo "$URL -> $CODE"
-            if [ "$CODE" = "200" ]; then ok=1; break; fi
+          for base in "${urls[@]}"; do
+            for suffix in "" "/Cornea.html"; do
+              target="${base}${suffix}"
+              code=$(curl -sL -o /dev/null -w '%{http_code}' --max-time 30 "$target" || echo "000")
+              echo "$target -> $code"
+              if [ "$code" = "200" ]; then ok=1; break 2; fi
+            done
           done
-          test "$ok" -eq 1
+          if [ "$ok" -ne 1 ]; then
+            echo "Clinic UI check failed — no candidate URL returned HTTP 200"
+            exit 1
+          fi
+          echo "Clinic UI reachable"
 
   staging-smoke:
     runs-on: ubuntu-latest
