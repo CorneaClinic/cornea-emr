@@ -15,7 +15,7 @@ var PAGE_META = {
     databaseTab:  { title: 'Database Management', subtitle: 'Export, import & manage local data' },
     keratoplastyTab: { title: 'Keratoplasty Register', subtitle: 'Patient register, tissue inventory & matching' },
     keratitisTab: { title: 'Keratitis & Ulcer Service', subtitle: 'Microbial keratitis workflow, cultures & daily monitoring' },
-    researchTab: { title: 'Research & Outcomes', subtitle: 'Registry analytics, cohort export & graft survival' },
+    researchTab: { title: 'Research & Outcomes', subtitle: 'Registry analytics, cohort export & graft survival (offline-capable)' },
     kcRegistryTab: { title: 'KC & CXL Registry', subtitle: 'Keratoconus programme, serial topography & cross-linking' },
     clinicalMediaTab: { title: 'Clinical Media', subtitle: 'Imaging library, timeline & comparison' }
 };

@@ -4920,7 +4920,8 @@
 
         <!-- ===== RESEARCH ANALYTICS TAB (Project 6) ===== -->
         <div id="researchTab" class="tab-content" role="tabpanel" aria-labelledby="nav-researchTab" aria-hidden="true">
-            <p id="raCloudHint" class="form-hint" style="margin-bottom:16px;">Sign in to cloud to load institute-wide registry analytics and CSV export.</p>
+            <p id="raCloudHint" class="form-hint" style="margin-bottom:8px;">Sign in to cloud for institute-wide registry analytics and CSV export.</p>
+            <p id="raSourceBadge" class="form-hint" style="margin-bottom:16px;" hidden></p>
             <div class="kp-stats-grid">
                 <div class="kp-stat"><div class="val" id="raKcTotal">0</div><div class="lbl">KC enrolled</div></div>
                 <div class="kp-stat"><div class="val" id="raKcProgression">0</div><div class="lbl">KC progression</div></div>
@@ -4936,7 +4937,7 @@
                 <div class="card-body">
                     <p><strong>Overall survival:</strong> <span id="raGraftSurvival">—</span> · <strong>Failed:</strong> <span id="raGraftFailed">0</span> · <strong>Post-graft exams:</strong> <span id="raGraftExams">0</span> · <strong>Rejections:</strong> <span id="raRejections">0</span></p>
                     <div id="raGraftSurvivalChart"></div>
-                    <p class="form-hint">Kaplan-Meier-style checkpoints at 1, 3, 6, 12, 24, 36 months post-op (simplified; requires cloud registry data).</p>
+                    <p class="form-hint">Kaplan-Meier-style checkpoints at 1, 3, 6, 12, 24, 36 months post-op (simplified). Uses cloud data when signed in; falls back to last sync or local registry data offline.</p>
                 </div>
             </div>
             <div class="card section-theme-kp-patients" style="margin-top:20px;">
