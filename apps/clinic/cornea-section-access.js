@@ -14,6 +14,7 @@
     appointmentsTab: 'appointments_recall',
     keratoplastyTab: 'keratoplasty',
     keratitisTab: 'keratitis_ulcer',
+    dryEyeTab: 'dry_eye_osd',
     researchTab: 'research_analytics',
     kcRegistryTab: 'kc_registry',
     clinicalMediaTab: 'clinical_media',

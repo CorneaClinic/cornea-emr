@@ -176,7 +176,7 @@
       try {
         const res = await global.CorneaApi.request('/api/v1/ectasia-ai/analyze', {
           method: 'POST',
-          body: JSON.stringify(metrics)
+          body: JSON.stringify({ ...metrics, modelVersion: 'ectasia-v2-topography' })
         });
         return { ...res?.data, source: 'cloud' };
       } catch (err) {

@@ -5,7 +5,7 @@
 window.db = null;
 var DB_NAME = "CorneaClinicDB";
 var STORE_NAME = "patients";
-var DB_VERSION = 11;
+var DB_VERSION = 12;
 var STORE_USERS = 'users';
 var STORE_SYNC_QUEUE = 'sync_queue';
 var STORE_SYNC_META = 'sync_meta';
@@ -85,6 +85,12 @@ function initDB() {
             }
             if (window.CorneaAppointments && typeof window.CorneaAppointments.ensureStores === 'function') {
                 window.CorneaAppointments.ensureStores(db, event);
+            }
+            if (window.CorneaDryEye && typeof window.CorneaDryEye.ensureStores === 'function') {
+                window.CorneaDryEye.ensureStores(db, event);
+            }
+            if (window.CorneaOrSchedule && typeof window.CorneaOrSchedule.ensureStores === 'function') {
+                window.CorneaOrSchedule.ensureStores(db, event);
             }
         };
 

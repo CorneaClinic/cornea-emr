@@ -150,6 +150,53 @@ function rankList(scores, registry) {
     .map((r, i) => ({ rank: i + 1, ...r }));
 }
 
+export function analyzeEctasiaMetricsV2(body = {}) {
+  const v1 = analyzeEctasiaMetrics(body);
+  const od = body.od || body.metrics?.od || {};
+  const os = body.os || body.metrics?.os || {};
+  const shared = body.shared || body.metrics?.shared || {};
+
+  let composite = v1.compositeScore;
+  const v2Factors = [];
+
+  const abcdOd = String(od.abcdGrade ?? od.abcd_grade ?? '').toUpperCase();
+  const abcdOs = String(os.abcdGrade ?? os.abcd_grade ?? '').toUpperCase();
+  const abcdWorst = [abcdOd, abcdOs].includes('D') ? 'D'
+    : [abcdOd, abcdOs].includes('C') ? 'C'
+      : [abcdOd, abcdOs].includes('B') ? 'B'
+        : [abcdOd, abcdOs].includes('A') ? 'A' : '';
+  if (abcdWorst === 'D') { composite += 12; v2Factors.push('ABCD grade D'); }
+  else if (abcdWorst === 'C') { composite += 8; v2Factors.push('ABCD grade C'); }
+  else if (abcdWorst === 'B') { composite += 4; v2Factors.push('ABCD grade B'); }
+
+  const isv = Math.max(num(od.isv ?? od.ISV), num(os.isv ?? os.ISV)) || null;
+  if (isv != null && isv > 40) { composite += 6; v2Factors.push(`ISV ${isv}`); }
+
+  const iha = Math.max(num(od.iha ?? od.IHA), num(os.iha ?? os.IHA)) || null;
+  if (iha != null && iha > 20) { composite += 5; v2Factors.push(`IHA ${iha}°`); }
+
+  const art = Math.max(num(od.art ?? od.ART), num(os.art ?? os.ART)) || null;
+  if (art != null && art < 400) { composite += 8; v2Factors.push(`ART ${art} µm`); }
+
+  if (bool(shared.ocularSurfaceDryEye) === true) {
+    composite += 5;
+    v2Factors.push('Significant dry eye on work-up');
+  }
+
+  composite = Math.min(100, composite);
+  const tier = v1.riskTier === 'Contraindicated' ? 'Contraindicated' : riskTier(composite, false);
+
+  return {
+    ...v1,
+    modelVersion: 'ectasia-v2-topography',
+    compositeScore: composite,
+    riskTier: tier,
+    riskFactors: [...v1.riskFactors, ...v2Factors],
+    v2Enhancements: v2Factors,
+    disclaimer: 'Ectasia AI v2 — adds ABCD, ISV/IHA/ART and dry-eye modifiers. Clinical decision support only.'
+  };
+}
+
 export function analyzeEctasiaMetrics(body = {}) {
   const od = body.od || body.metrics?.od || {};
   const os = body.os || body.metrics?.os || {};
@@ -310,7 +357,8 @@ export async function getRegistryInsights(clinicId) {
 }
 
 export async function analyzeWithRegistry(clinicId, body) {
-  const base = analyzeEctasiaMetrics(body);
+  const useV2 = String(body.modelVersion || '').includes('v2') || body.useV2 === true;
+  const base = useV2 ? analyzeEctasiaMetricsV2(body) : analyzeEctasiaMetrics(body);
   const registry = await getRegistryInsights(clinicId);
   const ctx = {
     keratoconus: base.riskTier === 'Contraindicated',

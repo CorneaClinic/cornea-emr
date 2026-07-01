@@ -14,6 +14,8 @@ export const EMR_SECTIONS = Object.freeze([
   'keratitis_ulcer',
   'research_analytics',
   'appointments_recall',
+  'dry_eye_osd',
+  'or_scheduling',
   'clinical_media',
   'database',
   'user_admin'
@@ -32,6 +34,8 @@ export const EMR_SECTION_LABELS = Object.freeze({
   keratitis_ulcer: 'Keratitis & Ulcer Service',
   research_analytics: 'Research & Outcomes Analytics',
   appointments_recall: 'Appointments & Recall',
+  dry_eye_osd: 'Dry Eye / OSD Clinic',
+  or_scheduling: 'OR Scheduling',
   clinical_media: 'Clinical Media Library',
   database: 'Database & export/import',
   user_admin: 'User & section access (admin)'
@@ -50,6 +54,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratitis_ulcer: true,
     research_analytics: true,
     appointments_recall: true,
+    dry_eye_osd: true,
+    or_scheduling: true,
     clinical_media: true,
     database: true,
     user_admin: true
@@ -65,6 +71,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratitis_ulcer: true,
     research_analytics: true,
     appointments_recall: true,
+    dry_eye_osd: true,
+    or_scheduling: true,
     clinical_media: true,
     database: false,
     user_admin: false
@@ -80,6 +88,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratitis_ulcer: true,
     research_analytics: true,
     appointments_recall: true,
+    dry_eye_osd: true,
+    or_scheduling: true,
     clinical_media: true,
     database: false,
     user_admin: false
@@ -95,6 +105,8 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratitis_ulcer: true,
     research_analytics: true,
     appointments_recall: true,
+    dry_eye_osd: true,
+    or_scheduling: true,
     clinical_media: true,
     database: false,
     user_admin: false
@@ -108,6 +120,7 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratoplasty: false,
     kc_registry: true,
     keratitis_ulcer: true,
+    dry_eye_osd: true,
     clinical_media: true,
     database: false,
     user_admin: false
@@ -121,6 +134,7 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratoplasty: false,
     kc_registry: true,
     keratitis_ulcer: true,
+    dry_eye_osd: true,
     clinical_media: true,
     database: false,
     user_admin: false
@@ -136,6 +150,7 @@ export const ROLE_DEFAULT_EMR_SECTIONS = Object.freeze({
     keratitis_ulcer: false,
     research_analytics: false,
     appointments_recall: true,
+    or_scheduling: true,
     clinical_media: false,
     database: false,
     user_admin: false

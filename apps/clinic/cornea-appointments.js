@@ -60,12 +60,16 @@
 
   function setPanel(panel) {
     _activePanel = panel;
+    const panelIds = { schedule: 'apptSchedulePanel', recall: 'apptRecallPanel', or: 'apptOrPanel' };
     document.querySelectorAll('#appointmentsTab .appt-panel').forEach((p) => {
-      p.classList.toggle('active', p.id === `appt${panel === 'schedule' ? 'Schedule' : 'Recall'}Panel`);
+      p.classList.toggle('active', p.id === panelIds[panel]);
     });
     document.querySelectorAll('#appointmentsTab .appt-subnav-btn').forEach((b) => {
       b.classList.toggle('active', b.dataset.apptPanel === panel);
     });
+    if (panel === 'or' && global.CorneaOrSchedule?.refreshDay) {
+      global.CorneaOrSchedule.refreshDay();
+    }
   }
 
   function renderScheduleTable() {

@@ -3162,6 +3162,9 @@
         <button type="button" class="nav-item" onclick="switchTab('keratitisTab')" data-tab="keratitisTab" data-emr-section="keratitis_ulcer" id="nav-keratitisTab" aria-controls="keratitisTab">
             <i class="fa-solid fa-virus" aria-hidden="true"></i> Keratitis &amp; Ulcer
         </button>
+        <button type="button" class="nav-item" onclick="switchTab('dryEyeTab')" data-tab="dryEyeTab" data-emr-section="dry_eye_osd" id="nav-dryEyeTab" aria-controls="dryEyeTab">
+            <i class="fa-solid fa-droplet" aria-hidden="true"></i> Dry Eye
+        </button>
         <button type="button" class="nav-item" onclick="switchTab('researchTab')" data-tab="researchTab" data-emr-section="research_analytics" id="nav-researchTab" aria-controls="researchTab">
             <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Research
         </button>
@@ -4323,6 +4326,9 @@
                 <button type="button" class="kp-subnav-btn appt-subnav-btn" data-appt-panel="recall" onclick="CorneaAppointments.switchPanel('recall')">
                     <i class="fa-solid fa-bell" aria-hidden="true"></i> Recall queue
                 </button>
+                <button type="button" class="kp-subnav-btn appt-subnav-btn" data-appt-panel="or" data-emr-section="or_scheduling" onclick="CorneaAppointments.switchPanel('or')">
+                    <i class="fa-solid fa-hospital" aria-hidden="true"></i> OR schedule
+                </button>
             </div>
             <div id="apptSchedulePanel" class="kp-panel appt-panel active">
                 <div class="card section-theme-records">
@@ -4362,6 +4368,29 @@
                             <table class="records-table">
                                 <thead><tr><th>Due</th><th>Patient</th><th>MRN</th><th>Purpose</th><th>Severity</th><th class="no-print">Action</th></tr></thead>
                                 <tbody id="apptRecallBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="apptOrPanel" class="kp-panel appt-panel">
+                <div class="card section-theme-records">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon red"><i class="fa-solid fa-hospital"></i></div>
+                            <span class="card-title">OR theatre schedule</span>
+                        </div>
+                        <div class="emr-toolbar-actions no-print">
+                            <input type="date" id="orDatePicker" onchange="CorneaOrSchedule.refreshDay()" style="margin-right:8px;" />
+                            <button type="button" class="btn-primary btn-sm" onclick="CorneaOrSchedule.openNew()"><i class="fa-solid fa-plus"></i> Schedule case</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint">Corneal surgery day list — PK, DALK, endothelial keratoplasty, CXL, and other theatre procedures. Requires cloud sign-in.</p>
+                        <div class="table-scroll">
+                            <table class="records-table">
+                                <thead><tr><th>Time</th><th>Patient</th><th>Procedure</th><th>Surgeon</th><th>Theatre</th><th>Status</th><th class="no-print">Actions</th></tr></thead>
+                                <tbody id="orScheduleBody"></tbody>
                             </table>
                         </div>
                     </div>
@@ -4984,6 +5013,46 @@
             </div>
         </div>
 
+        <!-- ===== DRY EYE / OSD TAB (P7) ===== -->
+        <div id="dryEyeTab" class="tab-content" role="tabpanel" aria-labelledby="nav-dryEyeTab" aria-hidden="true">
+            <div class="kp-subnav no-print de-subnav" role="tablist">
+                <button type="button" class="kp-subnav-btn de-subnav-btn active" data-de-panel="deOverviewPanel" onclick="switchDePanel('deOverviewPanel')"><i class="fa-solid fa-chart-pie"></i> Overview</button>
+                <button type="button" class="kp-subnav-btn de-subnav-btn" data-de-panel="deCasesPanel" onclick="switchDePanel('deCasesPanel')"><i class="fa-solid fa-droplet"></i> OSD cases</button>
+            </div>
+            <div id="deOverviewPanel" class="kp-panel de-panel active">
+                <div class="kp-stats-grid">
+                    <div class="kp-stat"><div class="val" id="deStatTotal">0</div><div class="lbl">Total cases</div></div>
+                    <div class="kp-stat"><div class="val" id="deStatActive">0</div><div class="lbl">Active</div></div>
+                    <div class="kp-stat"><div class="val" id="deStatStable">0</div><div class="lbl">Stable</div></div>
+                    <div class="kp-stat"><div class="val" id="deStatDischarged">0</div><div class="lbl">Discharged</div></div>
+                </div>
+                <p class="form-hint" style="margin-top:16px;">Dedicated dry eye / ocular surface disease clinic — OSDI, DEQ-5, TBUT, Schirmer, MGD grading and treatment plans with composite OSD index.</p>
+            </div>
+            <div id="deCasesPanel" class="kp-panel de-panel">
+                <div class="card section-theme-records">
+                    <div class="card-header">
+                        <div class="card-header-left"><div class="card-icon cyan"><i class="fa-solid fa-droplet"></i></div><span class="card-title">OSD patient register</span></div>
+                        <button type="button" class="btn-primary btn-sm no-print" onclick="CorneaDryEye.openCaseModal('new')"><i class="fa-solid fa-plus"></i> New case</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="deCaseDetail" class="emr-readonly-shell mb-4" hidden>
+                            <div class="emr-toolbar">
+                                <div class="emr-toolbar-title" id="deCaseDetailTitle">Case detail</div>
+                                <div class="emr-toolbar-actions no-print">
+                                    <button type="button" class="btn-secondary btn-sm" onclick="CorneaDryEye.openCaseModal('edit')">Edit</button>
+                                    <button type="button" class="btn-primary btn-sm" onclick="CorneaDryEye.openAssessModal()">Serial assessment</button>
+                                </div>
+                            </div>
+                            <div class="table-scroll"><table class="records-table"><thead><tr><th>Date</th><th>OSD index</th><th>Severity</th><th>TBUT OD</th><th>OSDI</th><th>Plan</th></tr></thead><tbody id="deAssessBody"></tbody></table></div>
+                        </div>
+                        <div class="kp-filters no-print"><div class="form-group"><label>Status</label><select id="deFilterStatus" onchange="CorneaDryEye.init()"><option value="">All</option><option>Active</option><option>Stable</option><option>Discharged</option></select></div></div>
+                        <div class="search-box no-print" style="max-width:220px;margin-bottom:12px;"><input type="text" id="deCaseSearch" placeholder="Search…" onkeyup="CorneaDryEye.init()"></div>
+                        <div class="table-scroll"><table class="records-table"><thead><tr><th>ID</th><th>Name</th><th>Subtype</th><th>Status</th><th>MRN</th><th class="no-print">Actions</th></tr></thead><tbody id="deCasesBody"></tbody></table></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ===== RESEARCH ANALYTICS TAB (Project 6) ===== -->
         <div id="researchTab" class="tab-content" role="tabpanel" aria-labelledby="nav-researchTab" aria-hidden="true">
             <p id="raCloudHint" class="form-hint" style="margin-bottom:8px;">Sign in to cloud for institute-wide registry analytics and CSV export.</p>
@@ -5557,6 +5626,86 @@
     </div>
 </div>
 
+<div id="deCaseModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="deCaseModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="deCaseModalTitle"><i class="fa-solid fa-droplet"></i> Dry eye case</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('deCaseModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="deCaseRecordId"><input type="hidden" id="deCaseUuid">
+            <div class="kp-form-grid">
+                <div class="form-group"><label for="deCaseIdField">Case ID</label><input type="text" id="deCaseIdField" readonly /></div>
+                <div class="form-group"><label class="required" for="deFullName">Patient name</label><input type="text" id="deFullName" required /></div>
+                <div class="form-group"><label for="deMrn">MRN</label><input type="text" id="deMrn" /></div>
+                <div class="form-group"><label for="deSubtype">Primary subtype</label><select id="deSubtype"><option>MGD</option><option>Aqueous deficient</option><option>Evaporative</option><option>Mixed</option><option>Sjögren suspect</option><option>Other</option></select></div>
+                <div class="form-group"><label for="deStatus">Status</label><select id="deStatus"><option>Active</option><option>Stable</option><option>Discharged</option></select></div>
+                <div class="form-group span-2"><label for="deNotes">Notes</label><textarea id="deNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('deCaseModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="CorneaDryEye.saveCase()">Save</button>
+        </div>
+    </div>
+</div>
+
+<div id="deAssessModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="deAssessModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="deAssessModalTitle"><i class="fa-solid fa-clipboard-list"></i> OSD assessment</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('deAssessModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="deAssessCaseId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label for="deAssessDate">Date</label><input type="date" id="deAssessDate" /></div>
+                <div class="form-group"><label for="deTbutOd">TBUT OD (s)</label><input type="number" step="0.1" id="deTbutOd" /></div>
+                <div class="form-group"><label for="deTbutOs">TBUT OS (s)</label><input type="number" step="0.1" id="deTbutOs" /></div>
+                <div class="form-group"><label for="deSchirmerOd">Schirmer OD (mm)</label><input type="number" step="0.1" id="deSchirmerOd" /></div>
+                <div class="form-group"><label for="deSchirmerOs">Schirmer OS (mm)</label><input type="number" step="0.1" id="deSchirmerOs" /></div>
+                <div class="form-group"><label for="deOsdi">OSDI score</label><input type="number" id="deOsdi" min="0" max="100" /></div>
+                <div class="form-group"><label for="deDeq5">DEQ-5 score</label><input type="number" id="deDeq5" min="0" max="22" /></div>
+                <div class="form-group"><label for="deMgd">MGD grade</label><select id="deMgd"><option>None</option><option>Mild</option><option>Moderate</option><option>Severe</option></select></div>
+                <div class="form-group"><label for="deBleph">Blepharitis</label><select id="deBleph"><option>None</option><option>Mild</option><option>Moderate</option><option>Severe</option></select></div>
+                <div class="form-group span-2"><label for="deTreatment">Treatment plan</label><textarea id="deTreatment" rows="2" placeholder="Lubricants, cyclosporine, IPL, punctal plugs…"></textarea></div>
+                <div class="form-group span-2"><label for="deAssessNotes">Notes</label><textarea id="deAssessNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('deAssessModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="CorneaDryEye.saveAssessment()">Save assessment</button>
+        </div>
+    </div>
+</div>
+
+<div id="orCaseModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="orCaseModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="orCaseModalTitle"><i class="fa-solid fa-hospital"></i> Schedule OR case</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('orCaseModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="orRecordId"><input type="hidden" id="orRevision">
+            <div class="kp-form-grid">
+                <div class="form-group"><label class="required" for="orPatientName">Patient name</label><input type="text" id="orPatientName" required /></div>
+                <div class="form-group"><label for="orPatientMrn">MRN</label><input type="text" id="orPatientMrn" /></div>
+                <div class="form-group"><label for="orDate">Procedure date</label><input type="date" id="orDate" /></div>
+                <div class="form-group"><label for="orStartTime">Start time</label><input type="time" id="orStartTime" /></div>
+                <div class="form-group"><label for="orDuration">Duration (min)</label><input type="number" id="orDuration" value="60" min="15" max="480" /></div>
+                <div class="form-group"><label for="orProcedureType">Procedure</label><select id="orProcedureType"><option>DALK</option><option>PK</option><option>DSEK</option><option>DMEK</option><option>DSAEK</option><option>CXL</option><option>PTERYGIUM</option><option>AMNIOTIC_MEMBRANE</option><option>CORNEAL_BIOPSY</option><option>OTHER</option></select></div>
+                <div class="form-group"><label for="orSurgeon">Surgeon</label><input type="text" id="orSurgeon" /></div>
+                <div class="form-group"><label for="orTheatre">Theatre</label><select id="orTheatre"><option>OR-1</option><option>OR-2</option><option>OR-3</option></select></div>
+                <div class="form-group span-2"><label for="orNotes">Notes</label><textarea id="orNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('orCaseModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="CorneaOrSchedule.save()">Save</button>
+        </div>
+    </div>
+</div>
+
 <div id="dicomImportModal" class="emr-modal-overlay" aria-hidden="true">
     <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="dicomImportModalTitle">
         <div class="emr-modal-header">
@@ -5852,6 +6001,7 @@
 <script src="cornea-eye-bank-traceability.js"></script>
 <script src="cornea-keratitis-taxonomy.js"></script>
 <script src="cornea-keratitis.js"></script>
+<script src="cornea-dry-eye.js"></script>
 <script src="cornea-research-analytics.js"></script>
 <script src="cornea-kc-cxl-taxonomy.js"></script>
 <script src="cornea-pentacam-import.js"></script>
@@ -5870,6 +6020,7 @@
 <script src="cornea-section-access.js"></script>
 <script src="cornea-patient-flow.js"></script>
 <script src="cornea-appointments.js"></script>
+<script src="cornea-or-schedule.js"></script>
 <script src="cornea-admin-users.js"></script>
 <script src="cornea-record-lock.js"></script>
 <script src="cornea-api-adapter.js"></script>
