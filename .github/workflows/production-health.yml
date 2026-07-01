@@ -20,6 +20,7 @@ jobs:
         env:
           STAGING_API_URL: ${{ vars.STAGING_API_URL }}
         run: |
+          echo "production-health API liveness — commit ${{ github.sha }}"
           set -e
           for api in "https://corneaclinic-2zfpt.ondigitalocean.app" "${STAGING_API_URL:-}"; do
             [ -z "$api" ] && continue
@@ -57,7 +58,9 @@ jobs:
         env:
           STAGING_CLINIC_URL: ${{ vars.STAGING_CLINIC_URL }}
         run: |
+          echo "production-health clinic check v3 — commit ${{ github.sha }}"
           set -e
+          UA='Mozilla/5.0 (compatible; CorneaEMR-HealthCheck/1.0; +https://github.com/CorneaClinic/cornea-emr)'
           clinic_ok=0
           for url in \
             "https://corneaclinic.visionemr.net/Cornea/health.json" \
@@ -67,12 +70,14 @@ jobs:
             "${STAGING_CLINIC_URL:+${STAGING_CLINIC_URL%/}/Cornea.html}" \
             "${STAGING_CLINIC_URL:+${STAGING_CLINIC_URL%/}/health.json}"; do
             [ -z "$url" ] && continue
-            code=$(curl -sL -o /dev/null -w '%{http_code}' --max-time 30 "$url" || echo "000")
+            code=$(curl -sL -A "$UA" -o /dev/null -w '%{http_code}' --max-time 30 "$url" || echo "000")
             echo "$url -> $code"
             if [ "$code" = "200" ]; then clinic_ok=1; break; fi
           done
           if [ "$clinic_ok" -ne 1 ]; then
             echo "Clinic UI check failed — no candidate URL returned HTTP 200"
+            echo "If you see the old one-line curl command above, you re-ran an outdated workflow."
+            echo "Use Actions -> Production Health -> Run workflow on branch main (do not Re-run failed jobs)."
             exit 1
           fi
           echo "Clinic UI reachable"
