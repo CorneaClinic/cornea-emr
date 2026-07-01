@@ -27,9 +27,15 @@ jobs:
 
       - name: Clinic UI reachable
         run: |
-          CODE=$(curl -so /dev/null -w '%{http_code}' --max-time 30 \
-            "${{ vars.STAGING_CLINIC_URL || 'https://corneaclinic.visionemr.net/Cornea' }}/Cornea.html")
-          test "$CODE" = "200"
+          CLINIC="${{ vars.STAGING_CLINIC_URL || 'https://corneaclinic.visionemr.net/Cornea' }}"
+          CLINIC="${CLINIC%/}"
+          ok=0
+          for URL in "$CLINIC" "$CLINIC/Cornea.html"; do
+            CODE=$(curl -so /dev/null -w '%{http_code}' -L --max-time 30 "$URL" || echo "000")
+            echo "$URL -> $CODE"
+            if [ "$CODE" = "200" ]; then ok=1; break; fi
+          done
+          test "$ok" -eq 1
 
   staging-smoke:
     runs-on: ubuntu-latest

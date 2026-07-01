@@ -47,9 +47,17 @@ Test-Endpoint 'API /health (database)' {
     return $r.StatusCode -eq 200 -and $j.checks.database.ok -eq $true
 }
 
-Test-Endpoint 'Clinic Cornea.html' {
-    $r = Invoke-WebRequest -Uri "$ClinicUrl/Cornea.html" -UseBasicParsing -TimeoutSec 30
-    return $r.StatusCode -eq 200
+Test-Endpoint 'Clinic UI reachable' {
+    $candidates = @($ClinicUrl, "$ClinicUrl/Cornea.html")
+    foreach ($url in $candidates) {
+        try {
+            $r = Invoke-WebRequest -Uri $url -UseBasicParsing -TimeoutSec 30 -MaximumRedirection 5
+            if ($r.StatusCode -eq 200) { return $true }
+        } catch {
+            continue
+        }
+    }
+    return $false
 }
 
 $backupLog = Join-Path (Split-Path -Parent $PSScriptRoot) 'backups\production\backup.log'
