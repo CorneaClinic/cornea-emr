@@ -805,26 +805,57 @@
     return row;
   }
 
-  let _pentacamImportReadings = [];
-  let _pentacamImportMode = 'kc';
+  let _topoImportReadings = [];
+  let _topoImportMode = 'kc';
+  let _topoImportDevice = 'pentacam';
 
-  function resetPentacamImportModal(mode) {
-    _pentacamImportMode = mode;
-    _pentacamImportReadings = [];
-    const preview = document.getElementById('pentacamImportPreview');
-    if (preview) preview.innerHTML = '<p class="text-muted">Choose a Pentacam CSV file (chamber.csv, BAD.CSV, or export).</p>';
-    const fileInput = document.getElementById('pentacamImportFile');
+  function topoImportApi() {
+    return global.CorneaTopographyImport || global.CorneaPentacamImport;
+  }
+
+  function parseTopoImportFile(text, device) {
+    const api = topoImportApi();
+    if (!api) return null;
+    if (device === 'sirius') return api.parseSiriusCsv?.(text) || api.parseTopographyCsv?.(text, { device: 'Sirius' });
+    if (device === 'pentacam') return api.parsePentacamCsv?.(text) || api.parseTopographyCsv?.(text, { device: 'Pentacam' });
+    return api.parseTopographyCsv?.(text, { device: 'auto' }) || api.parsePentacamCsv?.(text);
+  }
+
+  function resetTopoImportModal(mode, device) {
+    _topoImportMode = mode;
+    _topoImportDevice = device || 'pentacam';
+    _topoImportReadings = [];
+    const isSirius = _topoImportDevice === 'sirius';
+    const preview = document.getElementById('topoImportPreview');
+    if (preview) {
+      preview.innerHTML = isSirius
+        ? '<p class="text-muted">Choose a Sirius / CSO Phoenix indices CSV export.</p>'
+        : '<p class="text-muted">Choose a Pentacam CSV file (chamber.csv, BAD.CSV, or export).</p>';
+    }
+    const fileInput = document.getElementById('topoImportFile');
     if (fileInput) fileInput.value = '';
-    const laserChk = document.getElementById('pentacamImportToLaser');
-    const laserRow = document.getElementById('pentacamImportLaserRow');
+    const laserChk = document.getElementById('topoImportToLaser');
+    const laserRow = document.getElementById('topoImportLaserRow');
     if (laserChk) laserChk.checked = mode === 'laser';
     if (laserRow) laserRow.hidden = mode === 'laser';
-    const title = document.getElementById('pentacamImportModalTitle');
+    const title = document.getElementById('topoImportModalTitle');
+    const hint = document.getElementById('topoImportHint');
+    const deviceLabel = isSirius ? 'Sirius / CSO Phoenix CSV' : 'Pentacam CSV';
     if (title) {
       title.textContent = mode === 'laser'
-        ? 'Import Pentacam CSV — Laser work-up'
-        : 'Import Pentacam CSV — KC registry';
+        ? `Import ${deviceLabel} — Laser work-up`
+        : `Import ${deviceLabel} — KC registry`;
     }
+    if (hint) {
+      hint.innerHTML = isSirius
+        ? 'Supports <strong>CSO Phoenix indices export</strong> (comma, semicolon, or tab). Maps Kmax, Kmean, pachymetry, elevations, and Sirius screening indices (ISV, IVA, CKI).'
+        : 'Supports Pentacam <strong>chamber.csv</strong>, <strong>BAD.CSV</strong>, and common exports (comma or semicolon). Maps Kmax, Kmean, pachymetry, BAD-D, and ABCD to topography fields.';
+    }
+  }
+
+  function openTopoImportModal(mode, device) {
+    resetTopoImportModal(mode, device);
+    global.openEmrModal('topoImportModal');
   }
 
   global.openKcPentacamImport = function () {
@@ -833,48 +864,63 @@
       alert('Select a KC registry patient first (Open a patient from the list).');
       return;
     }
-    resetPentacamImportModal('kc');
-    global.openEmrModal('pentacamImportModal');
+    openTopoImportModal('kc', 'pentacam');
+  };
+
+  global.openKcSiriusImport = function () {
+    const kcPatientId = global._kcSelectedPatientId;
+    if (!kcPatientId) {
+      alert('Select a KC registry patient first (Open a patient from the list).');
+      return;
+    }
+    openTopoImportModal('kc', 'sirius');
   };
 
   global.openLaserPentacamImport = function () {
     if (document.getElementById('section-laser-refractive')?.hidden) {
       global.CorneaLaserRefractive?.toggleSection?.(true);
     }
-    resetPentacamImportModal('laser');
-    global.openEmrModal('pentacamImportModal');
+    openTopoImportModal('laser', 'pentacam');
   };
 
-  global.onPentacamFileSelected = async function (input) {
+  global.openLaserSiriusImport = function () {
+    if (document.getElementById('section-laser-refractive')?.hidden) {
+      global.CorneaLaserRefractive?.toggleSection?.(true);
+    }
+    openTopoImportModal('laser', 'sirius');
+  };
+
+  global.onTopoImportFileSelected = async function (input) {
     const file = input?.files?.[0];
-    const preview = document.getElementById('pentacamImportPreview');
+    const preview = document.getElementById('topoImportPreview');
     if (!file || !preview) return;
     try {
       const text = await file.text();
-      const result = global.CorneaPentacamImport?.parsePentacamCsv?.(text);
+      const result = parseTopoImportFile(text, _topoImportDevice);
       if (!result) {
-        preview.innerHTML = '<p class="text-muted">Pentacam import module not loaded.</p>';
+        preview.innerHTML = '<p class="text-muted">Topography import module not loaded.</p>';
         return;
       }
-      _pentacamImportReadings = result.readings || [];
-      if (!_pentacamImportReadings.length) {
+      _topoImportReadings = result.readings || [];
+      if (!_topoImportReadings.length) {
         preview.innerHTML = `<p class="text-muted">No topography readings found. ${(result.warnings || []).join(' ')}</p>`;
         return;
       }
+      const importer = topoImportApi();
       const warn = (result.warnings || []).length
         ? `<p class="form-hint">${global.escapeHtml?.(result.warnings.join('; ')) || result.warnings.join('; ')}</p>`
         : '';
-      const rows = _pentacamImportReadings.map((r, i) => {
-        const p = global.CorneaPentacamImport.formatPreviewRow(r);
+      const rows = _topoImportReadings.map((r, i) => {
+        const p = importer.formatPreviewRow(r);
         return `<tr>
-          <td><input type="checkbox" class="pentacam-import-row" data-idx="${i}" checked /></td>
-          <td>${p.eye}</td><td>${p.date}</td><td>${p.kmax}</td><td>${p.kmean}</td>
+          <td><input type="checkbox" class="topo-import-row" data-idx="${i}" checked /></td>
+          <td>${p.eye}</td><td>${p.date}</td><td>${p.device}</td><td>${p.kmax}</td><td>${p.kmean}</td>
           <td>${p.pachyMin}</td><td>${p.badD}</td><td>${global.escapeHtml?.(p.patient) || p.patient}</td>
         </tr>`;
       }).join('');
-      preview.innerHTML = `${warn}<p class="form-hint">Detected ${result.format} format · ${result.readings.length} reading(s)</p>
+      preview.innerHTML = `${warn}<p class="form-hint">Detected ${result.device || _topoImportDevice} · ${result.format} format · ${result.readings.length} reading(s)</p>
         <div class="table-scroll"><table class="records-table">
-          <thead><tr><th></th><th>Eye</th><th>Date</th><th>Kmax</th><th>Kmean</th><th>Pachy min</th><th>BAD-D</th><th>Patient</th></tr></thead>
+          <thead><tr><th></th><th>Eye</th><th>Date</th><th>Device</th><th>Kmax</th><th>Kmean</th><th>Pachy min</th><th>BAD-D/CKI</th><th>Patient</th></tr></thead>
           <tbody>${rows}</tbody>
         </table></div>`;
     } catch (err) {
@@ -882,16 +928,21 @@
     }
   };
 
-  global.commitKcPentacamImport = async function () {
-    const checks = document.querySelectorAll('.pentacam-import-row:checked');
+  global.onPentacamFileSelected = global.onTopoImportFileSelected;
+
+  global.commitKcTopoImport = async function () {
+    const checks = document.querySelectorAll('.topo-import-row:checked');
     const indices = [...checks].map((el) => Number(el.dataset.idx));
     if (!indices.length) { alert('Select at least one reading to import.'); return; }
-    const selected = indices.map((i) => _pentacamImportReadings[i]).filter(Boolean);
+    const selected = indices.map((i) => _topoImportReadings[i]).filter(Boolean);
+    const importer = topoImportApi();
 
-    if (_pentacamImportMode === 'laser') {
-      const n = global.CorneaLaserRefractive?.applyPentacamReadings?.(selected) || 0;
-      global.closeEmrModal('pentacamImportModal');
-      alert(n ? `Applied ${n} Pentacam reading(s) to laser refractive work-up.` : 'Import failed.');
+    if (_topoImportMode === 'laser') {
+      const n = global.CorneaLaserRefractive?.applyTopoReadings?.(selected)
+        || global.CorneaLaserRefractive?.applyPentacamReadings?.(selected)
+        || 0;
+      global.closeEmrModal('topoImportModal');
+      alert(n ? `Applied ${n} topography reading(s) to laser refractive work-up.` : 'Import failed.');
       return;
     }
 
@@ -902,7 +953,7 @@
     let cloudErrors = 0;
 
     for (const reading of selected) {
-      const row = global.CorneaPentacamImport.toKcTopoRow(reading, kcPatientId);
+      const row = importer.toKcTopoRow(reading, kcPatientId);
       try {
         await saveTopoRow(row, kcPatientId);
         imported++;
@@ -911,21 +962,25 @@
       }
     }
 
-    if (document.getElementById('pentacamImportToLaser')?.checked && global.CorneaLaserRefractive?.applyPentacamReadings) {
-      global.CorneaLaserRefractive.applyPentacamReadings(selected);
+    if (document.getElementById('topoImportToLaser')?.checked) {
+      global.CorneaLaserRefractive?.applyTopoReadings?.(selected)
+        || global.CorneaLaserRefractive?.applyPentacamReadings?.(selected);
     }
 
     await recomputeLocalProgression(kcPatientId);
-    global.closeEmrModal('pentacamImportModal');
+    global.closeEmrModal('topoImportModal');
     await refreshCaches();
     viewKcPatientDetail(kcPatientId);
     updateKcOverviewStats();
     renderKcPatientsTable();
 
-    let msg = `Imported ${imported} Pentacam topography reading(s) into KC registry.`;
+    const deviceName = selected[0]?.device || 'Topography';
+    let msg = `Imported ${imported} ${deviceName} reading(s) into KC registry.`;
     if (cloudErrors) msg += ` ${cloudErrors} failed to sync to cloud (saved locally).`;
     alert(msg);
   };
+
+  global.commitKcPentacamImport = global.commitKcTopoImport;
 
   global.CorneaKcCxl = {
     STORE_KC_PATIENTS,
