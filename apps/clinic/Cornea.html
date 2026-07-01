@@ -3153,6 +3153,9 @@
         <button type="button" class="nav-item" onclick="switchTab('flowTab')" data-tab="flowTab" data-emr-section="patient_flow" id="nav-flowTab" aria-controls="flowTab">
             <i class="fa-solid fa-route" aria-hidden="true"></i> Patient Flow
         </button>
+        <button type="button" class="nav-item" onclick="switchTab('appointmentsTab')" data-tab="appointmentsTab" data-emr-section="appointments_recall" id="nav-appointmentsTab" aria-controls="appointmentsTab">
+            <i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Appointments
+        </button>
         <button type="button" class="nav-item" onclick="switchTab('keratoplastyTab')" data-tab="keratoplastyTab" data-emr-section="keratoplasty" id="nav-keratoplastyTab" aria-controls="keratoplastyTab">
             <i class="fa-solid fa-hand-holding-medical" aria-hidden="true"></i> Keratoplasty
         </button>
@@ -4309,6 +4312,61 @@
         <div id="flowTab" class="tab-content section-theme-flow" role="tabpanel" aria-labelledby="nav-flowTab" aria-hidden="true">
             <div class="flow-subnav no-print" id="flowSubnav" role="tablist" aria-label="Clinic stations"></div>
             <div id="flowPanelsWrap"></div>
+        </div>
+
+        <!-- ===== APPOINTMENTS & RECALL TAB (P5) ===== -->
+        <div id="appointmentsTab" class="tab-content section-theme-flow" role="tabpanel" aria-labelledby="nav-appointmentsTab" aria-hidden="true">
+            <div class="kp-subnav no-print" role="tablist" aria-label="Appointments sections">
+                <button type="button" class="kp-subnav-btn appt-subnav-btn active" data-appt-panel="schedule" onclick="CorneaAppointments.switchPanel('schedule')">
+                    <i class="fa-solid fa-calendar-day" aria-hidden="true"></i> Day schedule
+                </button>
+                <button type="button" class="kp-subnav-btn appt-subnav-btn" data-appt-panel="recall" onclick="CorneaAppointments.switchPanel('recall')">
+                    <i class="fa-solid fa-bell" aria-hidden="true"></i> Recall queue
+                </button>
+            </div>
+            <div id="apptSchedulePanel" class="kp-panel appt-panel active">
+                <div class="card section-theme-records">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon indigo"><i class="fa-solid fa-calendar-day"></i></div>
+                            <span class="card-title">Day schedule</span>
+                        </div>
+                        <div class="emr-toolbar-actions no-print">
+                            <input type="date" id="apptDatePicker" onchange="CorneaAppointments.refreshDay()" style="margin-right:8px;" />
+                            <button type="button" class="btn-primary btn-sm" onclick="CorneaAppointments.openNew()"><i class="fa-solid fa-plus"></i> Book appointment</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p id="apptCloudHint" class="form-hint">Sign in to cloud for institute-wide scheduling and recall queue from visit follow-ups.</p>
+                        <div class="table-scroll">
+                            <table class="records-table">
+                                <thead><tr><th>Time</th><th>Patient</th><th>Type</th><th>Reason</th><th>Station</th><th>Status</th><th class="no-print">Actions</th></tr></thead>
+                                <tbody id="apptScheduleBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="apptRecallPanel" class="kp-panel appt-panel">
+                <div class="card section-theme-records">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon orange"><i class="fa-solid fa-bell"></i></div>
+                            <span class="card-title">Recall queue</span>
+                        </div>
+                        <button type="button" class="btn-secondary btn-sm no-print" onclick="CorneaAppointments.refreshRecall()"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint">Patients with due follow-up dates from visit records who do not yet have a future appointment scheduled.</p>
+                        <div class="table-scroll">
+                            <table class="records-table">
+                                <thead><tr><th>Due</th><th>Patient</th><th>MRN</th><th>Purpose</th><th>Severity</th><th class="no-print">Action</th></tr></thead>
+                                <tbody id="apptRecallBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- ===== RECORDS TAB ===== -->
@@ -5491,6 +5549,38 @@
     </div>
 </div>
 
+<div id="appointmentModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="appointmentModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="appointmentModalTitle"><i class="fa-solid fa-calendar-plus"></i> Appointment</h2>
+            <button type="button" class="emr-modal-close" onclick="closeEmrModal('appointmentModal')" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="apptRecordId">
+            <input type="hidden" id="apptPatientId">
+            <input type="hidden" id="apptRecallVisitId">
+            <input type="hidden" id="apptRevision">
+            <div class="kp-form-grid">
+                <div class="form-group"><label class="required" for="apptPatientName">Patient name</label><input type="text" id="apptPatientName" required /></div>
+                <div class="form-group"><label for="apptPatientMrn">MRN / ID</label><input type="text" id="apptPatientMrn" /></div>
+                <div class="form-group"><label for="apptPatientPhone">Phone</label><input type="text" id="apptPatientPhone" /></div>
+                <div class="form-group"><label class="required" for="apptDate">Date</label><input type="date" id="apptDate" required /></div>
+                <div class="form-group"><label for="apptStartTime">Start time</label><input type="time" id="apptStartTime" /></div>
+                <div class="form-group"><label for="apptDuration">Duration (min)</label><input type="number" id="apptDuration" min="5" max="480" value="15" /></div>
+                <div class="form-group"><label for="apptType">Type</label><select id="apptType"><option value="visit">Visit</option><option value="recall">Recall</option><option value="procedure">Procedure</option><option value="review">Review</option></select></div>
+                <div class="form-group"><label for="apptStatus">Status</label><select id="apptStatus"><option>scheduled</option><option>confirmed</option><option>arrived</option><option>completed</option><option>cancelled</option><option>no_show</option></select></div>
+                <div class="form-group"><label for="apptStation">Station</label><select id="apptStation"><option value="">—</option><option value="refraction">Refraction</option><option value="doctor_exam">Doctor exam</option><option value="pentacam">Pentacam</option><option value="investigations">Investigations</option><option value="contact_lens">Contact lens</option></select></div>
+                <div class="form-group span-2"><label for="apptReason">Reason</label><input type="text" id="apptReason" placeholder="e.g. KC review, post-graft check" /></div>
+                <div class="form-group span-2"><label for="apptNotes">Notes</label><textarea id="apptNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" onclick="closeEmrModal('appointmentModal')">Cancel</button>
+            <button type="button" class="btn-primary" onclick="CorneaAppointments.save()"><i class="fa-solid fa-floppy-disk"></i> Save</button>
+        </div>
+    </div>
+</div>
+
 <div id="kcCxlModal" class="emr-modal-overlay" aria-hidden="true">
     <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="kcCxlModalTitle">
         <div class="emr-modal-header">
@@ -5742,6 +5832,7 @@
 <script src="cornea-audit-trail.js"></script>
 <script src="cornea-section-access.js"></script>
 <script src="cornea-patient-flow.js"></script>
+<script src="cornea-appointments.js"></script>
 <script src="cornea-admin-users.js"></script>
 <script src="cornea-record-lock.js"></script>
 <script src="cornea-api-adapter.js"></script>

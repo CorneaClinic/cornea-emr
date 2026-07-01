@@ -5,7 +5,7 @@
 window.db = null;
 var DB_NAME = "CorneaClinicDB";
 var STORE_NAME = "patients";
-var DB_VERSION = 10;
+var DB_VERSION = 11;
 var STORE_USERS = 'users';
 var STORE_SYNC_QUEUE = 'sync_queue';
 var STORE_SYNC_META = 'sync_meta';
@@ -82,6 +82,9 @@ function initDB() {
             }
             if (window.CorneaKeratitis && typeof window.CorneaKeratitis.ensureStores === 'function') {
                 window.CorneaKeratitis.ensureStores(db, event);
+            }
+            if (window.CorneaAppointments && typeof window.CorneaAppointments.ensureStores === 'function') {
+                window.CorneaAppointments.ensureStores(db, event);
             }
         };
 

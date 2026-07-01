@@ -11,6 +11,7 @@
     recordsTab: 'records',
     auditTrailTab: 'audit_trail',
     flowTab: 'patient_flow',
+    appointmentsTab: 'appointments_recall',
     keratoplastyTab: 'keratoplasty',
     keratitisTab: 'keratitis_ulcer',
     researchTab: 'research_analytics',

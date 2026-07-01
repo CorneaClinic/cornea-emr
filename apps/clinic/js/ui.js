@@ -12,6 +12,7 @@ var PAGE_META = {
     recordsTab:   { title: 'Patient Records', subtitle: 'All stored patient visits' },
     auditTrailTab:{ title: 'Audit Trail', subtitle: 'Who changed which patient records' },
     flowTab:      { title: 'Patient Flow', subtitle: 'Today\'s patients by clinic station' },
+    appointmentsTab: { title: 'Appointments & Recall', subtitle: 'Day schedule and follow-up recall queue' },
     databaseTab:  { title: 'Database Management', subtitle: 'Export, import & manage local data' },
     keratoplastyTab: { title: 'Keratoplasty Register', subtitle: 'Patient register, tissue inventory & matching' },
     keratitisTab: { title: 'Keratitis & Ulcer Service', subtitle: 'Microbial keratitis workflow, cultures & daily monitoring' },
@@ -135,6 +136,9 @@ window.switchTab = function(tabId) {
     if (tabId === 'dashboardTab') updateDashboardStats();
     if (tabId === 'flowTab' && window.CorneaPatientFlow) {
         window.CorneaPatientFlow.initFlowTab();
+    }
+    if (tabId === 'appointmentsTab' && typeof initAppointmentsTab === 'function') {
+        initAppointmentsTab();
     }
 
     if (tabId === 'formTab') {
