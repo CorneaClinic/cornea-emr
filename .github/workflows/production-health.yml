@@ -1,4 +1,6 @@
-# G7 — Production health and backup freshness checks (hourly).
+# G7 — Production health checks (hourly).
+# API: probed directly on DigitalOcean (reliable from GitHub Actions).
+# Clinic UI: Cloudflare often blocks datacenter curl — use staging-smoke (Playwright) or npm run health:production.
 name: Production Health
 
 on:
@@ -20,7 +22,7 @@ jobs:
         env:
           STAGING_API_URL: ${{ vars.STAGING_API_URL }}
         run: |
-          echo "production-health API liveness — commit ${{ github.sha }}"
+          echo "production-health v4 (API only) — commit ${{ github.sha }}"
           set -e
           for api in "https://corneaclinic-2zfpt.ondigitalocean.app" "${STAGING_API_URL:-}"; do
             [ -z "$api" ] && continue
@@ -54,36 +56,9 @@ jobs:
           done
           exit 1
 
-      - name: Clinic UI reachable
-        env:
-          STAGING_CLINIC_URL: ${{ vars.STAGING_CLINIC_URL }}
-        run: |
-          echo "production-health clinic check v3 — commit ${{ github.sha }}"
-          set -e
-          UA='Mozilla/5.0 (compatible; CorneaEMR-HealthCheck/1.0; +https://github.com/CorneaClinic/cornea-emr)'
-          clinic_ok=0
-          for url in \
-            "https://corneaclinic.visionemr.net/Cornea/health.json" \
-            "https://corneaclinic.visionemr.net/Cornea" \
-            "https://corneaclinic.visionemr.net/Cornea/Cornea.html" \
-            "${STAGING_CLINIC_URL:-}" \
-            "${STAGING_CLINIC_URL:+${STAGING_CLINIC_URL%/}/Cornea.html}" \
-            "${STAGING_CLINIC_URL:+${STAGING_CLINIC_URL%/}/health.json}"; do
-            [ -z "$url" ] && continue
-            code=$(curl -sL -A "$UA" -o /dev/null -w '%{http_code}' --max-time 30 "$url" || echo "000")
-            echo "$url -> $code"
-            if [ "$code" = "200" ]; then clinic_ok=1; break; fi
-          done
-          if [ "$clinic_ok" -ne 1 ]; then
-            echo "Clinic UI check failed — no candidate URL returned HTTP 200"
-            echo "If you see the old one-line curl command above, you re-ran an outdated workflow."
-            echo "Use Actions -> Production Health -> Run workflow on branch main (do not Re-run failed jobs)."
-            exit 1
-          fi
-          echo "Clinic UI reachable"
-
   staging-smoke:
     runs-on: ubuntu-latest
+    needs: health-check
     env:
       CI: true
       STAGING_E2E_EMAIL: ${{ secrets.STAGING_E2E_EMAIL }}
@@ -97,7 +72,7 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: package-lock.json
-      - name: Staging smoke (login + clinic load)
+      - name: Staging smoke (clinic load + login)
         run: |
           if [ -z "$STAGING_E2E_EMAIL" ] || [ -z "$STAGING_E2E_PASSWORD" ]; then
             echo "Skipping — STAGING_E2E_* secrets not configured."
