@@ -497,6 +497,29 @@
       a.download = `cornea-cohort-${type}-${_lastSource === 'cached' ? 'cached-' : ''}${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
+    },
+    async exportCohortFhir() {
+      if (!apiOn()) {
+        alert('Cloud sign-in required to export FHIR bundles from the server.');
+        return;
+      }
+      if (global.navigator.onLine === false) {
+        alert('FHIR export requires an internet connection.');
+        return;
+      }
+      const type = document.getElementById('raCohortSelect')?.value || 'kc';
+      try {
+        const blob = await global.CorneaApi.downloadBlob(
+          `/api/v1/fhir-export/cohort/${encodeURIComponent(type)}/bundle?anonymize=true`
+        );
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `cornea-fhir-cohort-${type}-${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      } catch (err) {
+        alert(err.message || 'FHIR export failed');
+      }
     }
   };
 

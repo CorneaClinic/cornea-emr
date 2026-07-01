@@ -4942,10 +4942,19 @@
             </div>
             <div class="card section-theme-kp-patients" style="margin-top:20px;">
                 <div class="card-header">
+                    <div class="card-header-left"><div class="card-icon teal"><i class="fa-solid fa-share-nodes"></i></div><span class="card-title">FHIR interchange (prototype)</span></div>
+                </div>
+                <div class="card-body">
+                    <p class="form-hint" style="margin:0;">Export registry cohorts as <strong>FHIR R4 Bundle</strong> (JSON) for national registry pilots. Cohort exports are <strong>anonymized</strong> by default. Requires cloud sign-in and research export permission.</p>
+                </div>
+            </div>
+            <div class="card section-theme-kp-patients" style="margin-top:20px;">
+                <div class="card-header">
                     <div class="card-header-left"><div class="card-icon orange"><i class="fa-solid fa-table"></i></div><span class="card-title">Cohort builder</span></div>
                     <div class="emr-toolbar-actions no-print">
                         <select id="raCohortSelect" onchange="CorneaResearchAnalytics.refreshCohort()" style="margin-right:8px;"></select>
                         <button type="button" class="btn-primary btn-sm" onclick="CorneaResearchAnalytics.exportCohort()"><i class="fa-solid fa-file-csv"></i> Export CSV</button>
+                        <button type="button" class="btn-secondary btn-sm" onclick="CorneaResearchAnalytics.exportCohortFhir()"><i class="fa-solid fa-file-code"></i> Export FHIR</button>
                     </div>
                 </div>
                 <div class="card-body">
