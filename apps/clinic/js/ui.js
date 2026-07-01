@@ -18,7 +18,7 @@ var PAGE_META = {
     keratitisTab: { title: 'Keratitis & Ulcer Service', subtitle: 'Microbial keratitis workflow, cultures & daily monitoring' },
     researchTab: { title: 'Research & Outcomes', subtitle: 'Registry analytics, cohort export, FHIR interchange & graft survival' },
     kcRegistryTab: { title: 'KC & CXL Registry', subtitle: 'Keratoconus programme, serial topography & cross-linking' },
-    clinicalMediaTab: { title: 'Clinical Media', subtitle: 'Imaging library, timeline & comparison' }
+    clinicalMediaTab: { title: 'Clinical Media', subtitle: 'Imaging library, DICOM ingest, timeline & comparison' }
 };
 
 function escapeHtml(str) {

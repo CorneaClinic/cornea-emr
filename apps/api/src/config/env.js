@@ -193,7 +193,7 @@ export const env = Object.freeze({
     allowedMimeTypes: Object.freeze(
       optional(
         'MEDIA_ALLOWED_MIME_TYPES',
-        'image/png,image/jpeg,image/webp,image/svg+xml,image/tiff,application/pdf,video/mp4,video/webm'
+        'image/png,image/jpeg,image/webp,image/svg+xml,image/tiff,application/pdf,application/dicom,video/mp4,video/webm'
       ).split(',').map((s) => s.trim().toLowerCase()).filter(Boolean)
     ),
     s3: Object.freeze({
