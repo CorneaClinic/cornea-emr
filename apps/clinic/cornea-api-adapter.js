@@ -1055,20 +1055,6 @@
           lastEl.textContent = new Date(latestDate).toLocaleDateString();
         }
 
-        const recent = [...records]
-          .sort((a, b) => (b.lastModified || '').localeCompare(a.lastModified || ''))
-          .slice(0, 5);
-        const recentBody = document.getElementById('recentActivityBody');
-        if (recentBody) {
-          recentBody.innerHTML = recent.map((r) => `
-            <tr>
-              <td><strong>${escapeHtml(r.fullName)}</strong></td>
-              <td><span class="patient-id-badge">${escapeHtml(r.patientId)}</span></td>
-              <td>${escapeHtml(r.visitDate || '')}</td>
-              <td><button type="button" class="btn-info" onclick="viewRecordReadOnly(${r.id})"><i class="fa-solid fa-eye"></i> View</button></td>
-            </tr>`).join('') || '<tr><td colspan="4">No activity yet.</td></tr>';
-        }
-
         if (global.navigator.onLine !== false && sync()) {
           sync().syncNow().catch(() => {});
         }

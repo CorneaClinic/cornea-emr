@@ -7,7 +7,7 @@ window._kpSelectedPatientId = null;
 window._kpSelectedTissueId = null;
 
 var PAGE_META = {
-    dashboardTab: { title: 'Dashboard', subtitle: 'Overview & recent activity' },
+    dashboardTab: { title: 'Dashboard', subtitle: 'Overview & institute metrics' },
     formTab:      { title: 'Patient Form', subtitle: 'Read-only visit record · use Edit to modify' },
     recordsTab:   { title: 'Patient Records', subtitle: 'All stored patient visits' },
     auditTrailTab:{ title: 'Audit Trail', subtitle: 'Who changed which patient records' },

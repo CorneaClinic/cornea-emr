@@ -3204,7 +3204,7 @@
             </button>
             <div>
                 <div class="page-title" id="pageTitle">Dashboard</div>
-                <div class="page-subtitle" id="pageSubtitle">Overview & recent activity</div>
+                <div class="page-subtitle" id="pageSubtitle">Overview & institute metrics</div>
             </div>
         </div>
         <div class="topbar-right">
@@ -3274,35 +3274,7 @@
                 </div>
             </div>
 
-            <div class="dashboard-split">
-                <div class="card section-theme-activity">
-                    <div class="card-header">
-                        <div class="card-header-left">
-                            <div class="card-icon blue"><i class="fa-solid fa-clock-rotate-left"></i></div>
-                            <span class="card-title">Recent Activity</span>
-                        </div>
-                        <button class="btn-secondary btn-sm no-print" onclick="switchTab('recordsTab')" data-emr-section="records">
-                            <i class="fa-solid fa-arrow-right"></i> View All
-                        </button>
-                    </div>
-                    <div class="table-scroll">
-                        <table class="recent-table">
-                            <thead>
-                                <tr>
-                                    <th>Patient</th>
-                                    <th>ID</th>
-                                    <th>Visit Date</th>
-                                    <th>Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="recentActivityBody">
-                                <tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-spinner fa-spin"></i><p>Loading activity…</p></div></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="card no-print section-theme-actions">
+            <div class="card no-print section-theme-actions">
                     <div class="card-header">
                         <div class="card-header-left">
                             <div class="card-icon teal"><i class="fa-solid fa-bolt"></i></div>
@@ -3332,7 +3304,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
         </div>
 
         <!-- ===== PATIENT FORM TAB ===== -->

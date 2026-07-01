@@ -1,5 +1,5 @@
 /**
- * Cornea Clinic — dashboard stats and recent activity
+ * Cornea Clinic — dashboard stats and institute KPIs
  * Phase 4 extraction from Cornea.html
  */
 
@@ -62,27 +62,6 @@ window.applyCloudVisitStats = function (data) {
             month: 'short', day: 'numeric', year: 'numeric'
         }));
     }
-
-    const recentBody = document.getElementById('recentActivityBody');
-    if (recentBody && Array.isArray(data.recent)) {
-        const recent = data.recent;
-        if (recent.length === 0) {
-            recentBody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No activity yet. Register your first patient.</p></div></td></tr>`;
-        } else {
-            recentBody.innerHTML = '';
-            recent.forEach((r) => {
-                const row = document.createElement('tr');
-                const viewId = r.legacyLocalId != null ? r.legacyLocalId : r.id;
-                row.innerHTML = `
-                    <td><strong>${escapeHtml(r.fullName ?? '') || 'Unnamed'}</strong></td>
-                    <td><span class="patient-id-badge">${escapeHtml(r.mrn ?? '') || '—'}</span></td>
-                    <td>${escapeHtml(r.visitDate ?? '') || '—'}</td>
-                    <td><button type="button" class="btn-info" onclick="viewRecordReadOnly(${viewId})"><i class="fa-solid fa-eye" aria-hidden="true"></i> View</button></td>
-                `;
-                recentBody.appendChild(row);
-            });
-        }
-    }
 };
 
 window.fetchInstituteKpis = async function () {
@@ -139,30 +118,6 @@ window.updateDashboardStats = function() {
             lastEl.textContent = latestDate
                 ? new Date(latestDate).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })
                 : '—';
-        }
-
-        // Recent Activity
-        const recentBody = document.getElementById('recentActivityBody');
-        if (recentBody) {
-            recentBody.innerHTML = '';
-            const recent = [...records]
-                .sort((a, b) => new Date(b.lastModified || 0) - new Date(a.lastModified || 0))
-                .slice(0, 5);
-
-            if (recent.length === 0) {
-                recentBody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No activity yet. Register your first patient.</p></div></td></tr>`;
-            } else {
-                recent.forEach(r => {
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td><strong>${escapeHtml(r.fullName ?? '') || 'Unnamed'}</strong></td>
-                        <td><span class="patient-id-badge">${escapeHtml(r.patientId ?? '') || '—'}</span></td>
-                        <td>${escapeHtml(r.visitDate ?? '') || '—'}</td>
-                        <td><button type="button" class="btn-info" onclick="viewRecordReadOnly(${r.id})"><i class="fa-solid fa-eye" aria-hidden="true"></i> View</button></td>
-                    `;
-                    recentBody.appendChild(row);
-                });
-            }
         }
 
         window.fetchInstituteKpis().catch(() => {});
