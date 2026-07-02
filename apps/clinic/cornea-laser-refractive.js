@@ -674,10 +674,15 @@
       updateToggleButton(true);
       if (!document.getElementById('laserRefractiveBuilder')?.innerHTML?.trim()) buildPanels();
       if (global.initFormSectionCollapse) global.initFormSectionCollapse(section);
-      requestAnimationFrame(() => section.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+      if (global.refreshFormSectionNav) global.refreshFormSectionNav();
+      requestAnimationFrame(() => {
+        if (global.navigateToFormSection) global.navigateToFormSection(section.id);
+        else section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
     } else {
       section.hidden = true;
       updateToggleButton(false);
+      if (global.refreshFormSectionNav) global.refreshFormSectionNav();
     }
   }
 
