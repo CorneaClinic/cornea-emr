@@ -924,6 +924,36 @@
         word-break: break-word;
     }
 
+    .form-section-nav-item.is-optional-hidden {
+        opacity: 0.72;
+        border: 1px dashed var(--border);
+    }
+
+    .form-section-nav-item.is-optional-hidden:hover {
+        opacity: 1;
+        border-color: var(--sec-accent, var(--primary-light));
+    }
+
+    .form-section-nav-optional {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 14px;
+        height: 14px;
+        margin-left: 4px;
+        border-radius: 3px;
+        background: rgba(0, 0, 0, 0.08);
+        font-size: 0.65rem;
+        font-weight: 700;
+        vertical-align: middle;
+        line-height: 1;
+    }
+
+    .form-section-nav-item.is-optional-hidden.is-active .form-section-nav-optional {
+        background: var(--sec-accent, var(--primary-mid));
+        color: #fff;
+    }
+
     .patient-form-main {
         flex: 1;
         min-width: 0;

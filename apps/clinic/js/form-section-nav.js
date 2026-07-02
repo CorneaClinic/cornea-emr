@@ -7,12 +7,37 @@
   let scrollRoot = null;
   let scrollSpy = null;
 
-  function getFormCards(form) {
+  function getNavSections(form) {
     return [...form.querySelectorAll('.form-card')].filter((card) => {
       if (!card.querySelector('.form-card-body')) return false;
+      return true;
+    });
+  }
+
+  function getVisibleFormCards(form) {
+    return getNavSections(form).filter((card) => {
       if (card.classList.contains('cl-optional-section') && card.hidden) return false;
       return true;
     });
+  }
+
+  const OPTIONAL_SECTION_HANDLERS = {
+    'section-contact-lens': () => global.CorneaContactLens?.toggleSection?.(true),
+    'section-laser-refractive': () => global.CorneaLaserRefractive?.toggleSection?.(true),
+  };
+
+  function revealOptionalSection(card) {
+    if (!card?.hidden) return false;
+    const reveal = OPTIONAL_SECTION_HANDLERS[card.id];
+    if (reveal) {
+      reveal();
+      return true;
+    }
+    card.hidden = false;
+    global.initFormSectionCollapse?.(card);
+    global.refreshFormSectionNav?.();
+    requestAnimationFrame(() => navigateToSection(card));
+    return true;
   }
 
   function getSectionLabel(card) {
@@ -63,32 +88,55 @@
     const activeId = navList.querySelector('.form-section-nav-item.is-active')?.getAttribute('data-section');
     navList.replaceChildren();
 
-    getFormCards(form).forEach((card, index) => {
+    getNavSections(form).forEach((card, index) => {
       if (!card.id) return;
+
+      const isOptionalHidden = card.classList.contains('cl-optional-section') && card.hidden;
 
       const btn = document.createElement('button');
       btn.type = 'button';
       btn.className = 'form-section-nav-item';
+      if (isOptionalHidden) btn.classList.add('is-optional-hidden');
       btn.setAttribute('data-section', card.id);
 
       const theme = [...card.classList].find((c) => c.startsWith('section-theme-'));
       if (theme) btn.dataset.theme = theme.replace('section-theme-', '');
 
+      const optionalHint = isOptionalHidden ? ' <span class="form-section-nav-optional" aria-hidden="true">+</span>' : '';
       btn.innerHTML = `<span class="form-section-nav-num" aria-hidden="true">${index + 1}</span>
-        <span class="form-section-nav-label">${escapeHtml(getSectionLabel(card))}</span>`;
+        <span class="form-section-nav-label">${escapeHtml(getSectionLabel(card))}${optionalHint}</span>`;
 
-      btn.addEventListener('click', () => navigateToSection(card));
+      if (isOptionalHidden) {
+        btn.title = 'Show section';
+        btn.setAttribute('aria-label', `${getSectionLabel(card)} (hidden — click to show)`);
+      }
+
+      btn.addEventListener('click', () => {
+        if (card.hidden) {
+          revealOptionalSection(card);
+          return;
+        }
+        navigateToSection(card);
+      });
       navList.appendChild(btn);
     });
 
-    const cards = getFormCards(form);
-    const keepActive = activeId && cards.some((c) => c.id === activeId);
-    setActiveNavItem(keepActive ? activeId : cards[0]?.id);
+    const cards = getVisibleFormCards(form);
+    const navCards = getNavSections(form);
+    const keepActive = activeId && navCards.some((c) => c.id === activeId);
+    if (keepActive && activeId) {
+      const activeCard = document.getElementById(activeId);
+      if (activeCard?.hidden) setActiveNavItem(activeId);
+      else if (cards.some((c) => c.id === activeId)) setActiveNavItem(activeId);
+      else setActiveNavItem(cards[0]?.id);
+    } else {
+      setActiveNavItem(cards[0]?.id);
+    }
   }
 
   function setupScrollSpy(form) {
     if (scrollSpy) scrollSpy.disconnect();
-    const cards = getFormCards(form);
+    const cards = getVisibleFormCards(form);
     const root = scrollRoot || form.closest('.patient-form-main');
     if (!cards.length || !root) return;
 
