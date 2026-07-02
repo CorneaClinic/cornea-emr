@@ -529,6 +529,37 @@ function updatePatientReadOnlyToolbar(hasRecord) {
     });
 }
 
+function stripRecordForNewVisit(record) {
+    if (!record || typeof record !== 'object') return {};
+    const copy = JSON.parse(JSON.stringify(record));
+    delete copy.id;
+    delete copy.uuid;
+    delete copy.sectionAttribution;
+    copy.visitDate = new Date().toISOString().split('T')[0];
+    copy.visitMediaJSON = '{"items":[]}';
+    [
+        'followUpDate', 'followUpCustomDate', 'followUpInterval', 'followUpDateDisplay',
+        'followUpSeverity', 'followUpPlace', 'followUpPurpose', 'followUpRemarks',
+    ].forEach((key) => { copy[key] = ''; });
+    return copy;
+}
+
+function prepareNewVisitFromRecord(record) {
+    if (!record) return;
+    populateFormFromData(stripRecordForNewVisit(record));
+    const idField = document.getElementById('currentRecordId');
+    const uuidField = document.getElementById('currentRecordUuid');
+    if (idField) idField.value = '';
+    if (uuidField) uuidField.value = '';
+    window._currentViewRecordId = null;
+    window._ageManuallyEdited = false;
+    window._lastAutofillPatientId = record.patientId || '';
+    setPatientIdAutofillHint(
+        `New visit — pre-filled from last visit (${formatVisitDisplayDate(record.visitDate)}). Update only what changed.`,
+        true
+    );
+}
+
 window.openPatientFormModal = function(mode) {
     if (!window.CorneaOfflineAuth?.hasPermission?.('visits:write')) {
         alert('You do not have permission to edit patient records.');
@@ -536,8 +567,46 @@ window.openPatientFormModal = function(mode) {
     }
     const title = document.getElementById('emrPatientModalTitle');
     if (mode === 'new') {
+        const priorRecordId = window._currentViewRecordId
+            || document.getElementById('currentRecordId')?.value
+            || null;
+        const priorPatientId = document.getElementById('patientId')?.value?.trim() || '';
+
         window.clearForm(false);
         if (title) title.innerHTML = '<i class="fa-solid fa-user-plus"></i> New Patient Visit';
+
+        openEmrModal('emrPatientModal');
+
+        const afterOpen = () => {
+            repositionOpenLidAutocompleteLists();
+            repositionOpenDiagnosisAutocomplete();
+            window.refreshExamFindingHighlights();
+        };
+
+        const seedNewVisit = (record) => {
+            if (record) prepareNewVisitFromRecord(record);
+            window.refreshPatientVisitHistory();
+            afterOpen();
+        };
+
+        if (priorPatientId && window.db) {
+            loadPatientVisits(priorPatientId, (visits) => {
+                seedNewVisit(visits.length ? visits[visits.length - 1] : null);
+            });
+            return;
+        }
+
+        if (priorRecordId && window.db) {
+            window.db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME)
+                .get(Number(priorRecordId)).onsuccess = (e) => seedNewVisit(e.target.result || null);
+            return;
+        }
+
+        requestAnimationFrame(() => {
+            window.refreshPatientVisitHistory();
+            afterOpen();
+        });
+        return;
     } else {
         if (!document.getElementById('currentRecordId')?.value && !window._currentViewRecordId) {
             alert('Select or open a record to edit.');
@@ -653,17 +722,10 @@ window.autofillPatientInfoFromPreviousVisit = function(patientId, visits) {
         return;
     }
 
+    if (window._lastAutofillPatientId === patientId) return;
+
     const latest = visits[visits.length - 1];
-    const demographicsEmpty = !document.getElementById('fullName')?.value?.trim();
-
-    if (window._lastAutofillPatientId === patientId && !demographicsEmpty) return;
-
-    applyPatientInfoFromVisit(latest);
-    window._lastAutofillPatientId = patientId;
-    setPatientIdAutofillHint(
-        `Patient details loaded from last visit (${formatVisitDisplayDate(latest.visitDate)}). Visit date set to today.`,
-        true
-    );
+    prepareNewVisitFromRecord(latest);
 };
 
 function truncateVisitText(str, maxLen = 100) {
