@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Cornea Clinic — local patient records, examination forms, and offline IndexedDB backup.">
     <title>Cornea Clinic — Management System</title>
+    <link rel="icon" type="image/png" href="assets/someyetech-icon.png">
     <link href="https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
     <script src="anterior-sketch-embedded.js"></script>
@@ -192,6 +193,109 @@
         font-size: 0.72rem;
         color: rgba(255,255,255,.38);
         line-height: 1.5;
+    }
+
+    .brand-icon img,
+    .sidebar-footer-icon {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: inherit;
+        display: block;
+    }
+
+    .sidebar-footer-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+    }
+
+    .sidebar-footer-icon {
+        width: 32px;
+        height: 32px;
+        border-radius: 8px;
+        flex-shrink: 0;
+        box-shadow: 0 2px 8px rgba(0,0,0,.2);
+    }
+
+    .sidebar-footer-name {
+        font-weight: 600;
+        color: rgba(255,255,255,.72);
+        font-size: 0.78rem;
+        letter-spacing: 0.02em;
+    }
+
+    .sidebar-footer-slogan {
+        font-size: 0.68rem;
+        color: rgba(255,255,255,.45);
+        margin-bottom: 6px;
+        font-style: italic;
+    }
+
+    .sidebar-footer-copy {
+        font-size: 0.65rem;
+        color: rgba(255,255,255,.32);
+    }
+
+    .app-footer {
+        margin-top: auto;
+        padding: 20px 28px 24px;
+        border-top: 1px solid var(--border);
+        background: linear-gradient(180deg, var(--surface-raised) 0%, var(--surface) 100%);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 20px;
+        flex-wrap: wrap;
+    }
+
+    .app-footer-brand {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        min-width: 0;
+    }
+
+    .app-footer-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 10px;
+        flex-shrink: 0;
+        box-shadow: var(--shadow-xs);
+    }
+
+    .app-footer-text strong {
+        display: block;
+        font-size: 0.95rem;
+        color: var(--primary);
+        letter-spacing: 0.02em;
+    }
+
+    .app-footer-text span {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        font-style: italic;
+        margin-top: 2px;
+    }
+
+    .app-footer-copy {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        text-align: right;
+    }
+
+    @media (max-width: 720px) {
+        .app-footer {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        .app-footer-copy { text-align: left; }
+    }
+
+    @media print {
+        .app-footer, .sidebar-footer { display: none !important; }
     }
 
     /* =============================================
@@ -3129,7 +3233,7 @@
 <!-- ========== SIDEBAR ========== -->
 <aside class="sidebar" id="sidebar" aria-label="Clinic navigation">
     <div class="sidebar-brand">
-        <div class="brand-icon"><i class="fa-solid fa-eye"></i></div>
+        <div class="brand-icon"><img src="assets/someyetech-icon.png" alt="SomeyeTech" width="40" height="40" /></div>
         <div class="brand-text">
             <h1>Cornea Clinic</h1>
             <p>Eye Care Management</p>
@@ -3188,8 +3292,13 @@
     </nav>
 
     <div class="sidebar-footer">
-        <div>Cornea Clinic v2.1</div>
-        <div>Local IndexedDB · Offline Ready</div>
+        <div class="sidebar-footer-brand">
+            <img class="sidebar-footer-icon" src="assets/someyetech-icon.png" alt="" width="32" height="32" aria-hidden="true" />
+            <div class="sidebar-footer-name">SomeyeTech</div>
+        </div>
+        <div class="sidebar-footer-slogan">Empowering Vision Through Technology</div>
+        <div class="sidebar-footer-copy">© <span id="sidebarFooterYear"></span> SomeyeTech. All rights reserved.</div>
+        <div style="margin-top:6px;">Cornea Clinic · Local IndexedDB · Offline Ready</div>
     </div>
 </aside>
 
@@ -5179,6 +5288,17 @@
         </div>
 
     </main><!-- end .page-content -->
+
+    <footer class="app-footer no-print" role="contentinfo">
+        <div class="app-footer-brand">
+            <img class="app-footer-icon" src="assets/someyetech-icon.png" alt="SomeyeTech logo" width="44" height="44" />
+            <div class="app-footer-text">
+                <strong>SomeyeTech</strong>
+                <span>Empowering Vision Through Technology</span>
+            </div>
+        </div>
+        <div class="app-footer-copy">© <span id="appFooterYear"></span> SomeyeTech. All rights reserved.</div>
+    </footer>
 </div><!-- end .main-wrapper -->
 
 <ul id="lidRE-ac" class="lid-ac-list" role="listbox" aria-hidden="true" aria-label="Lid condition suggestions (RE)"></ul>
@@ -6024,6 +6144,9 @@
 <script src="cornea-migration-tool.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', async () => {
+    const year = String(new Date().getFullYear());
+    document.getElementById('appFooterYear')?.replaceChildren(document.createTextNode(year));
+    document.getElementById('sidebarFooterYear')?.replaceChildren(document.createTextNode(year));
     try {
         localStorage.removeItem('corneaClinic_icdClientId');
         localStorage.removeItem('corneaClinic_icdClientSecret');
