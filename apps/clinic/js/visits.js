@@ -293,6 +293,7 @@ window.clearForm = function(ask = true) {
         if (window.CorneaContactLens) window.CorneaContactLens.reset();
         if (window.CorneaScleralLens) window.CorneaScleralLens.reset();
         if (window.CorneaLaserRefractive) window.CorneaLaserRefractive.reset();
+        if (window.CorneaOpinionReferral) window.CorneaOpinionReferral.reset();
         window._patientVisitsCache = [];
         window._lastAutofillPatientId = '';
         window._ageManuallyEdited = false;

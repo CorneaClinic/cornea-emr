@@ -223,6 +223,7 @@ function collectFormDataObject() {
     window.CorneaScleralLens?.syncToHiddenField?.();
     window.CorneaLaserRefractive?.syncToHiddenField?.();
     window.CorneaVisitMedia?.syncToHiddenField?.();
+    window.CorneaOpinionReferral?.syncToHiddenField?.();
     window.normalizePatientAgeFields?.();
     const form = document.getElementById('patientForm');
     if (!form) return {};
@@ -230,6 +231,7 @@ function collectFormDataObject() {
     const skipIds = new Set(['visitMediaFileInput', 'currentRecordId', 'currentRecordUuid']);
     form.querySelectorAll('input, textarea, select').forEach(input => {
         if (skipIds.has(input.id)) return;
+        if (input.closest('#opinionReferralRoot') && input.id !== 'opinionReferralJSON') return;
         if (input.type === 'radio') {
             if (input.checked) data[input.name] = input.value;
         } else if (input.type === 'checkbox' && input.id) {
@@ -318,6 +320,9 @@ function populateFormFromData(data) {
     }
     if (window.CorneaLaserRefractive) {
         window.CorneaLaserRefractive.onFormPopulated(data);
+    }
+    if (window.CorneaOpinionReferral) {
+        window.CorneaOpinionReferral.onFormPopulated(data);
     }
 }
 
@@ -421,6 +426,23 @@ window.renderPatientReadOnly = function(data, containerId) {
                 return;
             }
 
+            if (title === 'Opinion & Referral Notes') {
+                if (window.CorneaOpinionReferral) {
+                    const orHtml = window.CorneaOpinionReferral.formatReadOnly(data);
+                    if (orHtml) html += orHtml;
+                }
+                return;
+            }
+
+            if (title === 'Diagnosis & Management Plan') {
+                if (data.diagnosis?.trim()) fieldsHtml += buildEmrRoField('Diagnosis', data.diagnosis, true);
+                if (data.specialRemarks?.trim()) fieldsHtml += buildEmrRoField('Special Remarks', data.specialRemarks, true);
+                if (data.advise?.trim()) fieldsHtml += buildEmrRoField('Advice & Instructions to Patient', data.advise, true);
+                if (fieldsHtml) sectionHtml += `<div class="emr-ro-grid">${fieldsHtml}</div>`;
+                if (sectionHtml) html += buildEmrRoSection(title, icon, sectionHtml, attrHtml, themeClass);
+                return;
+            }
+
             const clinicTable = card.querySelector('table.clinic-table');
             if (clinicTable) {
                 const isExam = title.includes('Anterior') || title.includes('Fundus');
@@ -437,10 +459,11 @@ window.renderPatientReadOnly = function(data, containerId) {
             card.querySelectorAll('.form-group').forEach(fg => {
                 if (fg.closest('.medical-advice-block')) return;
                 if (fg.closest('.visit-media-upload-row')) return;
-                if (fg.querySelector('#diagnosisIcdStatus')) return;
+                if (fg.closest('#opinionReferralRoot')) return;
                 const labelEl = fg.querySelector('label, .followup-label');
                 const label = labelEl ? labelEl.textContent.replace(/\*/g, '').trim() : '';
                 const input = fg.querySelector('[id]');
+                if (input && input.id === 'diagnosisIcdStatus') return;
                 if (input && input.id === 'medicalAdviceJSON') return;
                 if (input && input.id) {
                     const full = input.tagName === 'TEXTAREA';

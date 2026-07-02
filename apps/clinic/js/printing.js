@@ -9,6 +9,8 @@ window.generateSummary = function(autoPrint = false) {
     window.CorneaContactLens?.syncToHiddenField?.();
     window.CorneaScleralLens?.syncToHiddenField?.();
     window.CorneaLaserRefractive?.syncToHiddenField?.();
+    window.CorneaOpinionReferral?.syncToHiddenField?.();
+    window.CorneaOpinionReferral?.syncToHiddenField?.();
     const getValue = id => document.getElementById(id)?.value || '—';
     const gv = id => escapeHtml(getValue(id));
     const sex = escapeHtml(document.querySelector('input[name="sex"]:checked')?.value || '—');
@@ -127,12 +129,37 @@ window.generateSummary = function(autoPrint = false) {
             ${sectionHeader('Diagnosis & Management Plan', '📝')}
             <table style="width:100%;border-collapse:collapse;">
                 <tr><td style="padding:9px 12px;border-bottom:1px solid #e8eef6;font-weight:600;color:#3d5166;font-size:13px;width:32%;background:#f7fafd;">Diagnosis</td><td style="padding:9px 12px;border-bottom:1px solid #e8eef6;font-size:13px;">${gv('diagnosis')}</td></tr>
-                <tr><td style="padding:9px 12px;border-bottom:1px solid #e8eef6;font-weight:600;color:#3d5166;font-size:13px;background:#f7fafd;">Opinion & Referral</td><td style="padding:9px 12px;border-bottom:1px solid #e8eef6;font-size:13px;">${gv('opinionReferral')}</td></tr>
                 <tr><td style="padding:9px 12px;border-bottom:1px solid #e8eef6;font-weight:600;color:#3d5166;font-size:13px;background:#f7fafd;">Advice</td><td style="padding:9px 12px;border-bottom:1px solid #e8eef6;font-size:13px;">${gv('advise')}</td></tr>
                 <tr><td style="padding:9px 12px;font-weight:600;color:#3d5166;font-size:13px;background:#f7fafd;vertical-align:top;">Special Remarks</td><td style="padding:9px 12px;font-size:13px;">${gv('specialRemarks')}</td></tr>
             </table>
             ${window.formatMedicalAdviceSummary()}
             </div>
+
+            ${(() => {
+                if (!window.CorneaOpinionReferral) return '';
+                const raw = document.getElementById('opinionReferralJSON')?.value;
+                try {
+                    const st = raw ? JSON.parse(raw) : null;
+                    if (!st || !window.CorneaOpinionReferral.getState) return '';
+                    const o = st.opinion || {};
+                    const r = st.referral || {};
+                    if (!o.clinic && !o.doctor && !o.note && !r.hospital && !r.reason) return '';
+                    const e = escapeHtml;
+                    const nl = (s) => e(s || '—').replace(/\n/g, '<br>');
+                    return sectionHeader('Opinion & Referral Notes', '🩺') + `<table style="width:100%;border-collapse:collapse;">
+                        <tr><td colspan="2" style="padding:10px 12px;font-weight:700;background:#f7fafd;">Opinion</td></tr>
+                        <tr><td style="padding:8px 12px;width:32%;background:#f7fafd;font-weight:600;">Clinic</td><td style="padding:8px 12px;">${e(o.clinic)}</td></tr>
+                        <tr><td style="padding:8px 12px;background:#f7fafd;font-weight:600;">Doctor</td><td style="padding:8px 12px;">${e(o.doctor)}</td></tr>
+                        <tr><td style="padding:8px 12px;background:#f7fafd;font-weight:600;">Reason</td><td style="padding:8px 12px;">${nl(o.reason)}</td></tr>
+                        <tr><td style="padding:8px 12px;background:#f7fafd;font-weight:600;">Note</td><td style="padding:8px 12px;">${nl(o.note)}</td></tr>
+                        <tr><td colspan="2" style="padding:10px 12px;font-weight:700;background:#f7fafd;">Referral</td></tr>
+                        <tr><td style="padding:8px 12px;background:#f7fafd;font-weight:600;">Hospital</td><td style="padding:8px 12px;">${e(r.hospital)}</td></tr>
+                        <tr><td style="padding:8px 12px;background:#f7fafd;font-weight:600;">Specialty</td><td style="padding:8px 12px;">${e(r.specialty)}</td></tr>
+                        <tr><td style="padding:8px 12px;background:#f7fafd;font-weight:600;">Summary</td><td style="padding:8px 12px;">${nl(r.summary)}</td></tr>
+                        <tr><td style="padding:8px 12px;background:#f7fafd;font-weight:600;">Reason</td><td style="padding:8px 12px;">${nl(r.reason)}</td></tr>
+                    </table></div>`;
+                } catch { return ''; }
+            })()}
 
             ${(() => {
                 if (!window.CorneaContactLens) return '';

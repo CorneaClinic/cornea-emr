@@ -30,6 +30,7 @@ window.addEventListener('DOMContentLoaded', () => {
     initEmrModals();
     initFormSectionCollapse();
     initFormSectionNav();
+    if (window.CorneaOpinionReferral) window.CorneaOpinionReferral.init();
     if (window.CorneaContactLens) window.CorneaContactLens.init();
     if (window.CorneaScleralLens) window.CorneaScleralLens.init();
     if (window.CorneaLaserRefractive) window.CorneaLaserRefractive.init();

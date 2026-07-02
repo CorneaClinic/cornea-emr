@@ -14,6 +14,7 @@
     'Anterior Segment Drawing': 'anterior_drawing',
     'Fundus Examination': 'fundus',
     'Diagnosis & Management Plan': 'diagnosis_plan',
+    'Opinion & Referral Notes': 'opinion_referral',
     'Documents & Clinical Images': 'documents',
     'Contact Lens': 'contact_lens',
     'Laser Refractive Work-up': 'laser_refractive',
