@@ -21,6 +21,9 @@ jobs:
       - name: Clinic global store collision check
         run: node scripts/check-clinic-globals.mjs
         working-directory: .
+      - name: Topography CSV import tests (Pentacam + Sirius)
+        run: npm run test:topography-import
+        working-directory: .
 
   test:
     runs-on: ubuntu-latest

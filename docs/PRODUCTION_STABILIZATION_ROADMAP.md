@@ -233,7 +233,7 @@ Target: run on every PR to `main` and nightly against staging.
 |----------|---------|-----------|
 | P1 | Dashboard institute KPIs | Ops visibility; small effort |
 | P2 | Offline research summaries | Reliability extension, not new clinical scope |
-| P3 | Sirius / tomography import | High value; builds on stable media pipeline |
+| P3 | Sirius / tomography import | CSV import done (KC + laser); Galilei / server parse deferred |
 | P4 | FHIR export prototype | Tertiary bridge |
 | P5 | Appointments & recall | Large; needs stable sync |
 | P6 | DICOM / PACS | XL; depends on media + performance |
