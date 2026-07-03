@@ -28,16 +28,25 @@ async function lastNightlyRun() {
   return data.workflow_runs?.[0];
 }
 
+async function stagingJobStatus(runId) {
+  const data = await fetchJson(`https://api.github.com/repos/${REPO}/actions/runs/${runId}/jobs`);
+  const jobs = data.jobs || [];
+  const smoke = jobs.find((j) => j.name === 'staging-smoke');
+  const reminder = jobs.find((j) => j.name === 'staging-secrets-reminder');
+  return { smoke, reminder };
+}
+
 async function main() {
   console.log('=== Staging E2E readiness ===\n');
 
   if (localSecretsReady()) {
     console.log('Local env: STAGING_E2E_EMAIL + STAGING_E2E_PASSWORD set');
-    console.log('  → run: npm run smoke:staging\n');
+    console.log('  → npm run check:staging-login');
+    console.log('  → npm run smoke:staging\n');
   } else {
     console.log('Local env: STAGING_E2E_* not set');
-    console.log('  → set secrets or run:');
-    console.log('     npm run setup:staging-e2e -- -Email you@clinic.com -Password "..."');
+    console.log('  → npm run e2e:staging-user   # create monitor user + print password');
+    console.log('  → npm run setup:staging-e2e -- -Email ... -Password ... -Apply');
     console.log('  → GitHub: https://github.com/CorneaClinic/cornea-emr/settings/secrets/actions\n');
   }
 
@@ -46,7 +55,16 @@ async function main() {
     if (run) {
       console.log(`Last nightly workflow: #${run.run_number} ${run.status} ${run.conclusion || ''}`);
       console.log(`  ${run.html_url}`);
-      console.log('  (If staging-smoke logs "Skipping", add repository secrets.)\n');
+
+      const { smoke, reminder } = await stagingJobStatus(run.id);
+      if (smoke) {
+        console.log(`  staging-smoke: ${smoke.conclusion || smoke.status}`);
+      } else if (reminder) {
+        console.log('  staging-smoke: skipped (secrets missing — see staging-secrets-reminder job)');
+      } else {
+        console.log('  staging-smoke: not found on last run (workflow may predate job split)');
+      }
+      console.log('');
     }
   } catch (err) {
     console.log(`GitHub API: ${err.message}\n`);

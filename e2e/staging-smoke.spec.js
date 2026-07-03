@@ -1,12 +1,9 @@
 import { test, expect } from '@playwright/test';
+import { waitForInstituteKpis } from './helpers.js';
+import { signInStaging, stagingCredentials } from './staging-helpers.js';
 
-const STAGING_EMAIL = process.env.STAGING_E2E_EMAIL || '';
-const STAGING_PASSWORD = process.env.STAGING_E2E_PASSWORD || '';
+const { email: STAGING_EMAIL, password: STAGING_PASSWORD } = stagingCredentials();
 const STAGING_CLINIC = (process.env.STAGING_CLINIC_URL || 'https://corneaclinic.visionemr.net/Cornea').replace(
-  /\/$/,
-  ''
-);
-const STAGING_API = (process.env.STAGING_API_URL || 'https://corneaclinic-2zfpt.ondigitalocean.app').replace(
   /\/$/,
   ''
 );
@@ -30,26 +27,27 @@ test.describe('Staging live smoke', () => {
   });
 
   test('cloud sign-in against production API', async ({ page }) => {
-    await page.addInitScript(() => {
-      try {
-        localStorage.removeItem('corneaEmr_apiToken');
-        localStorage.removeItem('corneaEmr_apiBase');
-      } catch (_) { /* ignore */ }
-    });
-    await page.goto('/Cornea.html?cloud=1');
+    const { elapsed } = await signInStaging(page);
+    expect(elapsed).toBeLessThan(15_000);
+  });
 
-    const modal = page.locator('#corneaCloudLoginModal');
-    await expect(modal).toHaveClass(/is-open/, { timeout: 30_000 });
+  test('dashboard institute KPIs load after sign-in (Phase 4 P1)', async ({ page }) => {
+    await signInStaging(page);
+    await expect(page.locator('#dashboardTab')).toHaveClass(/active/);
+    await waitForInstituteKpis(page);
 
-    await page.locator('#corneaLoginApiUrl').fill(STAGING_API);
-    await page.locator('#corneaLoginEmail').fill(STAGING_EMAIL);
-    await page.locator('#corneaLoginPassword').fill(STAGING_PASSWORD);
+    const kpiIds = ['kpiUniquePatients', 'kpiVisitsWeek', 'kpiKcEnrolled', 'kpiKpWaiting'];
+    for (const id of kpiIds) {
+      const text = await page.locator(`#${id}`).textContent();
+      expect(text, id).toMatch(/^\d+$/);
+    }
+    await expect(page.locator('#instituteKpisAsOf')).toContainText(/As of/i);
+  });
 
-    const started = Date.now();
-    await page.locator('#corneaLoginSubmitBtn').click();
-    await expect(modal).not.toHaveClass(/is-open/, { timeout: 20_000 });
-    expect(Date.now() - started).toBeLessThan(15_000);
-
-    await expect(page.locator('body')).not.toHaveClass(/cornea-auth-pending/);
+  test('appointments schedule tab opens (Phase 4 P5)', async ({ page }) => {
+    await signInStaging(page);
+    await page.locator('#nav-appointmentsTab').click();
+    await expect(page.locator('#appointmentsTab')).toHaveClass(/active/, { timeout: 15_000 });
+    await expect(page.locator('#apptSchedulePanel')).toHaveClass(/active/);
   });
 });

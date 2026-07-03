@@ -117,11 +117,20 @@ Workflow: `.github/workflows/e2e-nightly.yml` (02:00 UTC daily).
 | `STAGING_CLINIC_URL` (optional var) | Default: production clinic URL |
 | `STAGING_API_URL` (optional var) | Default: production API URL |
 
-### One-time setup (GitHub CLI)
+### One-time setup
+
+**1. Create the monitor user** (production DB — requires `apps/api/.env.production`):
+
+```powershell
+npm run e2e:staging-user
+# Prints STAGING_E2E_EMAIL and a generated STAGING_E2E_PASSWORD — save both.
+```
+
+**2. Add GitHub repository secrets** (GitHub CLI):
 
 ```powershell
 cd C:\Users\Hp\Documents\trae_projects\cornea-emr
-gh secret set STAGING_E2E_EMAIL --body "your-clinic-user@email.com"
+gh secret set STAGING_E2E_EMAIL --body "e2e-monitor@corneaclinic.local"
 gh secret set STAGING_E2E_PASSWORD --body "YourSecurePassword"
 # Optional overrides:
 gh variable set STAGING_CLINIC_URL --body "https://corneaclinic.visionemr.net/Cornea"
@@ -131,9 +140,10 @@ gh variable set STAGING_API_URL --body "https://corneaclinic-2zfpt.ondigitalocea
 Local run (same tests as nightly staging job):
 
 ```powershell
-$env:STAGING_E2E_EMAIL = "your@email.com"
+$env:STAGING_E2E_EMAIL = "e2e-monitor@corneaclinic.local"
 $env:STAGING_E2E_PASSWORD = "YourPassword"
-npm run smoke:staging
+npm run check:staging-login   # API-only credential check
+npm run smoke:staging         # browser smoke (clinic + KPIs + appointments)
 ```
 
 Or: `powershell -ExecutionPolicy Bypass -File scripts\setup-staging-e2e.ps1 -Email ... -Password ...` (prints `gh` commands if `gh` is missing).

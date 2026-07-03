@@ -74,9 +74,20 @@ jobs:
           done
           exit 1
 
+  staging-secrets-reminder:
+    runs-on: ubuntu-latest
+    needs: health-check
+    if: ${{ secrets.STAGING_E2E_EMAIL == '' || secrets.STAGING_E2E_PASSWORD == '' }}
+    steps:
+      - name: Staging secrets not configured
+        run: |
+          echo "::warning::STAGING_E2E_* secrets missing — staging-smoke job skipped"
+          echo "See docs/DEPLOY_ROLLBACK.md § Staging E2E"
+
   staging-smoke:
     runs-on: ubuntu-latest
     needs: health-check
+    if: ${{ secrets.STAGING_E2E_EMAIL != '' && secrets.STAGING_E2E_PASSWORD != '' }}
     env:
       CI: true
       STAGING_E2E_EMAIL: ${{ secrets.STAGING_E2E_EMAIL }}
@@ -90,12 +101,7 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: package-lock.json
+      - run: npm ci
+      - run: npx playwright install chromium --with-deps
       - name: Staging smoke (clinic load + login)
-        run: |
-          if [ -z "$STAGING_E2E_EMAIL" ] || [ -z "$STAGING_E2E_PASSWORD" ]; then
-            echo "Skipping — STAGING_E2E_* secrets not configured."
-            exit 0
-          fi
-          npm ci
-          npx playwright install chromium --with-deps
-          npm run test:e2e:staging
+        run: npm run test:e2e:staging
