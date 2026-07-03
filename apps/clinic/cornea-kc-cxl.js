@@ -59,6 +59,27 @@
     return global.__corneaCloudMode && global.CorneaApi?.isEnabled?.();
   }
 
+  function guardCloudRegistryWrite(label) {
+    if (!apiEnabled()) return true;
+    const ro = global.CorneaRegistryOnline;
+    if (!ro) return true;
+    return ro.requireCloudOnline(label || 'KC & CXL Registry');
+  }
+
+  function bindKcOfflineUi() {
+    global.CorneaRegistryOnline?.bindRegistryOfflineUi('kc', {
+      bannerId: 'kcRegistryOfflineBanner',
+      registryLabel: 'KC & CXL Registry',
+      writeSelectors: [
+        '#kcRegistryTab .btn-primary',
+        '#kcPatientModal .btn-primary',
+        '#kcTopoModal .btn-primary',
+        '#kcCxlModal .btn-primary',
+        '#topoImportModal .btn-primary'
+      ]
+    });
+  }
+
   async function apiRequest(path, options = {}) {
     return global.CorneaApi.request(path, options);
   }
@@ -347,6 +368,7 @@
   };
 
   global.saveKcPatient = async function () {
+    if (!guardCloudRegistryWrite()) return;
     const name = document.getElementById('kcFullName')?.value?.trim();
     if (!name) { alert('Full name is required.'); return; }
     const recordId = document.getElementById('kcRecordId')?.value;
@@ -446,6 +468,7 @@
   };
 
   global.saveKcTopo = async function () {
+    if (!guardCloudRegistryWrite()) return;
     const kcPatientId = Number(document.getElementById('kcTopoPatientId')?.value);
     const eye = document.getElementById('kcTopoEye')?.value;
     const capturedAt = document.getElementById('kcTopoCapturedAt')?.value;
@@ -508,6 +531,7 @@
   };
 
   global.saveKcCxl = async function () {
+    if (!guardCloudRegistryWrite()) return;
     const kcPatientId = Number(document.getElementById('kcCxlPatientId')?.value);
     const eye = document.getElementById('kcCxlEye')?.value;
     const procedureDate = document.getElementById('kcCxlProcedureDate')?.value;
@@ -778,6 +802,7 @@
       const p = _kcPatientsCache.find((x) => x.id === global._kcSelectedPatientId);
       if (p) renderKcPatientDetail(p);
     }
+    global.CorneaRegistryOnline?.refresh('kc');
   }
 
   async function saveTopoRow(row, kcPatientId) {
@@ -931,6 +956,7 @@
   global.onPentacamFileSelected = global.onTopoImportFileSelected;
 
   global.commitKcTopoImport = async function () {
+    if (!guardCloudRegistryWrite()) return;
     const checks = document.querySelectorAll('.topo-import-row:checked');
     const indices = [...checks].map((el) => Number(el.dataset.idx));
     if (!indices.length) { alert('Select at least one reading to import.'); return; }
@@ -1008,6 +1034,7 @@
 
     async init() {
       if (!global.db) return;
+      bindKcOfflineUi();
       if (apiEnabled()) await syncWithCloud();
       else await refreshCaches();
       refreshUi();

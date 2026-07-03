@@ -34,6 +34,26 @@
   function api(p, o) { return global.CorneaApi.request(p, o); }
   function esc(s) { return global.escapeHtml ? global.escapeHtml(s) : String(s ?? ''); }
 
+  function guardCloudRegistryWrite(label) {
+    if (!apiOn()) return true;
+    const ro = global.CorneaRegistryOnline;
+    if (!ro) return true;
+    return ro.requireCloudOnline(label || 'Keratitis registry');
+  }
+
+  function bindKeratitisOfflineUi() {
+    global.CorneaRegistryOnline?.bindRegistryOfflineUi('keratitis', {
+      bannerId: 'keratitisOfflineBanner',
+      registryLabel: 'Keratitis & ulcer registry',
+      writeSelectors: [
+        '#keratitisTab .btn-primary',
+        '#ukCaseModal .btn-primary',
+        '#ukAssessModal .btn-primary',
+        '#ukCultureModal .btn-primary'
+      ]
+    });
+  }
+
   async function refresh() {
     _cases = await dbAll(STORE_CASES);
     _assess = await dbAll(STORE_ASSESS);
@@ -162,10 +182,12 @@
 
     async init() {
       if (!global.db) return;
+      bindKeratitisOfflineUi();
       if (apiOn()) await pullFromCloud();
       else await refresh();
       renderOverview();
       renderCasesTable();
+      global.CorneaRegistryOnline?.refresh('keratitis');
     },
 
     openCase(id) {
@@ -204,6 +226,7 @@
     },
 
     async saveCase() {
+      if (!guardCloudRegistryWrite()) return;
       const name = document.getElementById('ukFullName')?.value?.trim();
       if (!name) { alert('Name required.'); return; }
       const row = {
@@ -259,6 +282,7 @@
     },
 
     async saveAssessment() {
+      if (!guardCloudRegistryWrite()) return;
       const ukCaseId = Number(document.getElementById('ukAssessCaseId')?.value);
       const row = {
         ukCaseId,
@@ -299,6 +323,7 @@
     },
 
     async saveCulture() {
+      if (!guardCloudRegistryWrite()) return;
       const ukCaseId = Number(document.getElementById('ukCultureCaseId')?.value);
       const row = {
         ukCaseId,

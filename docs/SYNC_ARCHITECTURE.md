@@ -162,7 +162,19 @@ Not all clinical data uses the sync queue. This is intentional during Phase 2 st
 | Record locks | `cornea-record-lock.js` | acquire / renew / release | N/A (coordination only) |
 | Clinical media | `cornea-media-upload.js` | upload queue + REST | Partial |
 
-**Regression coverage (G4):** Playwright `registry-workflows.spec.js` (KC CRUD + record lock API), `kc-registry-ui.spec.js` (KC tab panels).
+**Regression coverage (G4):** Playwright `registry-workflows.spec.js` (KC CRUD + record lock API), `kc-registry-ui.spec.js` (KC tab panels), `registry-offline.spec.js` (offline banner + disabled saves).
 
-**Next milestone (M2.2):** decide per-registry offline policy — extend `sync_queue` entity types OR show explicit “online required” UX when `navigator.onLine === false`.
+### Phase 2.1 M2.2 — Online-only policy (implemented July 2026)
+
+**Decision:** Option A — registries that use direct REST require **internet while signed in to cloud**. Pure offline (local) clinic mode continues to use IndexedDB only.
+
+| Registry | Module | Offline in cloud mode |
+|----------|--------|------------------------|
+| KC & CXL | `cornea-kc-cxl.js` | Read cached data; **writes blocked** + banner |
+| Keratitis | `cornea-keratitis.js` | Read cached data; **writes blocked** + banner |
+| Dry eye, OR, eye bank, appointments | respective modules | *Planned — same pattern* |
+
+Shared helper: `cornea-registry-online.js` (`CorneaRegistryOnline.requireCloudOnline`).
+
+**Next milestone (M2.3):** document conflict resolution per registry in this file. **M2.4:** offline→reconnect integration test in Playwright.
 

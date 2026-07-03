@@ -2146,6 +2146,17 @@
         line-height: 1.4;
     }
 
+    .registry-offline-banner {
+        margin: 12px 16px 0;
+        padding: 10px 14px;
+        border-radius: 8px;
+        background: #fff3e0;
+        border: 1px solid #ffb74d;
+        color: #5d4037;
+        font-size: 0.88rem;
+        line-height: 1.45;
+    }
+
     .lid-ac-wrap {
         position: relative;
         display: block;
@@ -5392,6 +5403,7 @@
 
         <!-- ===== KERATITIS & ULCER SERVICE TAB ===== -->
         <div id="keratitisTab" class="tab-content" role="tabpanel" aria-labelledby="nav-keratitisTab" aria-hidden="true">
+            <div id="keratitisOfflineBanner" class="registry-offline-banner no-print" role="status" aria-live="polite" hidden></div>
             <div class="kp-subnav no-print uk-subnav" role="tablist">
                 <button type="button" class="kp-subnav-btn uk-subnav-btn active" data-uk-panel="ukOverviewPanel" onclick="switchUkPanel('ukOverviewPanel')"><i class="fa-solid fa-chart-pie"></i> Overview</button>
                 <button type="button" class="kp-subnav-btn uk-subnav-btn" data-uk-panel="ukCasesPanel" onclick="switchUkPanel('ukCasesPanel')"><i class="fa-solid fa-users"></i> Ulcer cases</button>
@@ -5523,6 +5535,7 @@
 
         <!-- ===== KC & CXL REGISTRY TAB ===== -->
         <div id="kcRegistryTab" class="tab-content" role="tabpanel" aria-labelledby="nav-kcRegistryTab" aria-hidden="true">
+            <div id="kcRegistryOfflineBanner" class="registry-offline-banner no-print" role="status" aria-live="polite" hidden></div>
             <div class="kp-subnav no-print" role="tablist" aria-label="KC registry sections">
                 <button type="button" class="kp-subnav-btn active kc-subnav-btn" data-kc-panel="kcOverviewPanel" onclick="switchKcPanel('kcOverviewPanel')">
                     <i class="fa-solid fa-chart-pie" aria-hidden="true"></i> Overview
@@ -6435,6 +6448,7 @@
 <script src="js/keratoplasty.js"></script>
 <script src="cornea-kp-graft-outcomes.js"></script>
 <script src="cornea-eye-bank-traceability.js"></script>
+<script src="cornea-registry-online.js"></script>
 <script src="cornea-keratitis-taxonomy.js"></script>
 <script src="cornea-keratitis.js"></script>
 <script src="cornea-dry-eye.js"></script>
