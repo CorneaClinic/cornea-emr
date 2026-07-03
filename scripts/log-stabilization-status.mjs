@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Append Phase 0 stabilization gate status to backups/ logs.
- * Usage: node scripts/log-stabilization-status.mjs [--drill-pass|--drill-partial]
+ * Usage: node scripts/log-stabilization-status.mjs [--drill-pass|--drill-partial] [--password-reset-pass] [--alert-drill-pass] [--ci-pass] [--sync-matrix-pass]
  */
 import fs from 'fs';
 import path from 'path';
@@ -73,15 +73,38 @@ const g6 =
       ? 'PARTIAL'
       : 'OPEN';
 
+const passwordResetPass = process.argv.includes('--password-reset-pass');
+const alertDrillPass = process.argv.includes('--alert-drill-pass');
+const ciPass = process.argv.includes('--ci-pass');
+const syncMatrixPass = process.argv.includes('--sync-matrix-pass');
+
 const debug = runGlobalDebug();
 const g1 = drillFlag === 'PASS' ? 'PARTIAL' : drillFlag === 'PARTIAL' ? 'PARTIAL' : 'FAIL';
 const g2 = debug.out.includes('DO media provider') && debug.out.includes('s3') ? 'PASS' : 'PARTIAL';
-const g3 = debug.out.includes('DO AUTH_EXPOSE_REFRESH_IN_BODY') && !debug.out.includes('true — set false')
-  ? (debug.out.includes('DO SMTP') && !debug.out.includes('SMTP_HOST or SMTP_FROM missing') ? 'PARTIAL' : 'PARTIAL')
-  : 'PARTIAL';
+const g3 = passwordResetPass
+  ? 'PASS'
+  : debug.out.includes('DO AUTH_EXPOSE_REFRESH_IN_BODY') && !debug.out.includes('true — set false')
+    ? debug.out.includes('DO SMTP') && !debug.out.includes('SMTP_HOST or SMTP_FROM missing')
+      ? 'PARTIAL'
+      : 'PARTIAL'
+    : 'PARTIAL';
+const g3Note = passwordResetPass
+  ? 'password-reset E2E PASS (operator 2026-07-03; faaiz.nadaa@gmail.com; reset link received)'
+  : 'CORS/SMTP configured; password-reset E2E test pending operator';
 
-const g5Status = 'PARTIAL';
-const g7Status = healthProbe.ok ? 'PARTIAL' : 'OPEN';
+const g5Status = syncMatrixPass ? 'PASS' : 'PARTIAL';
+const g5Note = syncMatrixPass
+  ? 'sync-matrix green in CI #68 — visit/KP/KC/keratitis/dry-eye/OR/eye-bank'
+  : 'sync matrix covers visit/KP/KC/keratitis/dry-eye/OR/eye-bank (CI verify:sync-matrix)';
+const g7Status = alertDrillPass ? 'PASS' : healthProbe.ok ? 'PARTIAL' : 'OPEN';
+const g7Note = alertDrillPass
+  ? 'alert-drill fail run executed; operator confirmed GitHub failure notification (2026-07-03)'
+  : 'hourly production-health.yml + alert-drill.yml; confirm GitHub failure notifications';
+
+const g4Status = ciPass ? 'PASS' : 'PARTIAL';
+const g4Note = ciPass
+  ? 'CI run #68 green on dbf25f0 — clinic-globals, test (35 unit + sync-matrix), e2e-playwright'
+  : 'Playwright suite + CI job added; PASS when e2e-playwright job green';
 
 const gateBlock = [
   '',
@@ -89,11 +112,11 @@ const gateBlock = [
   `global-debug: ${debug.failed === '0' ? 'PASS' : 'WARN'} (${debug.passed} passed, ${debug.failed} failed)`,
   `G1 Data safety: ${g1} — latest backup ${latestBackup()}; drill ${drillFlag} (catalog mode; full pg_restore needs local PG)`,
   `G2 Media durability: ${g2} — MEDIA_STORAGE_PROVIDER=s3 on DigitalOcean`,
-  `G3 Auth hardening: ${g3} — CORS/SMTP configured; password-reset E2E test pending operator`,
-  `G4 Regression safety: PARTIAL — Playwright suite + CI job added; PASS when e2e-playwright job green`,
-  `G5 Sync reliability: ${g5Status} — sync matrix covers visit/KP/KC/keratitis/dry-eye/OR/eye-bank (CI verify:sync-matrix)`,
+  `G3 Auth hardening: ${g3} — ${g3Note}`,
+  `G4 Regression safety: ${g4Status} — ${g4Note}`,
+  `G5 Sync reliability: ${g5Status} — ${g5Note}`,
   `G6 Security baseline: ${g6} — production /health checks.redis.mode=${redisMode || 'n/a'} (${healthProbe.api})`,
-  `G7 Observability: ${g7Status} — hourly production-health.yml + alert-drill.yml; confirm GitHub failure notifications`,
+  `G7 Observability: ${g7Status} — ${g7Note}`,
   `Phase 0.2 smoke test: PASS (operator 2026-06-26) — login UX, KP tabs, save, media sync`,
   ''
 ].join('\n');

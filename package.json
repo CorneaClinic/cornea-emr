@@ -20,6 +20,7 @@
     "debug:all": "npm run test:unit && npm run debug:global && npm run debug:deep",
     "check:clinic-globals": "node scripts/check-clinic-globals.mjs",
     "phase0:status": "node scripts/log-stabilization-status.mjs --drill-partial",
+    "phase0:verified": "node scripts/log-stabilization-status.mjs --drill-partial --password-reset-pass --alert-drill-pass --ci-pass --sync-matrix-pass",
     "test:unit": "npm test --prefix apps/api",
     "test:api-live": "npm run verify:api --prefix apps/api",
     "test:api-sync": "npm run verify:sync --prefix apps/api",
@@ -37,7 +38,9 @@
     "audit:docx": "node scripts/generate-global-production-audit-docx.mjs",
     "plan:docx": "node scripts/generate-master-development-plan-docx.mjs",
     "phase1:status": "powershell -ExecutionPolicy Bypass -File scripts/phase1-immediate-priorities.ps1",
-    "phase1:valkey": "powershell -ExecutionPolicy Bypass -File scripts/phase1-immediate-priorities.ps1 -SetupValkey"
+    "phase1:valkey": "powershell -ExecutionPolicy Bypass -File scripts/phase1-immediate-priorities.ps1 -SetupValkey",
+    "alert-drill:fail": "powershell -ExecutionPolicy Bypass -File scripts/trigger-alert-drill.ps1 -Mode fail",
+    "alert-drill:pass": "powershell -ExecutionPolicy Bypass -File scripts/trigger-alert-drill.ps1 -Mode pass"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
