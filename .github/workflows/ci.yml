@@ -24,6 +24,9 @@ jobs:
       - name: Topography CSV import tests (Pentacam + Sirius)
         run: npm run test:topography-import
         working-directory: .
+      - name: Pen-test static self-check (S1–S8)
+        run: npm run pentest:self-check
+        working-directory: .
 
   test:
     runs-on: ubuntu-latest

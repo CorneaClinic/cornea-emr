@@ -111,3 +111,24 @@ export function authHeader(token, deviceId = 'pentest-device') {
     'X-Device-Id': deviceId
   };
 }
+
+/**
+ * @param {import('supertest').Agent | import('express').Express} app
+ * @param {string} token
+ * @param {string} deviceId
+ * @param {object[]} mutations
+ */
+export async function syncPush(app, token, deviceId, mutations) {
+  const request = (await import('supertest')).default;
+  return request(app)
+    .post('/api/v1/sync/push')
+    .set(authHeader(token, deviceId))
+    .send({ deviceId, mutations });
+}
+
+export async function syncPull(app, token, deviceId, cursor = '0') {
+  const request = (await import('supertest')).default;
+  return request(app)
+    .get(`/api/v1/sync/pull?deviceId=${encodeURIComponent(deviceId)}&cursor=${encodeURIComponent(cursor)}`)
+    .set(authHeader(token, deviceId));
+}
