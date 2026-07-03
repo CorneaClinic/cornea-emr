@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import crypto from 'crypto';
-import { apiLogin, authHeaders, loadCredentials, signInCloud, openAppointmentsSchedule } from './helpers.js';
+import { apiLogin, authHeaders, loadCredentials, signInCloud, openAppointmentsSchedule, waitForCloudRegistryMode } from './helpers.js';
 
 const DEVICE_ID = 'playwright-e2e-appointments';
 
@@ -88,8 +88,14 @@ test.describe('Appointments API (Phase 4 P5)', () => {
       }
     });
     expect(push.ok()).toBeTruthy();
-    const visitId = (await push.json()).data?.results?.[0]?.entityId;
+    const pushBody = await push.json();
+    const visitId = pushBody.data?.results?.[0]?.entityId;
     expect(visitId).toBeTruthy();
+
+    const visitRes = await request.get(`${creds.apiUrl}/api/v1/visits/${visitId}`, { headers });
+    expect(visitRes.ok()).toBeTruthy();
+    const patientId = (await visitRes.json()).data.patientId;
+    expect(patientId).toBeTruthy();
 
     const fu = await request.put(
       `${creds.apiUrl}/api/v1/visits/${visitId}/followup`,
@@ -115,6 +121,7 @@ test.describe('Appointments API (Phase 4 P5)', () => {
     const book = await request.post(`${creds.apiUrl}/api/v1/appointments`, {
       headers,
       data: {
+        patientId,
         patientName,
         appointmentDate: day,
         startTime: '11:00',
@@ -145,7 +152,13 @@ test.describe('Appointments API (Phase 4 P5)', () => {
 test.describe('Appointments UI (Phase 4 P5)', () => {
   test('day schedule tab loads after cloud sign-in', async ({ page }) => {
     await signInCloud(page);
+    await waitForCloudRegistryMode(page);
+    const dayResponse = page.waitForResponse(
+      (r) => r.url().includes('/api/v1/appointments/day/') && r.ok(),
+      { timeout: 30_000 }
+    );
     await openAppointmentsSchedule(page);
+    await dayResponse;
     await expect(page.locator('#apptScheduleBody')).toBeVisible();
     await expect(page.locator('#apptCloudHint')).toBeHidden();
     await expect(page.locator('#apptDatePicker')).toHaveValue(/\d{4}-\d{2}-\d{2}/);
