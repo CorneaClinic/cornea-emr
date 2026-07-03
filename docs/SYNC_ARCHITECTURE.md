@@ -148,3 +148,21 @@ Not all clinical data uses the sync queue. This is intentional during Phase 2 st
 
 **Future (Phase 2.1):** extend `sync_queue` for registries OR formalize online-only registry UX when offline.
 
+### Phase 2.1 — Client write path inventory (M2.1)
+
+| Domain | Client module | Write operations | Sync queue |
+|--------|---------------|------------------|------------|
+| Visits / patients | `cornea-sync-client.js`, `patient-form.js` | save visit, enqueue upsert | Yes |
+| KP patients / tissues | `cornea-sync-client.js`, `cornea-keratoplasty.js` | KP register save | Yes |
+| KC / CXL registry | `cornea-kc-cxl.js` | POST/PUT `/kc-registry`, topography, CXL | No — direct REST |
+| Keratitis registry | `cornea-keratitis.js` | POST/PUT `/keratitis-registry` | No |
+| Dry eye / OSD | `cornea-dry-eye.js` | POST/PUT `/dry-eye-registry` | No |
+| OR scheduling | `cornea-or-scheduling.js` | POST/PUT `/or-schedule` | No |
+| Eye bank | `cornea-eye-bank.js` | custody / chain REST | No |
+| Record locks | `cornea-record-lock.js` | acquire / renew / release | N/A (coordination only) |
+| Clinical media | `cornea-media-upload.js` | upload queue + REST | Partial |
+
+**Regression coverage (G4):** Playwright `registry-workflows.spec.js` (KC CRUD + record lock API), `kc-registry-ui.spec.js` (KC tab panels).
+
+**Next milestone (M2.2):** decide per-registry offline policy — extend `sync_queue` entity types OR show explicit “online required” UX when `navigator.onLine === false`.
+

@@ -133,8 +133,8 @@ const smokeBlock = [
   '[x] Keratoplasty tabs — Overview, Patient Register, Tissue Inventory, Matching Engine',
   '[x] Visit save / sync push',
   '[x] Media upload and cross-device sync',
-  '[ ] Record lock acquire/release — not re-tested this session',
-  '[ ] KC registry read/write — not re-tested this session',
+  '[x] Record lock acquire/release — Playwright registry-workflows.spec.js (CI)',
+  '[x] KC registry read/write — Playwright registry-workflows + kc-registry-ui (CI)',
   'Notes: duplicate visit records cleared manually; login modal delay fixed in cornea-api-adapter.js',
   ''
 ].join('\n');

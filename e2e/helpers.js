@@ -13,6 +13,27 @@ export function loadCredentials() {
   return JSON.parse(fs.readFileSync(CRED_FILE, 'utf8'));
 }
 
+/** @param {import('@playwright/test').APIRequestContext} request */
+export async function apiLogin(request, deviceId = 'playwright-e2e-device') {
+  const creds = loadCredentials();
+  const login = await request.post(`${creds.apiUrl}/api/v1/auth/login`, {
+    data: { email: creds.email, password: creds.password },
+    headers: { 'X-Device-Id': deviceId }
+  });
+  expect(login.ok()).toBeTruthy();
+  const body = await login.json();
+  expect(body.accessToken).toBeTruthy();
+  return { token: body.accessToken, creds, deviceId };
+}
+
+/** @param {string} token */
+export function authHeaders(token, deviceId = 'playwright-e2e-device') {
+  return {
+    Authorization: `Bearer ${token}`,
+    'X-Device-Id': deviceId
+  };
+}
+
 /**
  * Cloud sign-in against the local API (use Cornea.html?cloud=1).
  * @param {import('@playwright/test').Page} page
@@ -47,6 +68,13 @@ export async function signInCloud(page) {
 export async function openKeratoplastyTab(page) {
   await page.locator('#nav-keratoplastyTab').click();
   const tab = page.locator('#keratoplastyTab');
+  await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
+  await expect(tab).toHaveAttribute('aria-hidden', 'false');
+}
+
+export async function openKcRegistryTab(page) {
+  await page.locator('#nav-kcRegistryTab').click();
+  const tab = page.locator('#kcRegistryTab');
   await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
   await expect(tab).toHaveAttribute('aria-hidden', 'false');
 }
