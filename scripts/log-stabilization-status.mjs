@@ -98,7 +98,7 @@ const g3Note = passwordResetPass
 
 const g5Status = syncMatrixPass ? 'PASS' : 'PARTIAL';
 const g5Note = syncMatrixPass
-  ? 'sync-matrix green in CI #68 — visit/KP/KC/keratitis/dry-eye/OR/eye-bank'
+  ? 'sync-matrix green in CI #80 — visit/KP/KC/keratitis/dry-eye/OR/eye-bank'
   : 'sync matrix covers visit/KP/KC/keratitis/dry-eye/OR/eye-bank (CI verify:sync-matrix)';
 const g7Status = alertDrillPass ? 'PASS' : healthProbe.ok ? 'PARTIAL' : 'OPEN';
 const g7Note = alertDrillPass
@@ -107,7 +107,7 @@ const g7Note = alertDrillPass
 
 const g4Status = ciPass ? 'PASS' : 'PARTIAL';
 const g4Note = ciPass
-  ? 'CI run #68 green on dbf25f0 — clinic-globals, test (35 unit + sync-matrix), e2e-playwright'
+  ? 'CI run #80 green on bfb3c34 — clinic-globals, test (36 unit + sync-matrix), e2e-playwright (21 specs)'
   : 'Playwright suite + CI job added; PASS when e2e-playwright job green';
 
 const gateBlock = [
@@ -135,6 +135,9 @@ const smokeBlock = [
   '[x] Media upload and cross-device sync',
   '[x] Record lock acquire/release — Playwright registry-workflows.spec.js (CI)',
   '[x] KC registry read/write — Playwright registry-workflows + kc-registry-ui (CI)',
+  '[x] Dashboard institute KPIs — Playwright dashboard-kpis.spec.js (CI)',
+  '[x] Research offline cache badge — Playwright research-offline.spec.js (CI)',
+  '[x] Registry offline policy — Playwright registry-offline.spec.js (CI)',
   'Notes: duplicate visit records cleared manually; login modal delay fixed in cornea-api-adapter.js',
   ''
 ].join('\n');
