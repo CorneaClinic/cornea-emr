@@ -49,12 +49,39 @@ function runGlobalDebug() {
   return { exit: r.status ?? 1, passed, failed, out };
 }
 
+async function probeProductionHealth() {
+  const api = (process.env.PRODUCTION_API_URL || 'https://corneaclinic-2zfpt.ondigitalocean.app').replace(
+    /\/$/,
+    ''
+  );
+  try {
+    const res = await fetch(`${api}/health`, { signal: AbortSignal.timeout(15000) });
+    const body = await res.json().catch(() => ({}));
+    return { ok: res.ok, body, api };
+  } catch (err) {
+    return { ok: false, body: {}, api, error: err.message };
+  }
+}
+
+const healthProbe = await probeProductionHealth();
+const redisMode = healthProbe.body?.checks?.redis?.mode;
+const redisOk = healthProbe.body?.checks?.redis?.ok === true;
+const g6 =
+  redisOk && redisMode === 'redis'
+    ? 'PASS'
+    : redisMode === 'redis' || healthProbe.body?.checks?.redis?.configured
+      ? 'PARTIAL'
+      : 'OPEN';
+
 const debug = runGlobalDebug();
 const g1 = drillFlag === 'PASS' ? 'PARTIAL' : drillFlag === 'PARTIAL' ? 'PARTIAL' : 'FAIL';
 const g2 = debug.out.includes('DO media provider') && debug.out.includes('s3') ? 'PASS' : 'PARTIAL';
 const g3 = debug.out.includes('DO AUTH_EXPOSE_REFRESH_IN_BODY') && !debug.out.includes('true — set false')
   ? (debug.out.includes('DO SMTP') && !debug.out.includes('SMTP_HOST or SMTP_FROM missing') ? 'PARTIAL' : 'PARTIAL')
   : 'PARTIAL';
+
+const g5Status = 'PARTIAL';
+const g7Status = healthProbe.ok ? 'PARTIAL' : 'OPEN';
 
 const gateBlock = [
   '',
@@ -64,9 +91,9 @@ const gateBlock = [
   `G2 Media durability: ${g2} — MEDIA_STORAGE_PROVIDER=s3 on DigitalOcean`,
   `G3 Auth hardening: ${g3} — CORS/SMTP configured; password-reset E2E test pending operator`,
   `G4 Regression safety: PARTIAL — Playwright suite + CI job added; PASS when e2e-playwright job green`,
-  `G5 Sync reliability: PARTIAL — visits/media verified in smoke test; registry matrix pending`,
-  `G6 Security baseline: OPEN`,
-  `G7 Observability: OPEN`,
+  `G5 Sync reliability: ${g5Status} — sync matrix covers visit/KP/KC/keratitis/dry-eye/OR/eye-bank (CI verify:sync-matrix)`,
+  `G6 Security baseline: ${g6} — production /health checks.redis.mode=${redisMode || 'n/a'} (${healthProbe.api})`,
+  `G7 Observability: ${g7Status} — hourly production-health.yml + alert-drill.yml; confirm GitHub failure notifications`,
   `Phase 0.2 smoke test: PASS (operator 2026-06-26) — login UX, KP tabs, save, media sync`,
   ''
 ].join('\n');

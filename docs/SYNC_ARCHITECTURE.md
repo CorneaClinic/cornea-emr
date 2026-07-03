@@ -135,11 +135,16 @@ Not all clinical data uses the sync queue. This is intentional during Phase 2 st
 | KP patients / tissues | `CorneaSync` queue | `POST /sync/push` | Yes | Same as visits |
 | KC / CXL registry | Direct REST | `/api/v1/kc-registry` | No* | `baseRevision` on update → 409 Conflict |
 | Keratitis registry | Direct REST | `/api/v1/keratitis-registry` | No* | Online required for write |
-| Graft outcomes, eye bank | Direct REST | Dedicated routes | No* | Per-module REST semantics |
+| Dry eye / OSD registry | Direct REST | `/api/v1/dry-eye-registry` | No* | Online required for write |
+| OR scheduling | Direct REST | `/api/v1/or-schedule` | No* | Online required for write |
+| Eye bank traceability | Direct REST | `/api/v1/eye-bank/*` | No* | Linked to KP tissue UUID |
+| Graft outcomes | Direct REST | `/api/v1/kp-graft-outcomes` | No* | Per-module REST semantics |
+| Appointments / recall | Direct REST | `/api/v1/appointments` | No* | Online required for write |
+| Clinical media | Upload queue + REST | `/api/v1/media` | Partial | Retry on reconnect |
 
 \*Offline reads may use IndexedDB cache where implemented; writes require connectivity.
 
-**Verification:** `npm run verify:sync-matrix` (CI) exercises sync entities plus KC/keratitis REST create/read.
+**Verification:** `npm run verify:sync-matrix` (CI) exercises sync entities (visit, kp_patient, kp_tissue) plus KC, keratitis, dry eye, OR, and eye bank REST create/read.
 
 **Future (Phase 2.1):** extend `sync_queue` for registries OR formalize online-only registry UX when offline.
 

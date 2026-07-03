@@ -67,6 +67,22 @@ Test-Endpoint 'API /health (database)' {
     return $false
 }
 
+Test-Endpoint 'G6 Redis rate limits (checks.redis.mode=redis)' {
+    $apis = @(
+        'https://corneaclinic-2zfpt.ondigitalocean.app',
+        $ApiUrl
+    ) | ForEach-Object { $_.TrimEnd('/') } | Select-Object -Unique
+    foreach ($base in $apis) {
+        if (-not $base) { continue }
+        try {
+            $r = Invoke-WebRequest -Uri "$base/health" -UseBasicParsing -TimeoutSec 30
+            $j = $r.Content | ConvertFrom-Json
+            if ($j.checks.redis.mode -eq 'redis' -and $j.checks.redis.ok -eq $true) { return $true }
+        } catch { continue }
+    }
+    return $false
+}
+
 Test-Endpoint 'Clinic UI reachable' {
     $candidates = @(
         "$ClinicUrl/health.json",

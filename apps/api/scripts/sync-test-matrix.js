@@ -104,6 +104,24 @@ async function cleanup(clinicId) {
     [clinicId]
   );
   await db.query(
+    `DELETE FROM dry_eye_assessments WHERE clinic_id = $1 AND case_id IN
+       (SELECT id FROM dry_eye_cases WHERE clinic_id = $1 AND case_id LIKE 'E2E-MAT-%')`,
+    [clinicId]
+  );
+  await db.query(
+    `DELETE FROM dry_eye_cases WHERE clinic_id = $1 AND case_id LIKE 'E2E-MAT-%'`,
+    [clinicId]
+  );
+  await db.query(
+    `DELETE FROM or_schedule_cases WHERE clinic_id = $1 AND patient_name LIKE 'Matrix OR %'`,
+    [clinicId]
+  );
+  await db.query(
+    `DELETE FROM eye_bank_custody_events WHERE clinic_id = $1 AND tissue_id IN
+       (SELECT id FROM corneal_tissues WHERE clinic_id = $1 AND kp_tissue_id LIKE 'E2E-MAT-%')`,
+    [clinicId]
+  );
+  await db.query(
     `DELETE FROM kc_registry_patients WHERE clinic_id = $1 AND kc_registry_id LIKE 'E2E-MAT-%'`,
     [clinicId]
   );
@@ -249,6 +267,52 @@ async function main() {
       'keratitis registry read',
       kerGet.status === 200 && kerGet.body?.data?.fullName === 'Matrix Keratitis Case'
     );
+
+    // --- REST: dry eye registry --------------------------------------------
+    const dryCreate = await http('POST', '/api/v1/dry-eye-registry', {
+      fullName: 'Matrix Dry Eye Patient',
+      status: 'Active'
+    });
+    ok('dry eye registry create', dryCreate.status === 201 && !!dryCreate.body?.data?.id);
+    const dryId = dryCreate.body?.data?.id;
+
+    const dryGet = await http('GET', `/api/v1/dry-eye-registry/${dryId}`);
+    ok(
+      'dry eye registry read',
+      dryGet.status === 200 && dryGet.body?.data?.fullName === 'Matrix Dry Eye Patient'
+    );
+
+    // --- REST: OR scheduling -----------------------------------------------
+    const orDate = new Date().toISOString().slice(0, 10);
+    const orCreate = await http('POST', '/api/v1/or-schedule', {
+      patientName: 'Matrix OR Patient',
+      procedureDate: orDate,
+      procedureType: 'PK'
+    });
+    ok('or schedule create', orCreate.status === 201 && !!orCreate.body?.data?.id);
+    const orId = orCreate.body?.data?.id;
+
+    const orGet = await http('GET', `/api/v1/or-schedule/${orId}`);
+    ok(
+      'or schedule read',
+      orGet.status === 200 && orGet.body?.data?.patientName === 'Matrix OR Patient'
+    );
+
+    // --- REST: eye bank traceability (uses synced tissue) --------------------
+    const tissueUuid = tissueResult?.entityId;
+    if (tissueUuid) {
+      const custody = await http('POST', `/api/v1/eye-bank/tissues/${tissueUuid}/custody-events`, {
+        eventType: 'Received',
+        location: 'Matrix Eye Bank',
+        notes: 'G5 matrix custody test'
+      });
+      ok('eye bank custody event', custody.status === 201 && !!custody.body?.data?.id);
+
+      const trace = await http('GET', `/api/v1/eye-bank/tissues/${tissueUuid}/traceability`);
+      ok('eye bank traceability read', trace.status === 200 && !!trace.body?.data);
+    } else {
+      ok('eye bank traceability (skipped — no tissue uuid)', false, 'kp_tissue sync missing entityId');
+    }
   } finally {
     console.log('\nCleanup:');
     await cleanup(clinicId);

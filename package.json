@@ -33,7 +33,11 @@
     "verify:password-reset": "node scripts/verify-production-password-reset.mjs",
     "health:production": "powershell -ExecutionPolicy Bypass -File scripts/production-health-check.ps1",
     "setup:do-valkey": "powershell -ExecutionPolicy Bypass -File scripts/setup-do-valkey.ps1",
-    "drill:restore-local": "powershell -ExecutionPolicy Bypass -File scripts/setup-restore-drill-local.ps1"
+    "drill:restore-local": "powershell -ExecutionPolicy Bypass -File scripts/setup-restore-drill-local.ps1",
+    "audit:docx": "node scripts/generate-global-production-audit-docx.mjs",
+    "plan:docx": "node scripts/generate-master-development-plan-docx.mjs",
+    "phase1:status": "powershell -ExecutionPolicy Bypass -File scripts/phase1-immediate-priorities.ps1",
+    "phase1:valkey": "powershell -ExecutionPolicy Bypass -File scripts/phase1-immediate-priorities.ps1 -SetupValkey"
   },
   "devDependencies": {
     "@playwright/test": "^1.52.0",
