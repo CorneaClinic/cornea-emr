@@ -237,7 +237,7 @@ Target: run on every PR to `main` and nightly against staging.
 | P4 | FHIR export prototype | Done — cohort + patient bundles; API + UI + CI tests |
 | P5 | Appointments & recall | Done — day schedule, recall queue, API + UI + CI tests |
 | P6 | DICOM / PACS | Done — Part 10 ingest prototype; API + UI + CI tests |
-| P7 | New clinical modules (dry eye, OR, ML v2) | Deferred until platform proven |
+| P7 | Dry eye, OR schedule, ectasia AI v2 | Done — registries + theatre list + v2 modifiers; API + UI + CI tests |
 
 ---
 
