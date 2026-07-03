@@ -26,6 +26,12 @@
     return false;
   }
 
+  /** @param {boolean} apiEnabledFn result of module apiOn()/apiEnabled() */
+  function guardCloudWrite(apiEnabledFn, registryLabel) {
+    if (!apiEnabledFn) return true;
+    return requireCloudOnline(registryLabel);
+  }
+
   function updateBanner(bannerId, registryLabel) {
     const el = bannerId && document.getElementById(bannerId);
     if (!el) return;
@@ -70,6 +76,7 @@
     isCloudRegistryMode,
     isRegistryOnline,
     requireCloudOnline,
+    guardCloudWrite,
     updateBanner,
     bindRegistryOfflineUi,
     refresh: (key) => refreshBinding(key)

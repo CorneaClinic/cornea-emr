@@ -32,6 +32,22 @@
   function api(p, o) { return global.CorneaApi.request(p, o); }
   function esc(s) { return global.escapeHtml ? global.escapeHtml(s) : String(s ?? ''); }
 
+  function guardCloudRegistryWrite(label) {
+    return global.CorneaRegistryOnline?.guardCloudWrite(apiOn(), label || 'Dry eye registry') !== false;
+  }
+
+  function bindDryEyeOfflineUi() {
+    global.CorneaRegistryOnline?.bindRegistryOfflineUi('dryeye', {
+      bannerId: 'dryEyeOfflineBanner',
+      registryLabel: 'Dry eye / OSD registry',
+      writeSelectors: [
+        '#dryEyeTab .btn-primary',
+        '#deCaseModal .btn-primary',
+        '#deAssessModal .btn-primary'
+      ]
+    });
+  }
+
   async function refresh() {
     _cases = await dbAll(STORE_CASES);
     _assess = await dbAll(STORE_ASSESS);
@@ -148,11 +164,13 @@
       }
     },
     async init() {
+      bindDryEyeOfflineUi();
       await refresh();
       if (apiOn()) await pullFromCloud();
       renderOverview();
       renderCases();
       renderDetail();
+      global.CorneaRegistryOnline?.refresh('dryeye');
     },
     selectCase(id) {
       _selectedId = id;
@@ -187,6 +205,7 @@
       global.openEmrModal('deAssessModal');
     },
     async saveCase() {
+      if (!guardCloudRegistryWrite()) return;
       const row = {
         id: document.getElementById('deCaseRecordId').value ? Number(document.getElementById('deCaseRecordId').value) : undefined,
         uuid: document.getElementById('deCaseUuid').value || undefined,
@@ -228,6 +247,7 @@
       renderDetail();
     },
     async saveAssessment() {
+      if (!guardCloudRegistryWrite()) return;
       const caseId = Number(document.getElementById('deAssessCaseId').value);
       const c = _cases.find((x) => x.id === caseId);
       const payload = {

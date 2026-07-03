@@ -35,10 +35,7 @@
   function esc(s) { return global.escapeHtml ? global.escapeHtml(s) : String(s ?? ''); }
 
   function guardCloudRegistryWrite(label) {
-    if (!apiOn()) return true;
-    const ro = global.CorneaRegistryOnline;
-    if (!ro) return true;
-    return ro.requireCloudOnline(label || 'Keratitis registry');
+    return global.CorneaRegistryOnline?.guardCloudWrite(apiOn(), label || 'Keratitis registry') !== false;
   }
 
   function bindKeratitisOfflineUi() {

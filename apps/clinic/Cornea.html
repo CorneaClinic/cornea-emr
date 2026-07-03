@@ -4808,6 +4808,7 @@
                 </div>
             </div>
             <div id="apptOrPanel" class="kp-panel appt-panel">
+                <div id="orScheduleOfflineBanner" class="registry-offline-banner no-print" role="status" aria-live="polite" hidden></div>
                 <div class="card section-theme-records">
                     <div class="card-header">
                         <div class="card-header-left">
@@ -5322,6 +5323,7 @@
                                 </div>
                             </div>
                             <div id="kpTissueReadOnlyContent" class="emr-readonly-content"></div>
+                            <div id="eyeBankOfflineBanner" class="registry-offline-banner no-print" role="status" aria-live="polite" hidden></div>
                             <div id="kpTissueTraceabilityPanel" class="no-print"></div>
                         </div>
                         <div class="kp-filters no-print">
@@ -5450,6 +5452,7 @@
 
         <!-- ===== DRY EYE / OSD TAB (P7) ===== -->
         <div id="dryEyeTab" class="tab-content" role="tabpanel" aria-labelledby="nav-dryEyeTab" aria-hidden="true">
+            <div id="dryEyeOfflineBanner" class="registry-offline-banner no-print" role="status" aria-live="polite" hidden></div>
             <div class="kp-subnav no-print de-subnav" role="tablist">
                 <button type="button" class="kp-subnav-btn de-subnav-btn active" data-de-panel="deOverviewPanel" onclick="switchDePanel('deOverviewPanel')"><i class="fa-solid fa-chart-pie"></i> Overview</button>
                 <button type="button" class="kp-subnav-btn de-subnav-btn" data-de-panel="deCasesPanel" onclick="switchDePanel('deCasesPanel')"><i class="fa-solid fa-droplet"></i> OSD cases</button>

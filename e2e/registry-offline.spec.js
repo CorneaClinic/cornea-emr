@@ -28,4 +28,20 @@ test.describe('Registry offline policy (M2.2)', () => {
     await expect(banner).toBeHidden();
     await expect(enrolBtn).toBeEnabled();
   });
+
+  test('dry eye registry disables new case when offline in cloud mode', async ({ page, context }) => {
+    await signInCloud(page);
+    await page.locator('#nav-dryEyeTab').click();
+    await expect(page.locator('#dryEyeTab')).toHaveClass(/active/);
+    await page.locator('[data-de-panel="deCasesPanel"]').click();
+
+    await context.setOffline(true);
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event('offline'));
+      window.CorneaRegistryOnline?.refresh('dryeye');
+    });
+
+    await expect(page.locator('#dryEyeOfflineBanner')).toBeVisible();
+    await expect(page.locator('#deCasesPanel button.btn-primary').first()).toBeDisabled();
+  });
 });

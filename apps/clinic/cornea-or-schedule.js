@@ -12,6 +12,28 @@
   function apiOn() { return global.__corneaCloudMode && global.CorneaApi?.isEnabled?.(); }
   function api(p, o) { return global.CorneaApi.request(p, o); }
 
+  function guardCloudRegistryWrite(label) {
+    return global.CorneaRegistryOnline?.guardCloudWrite(apiOn(), label || 'OR theatre schedule') !== false;
+  }
+
+  let _orOfflineUiBound = false;
+  function bindOrOfflineUi() {
+    if (_orOfflineUiBound) {
+      global.CorneaRegistryOnline?.refresh('or');
+      return;
+    }
+    _orOfflineUiBound = true;
+    global.CorneaRegistryOnline?.bindRegistryOfflineUi('or', {
+      bannerId: 'orScheduleOfflineBanner',
+      registryLabel: 'OR theatre schedule',
+      writeSelectors: [
+        '#apptOrPanel .btn-primary',
+        '#apptOrPanel button[data-or-id]',
+        '#orCaseModal .btn-primary'
+      ]
+    });
+  }
+
   function dbAll() {
     return new Promise((resolve) => {
       if (!global.db) { resolve([]); return; }
@@ -56,6 +78,7 @@
   }
 
   async function loadDay(dateStr) {
+    bindOrOfflineUi();
     _selectedDate = dateStr || _selectedDate;
     const picker = document.getElementById('orDatePicker');
     if (picker) picker.value = _selectedDate;
@@ -100,6 +123,7 @@
       global.openEmrModal('orCaseModal');
     },
     async save() {
+      if (!guardCloudRegistryWrite()) return;
       const payload = {
         patientName: document.getElementById('orPatientName')?.value?.trim(),
         patientMrn: document.getElementById('orPatientMrn')?.value?.trim(),
@@ -135,6 +159,7 @@
       await loadDay(_selectedDate);
     },
     async markInProgress(id) {
+      if (!guardCloudRegistryWrite()) return;
       if (!apiOn() || !id) return;
       const row = _cases.find((c) => c.id === id);
       try {

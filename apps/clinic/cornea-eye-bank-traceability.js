@@ -34,6 +34,28 @@
     return global.__corneaCloudMode && global.CorneaApi?.isEnabled?.();
   }
 
+  function guardCloudRegistryWrite(label) {
+    return global.CorneaRegistryOnline?.guardCloudWrite(apiOn(), label || 'Eye bank traceability') !== false;
+  }
+
+  let _eyeBankOfflineUiBound = false;
+  function bindEyeBankOfflineUi() {
+    if (_eyeBankOfflineUiBound) {
+      global.CorneaRegistryOnline?.refresh('eyebank');
+      return;
+    }
+    _eyeBankOfflineUiBound = true;
+    global.CorneaRegistryOnline?.bindRegistryOfflineUi('eyebank', {
+      bannerId: 'eyeBankOfflineBanner',
+      registryLabel: 'Eye bank traceability',
+      writeSelectors: [
+        '#kpTissueTraceabilityPanel .btn-secondary:not([onclick*="exportTraceability"])',
+        '#kpCustodyModal .btn-primary',
+        '#kpColdChainModal .btn-primary'
+      ]
+    });
+  }
+
   async function api(path, options) {
     return global.CorneaApi.request(path, options);
   }
@@ -100,6 +122,7 @@
   async function renderTissueTraceability(tissue) {
     const panel = document.getElementById('kpTissueTraceabilityPanel');
     if (!panel || !tissue) return;
+    bindEyeBankOfflineUi();
     await refresh();
     if (apiOn() && tissue.uuid) await syncEventsFromCloud(tissue);
 
@@ -151,6 +174,7 @@
           <th>When</th><th>Event</th><th>Temp</th><th>Range</th><th>Location</th>
         </tr></thead><tbody>${coldRows}</tbody></table></div>
       </div>`;
+    global.CorneaRegistryOnline?.refresh('eyebank');
   }
 
   global.CorneaEyeBank = {
@@ -179,6 +203,7 @@
       global.openEmrModal('kpColdChainModal');
     },
     async saveCustodyEvent() {
+      if (!guardCloudRegistryWrite()) return;
       const tissueLocalId = Number(document.getElementById('kpCustodyTissueId')?.value);
       const tissue = (global._kpTissuesCache || []).find((t) => t.id === tissueLocalId);
       const row = {
@@ -214,6 +239,7 @@
       if (tissue) await renderTissueTraceability(tissue);
     },
     async saveColdChainEvent() {
+      if (!guardCloudRegistryWrite()) return;
       const tissueLocalId = Number(document.getElementById('kpColdTissueId')?.value);
       const tissue = (global._kpTissuesCache || []).find((t) => t.id === tissueLocalId);
       const temp = document.getElementById('kpColdTemp')?.value;

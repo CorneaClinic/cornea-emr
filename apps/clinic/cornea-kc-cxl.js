@@ -60,10 +60,7 @@
   }
 
   function guardCloudRegistryWrite(label) {
-    if (!apiEnabled()) return true;
-    const ro = global.CorneaRegistryOnline;
-    if (!ro) return true;
-    return ro.requireCloudOnline(label || 'KC & CXL Registry');
+    return global.CorneaRegistryOnline?.guardCloudWrite(apiEnabled(), label || 'KC & CXL Registry') !== false;
   }
 
   function bindKcOfflineUi() {

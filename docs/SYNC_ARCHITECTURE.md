@@ -172,9 +172,28 @@ Not all clinical data uses the sync queue. This is intentional during Phase 2 st
 |----------|--------|------------------------|
 | KC & CXL | `cornea-kc-cxl.js` | Read cached data; **writes blocked** + banner |
 | Keratitis | `cornea-keratitis.js` | Read cached data; **writes blocked** + banner |
-| Dry eye, OR, eye bank, appointments | respective modules | *Planned — same pattern* |
+| Dry eye / OSD | `cornea-dry-eye.js` | Read cached data; **writes blocked** + banner |
+| OR scheduling | `cornea-or-schedule.js` | Read day list cache; **writes blocked** + banner |
+| Eye bank traceability | `cornea-eye-bank-traceability.js` | Custody/cold-chain **writes blocked** + banner (KP tissue sync unchanged) |
+| Appointments / recall | `cornea-appointments.js` | *Planned — same pattern* |
 
-Shared helper: `cornea-registry-online.js` (`CorneaRegistryOnline.requireCloudOnline`).
+Shared helper: `cornea-registry-online.js` (`CorneaRegistryOnline.guardCloudWrite`).
 
-**Next milestone (M2.3):** document conflict resolution per registry in this file. **M2.4:** offline→reconnect integration test in Playwright.
+### Phase 2.1 M2.3 — Conflict resolution policy
+
+| Domain | Sync path | On concurrent edit | Client behaviour |
+|--------|-----------|-------------------|------------------|
+| Visits / patients | Sync queue + `revision` | Server wins; push returns **409** | `sync_status: conflict` badge; user refreshes from server |
+| KP patients / tissues | Sync queue + `revision` | Same as visits | Conflict badge + pull merge |
+| KC / CXL registry | Direct REST + `baseRevision` on PUT | **409 Conflict** if revision stale | Alert; re-fetch patient before retry |
+| Keratitis registry | Direct REST | Last write wins on server; no revision field on assessments | Re-pull case on tab open |
+| Dry eye registry | Direct REST | Assessment POST always appends | Re-pull case list on init |
+| OR schedule | Direct REST + `revision` on PATCH | **409** on stale PATCH | Alert; refresh day list |
+| Eye bank events | Direct REST append-only | Duplicate POST possible if retried | Idempotency via server UUID after success |
+| Record locks | Coordination API | **409** if held by another user | Show lock holder; offer force (admin) |
+| Clinical media | Upload queue | Retry on reconnect | Pending upload indicator |
+
+**Rule:** Modules on the sync queue must never silently overwrite a newer server `revision`. Registry modules using direct REST must either send `baseRevision` (KC, OR) or treat the server as source of truth after every save (keratitis, dry eye).
+
+**Next milestone (M2.4):** offline→reconnect Playwright test verifying banner clears and controls re-enable.
 
