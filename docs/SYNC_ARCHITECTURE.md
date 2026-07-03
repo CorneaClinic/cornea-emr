@@ -87,6 +87,17 @@ PostgreSQL is the **source of truth**. IndexedDB (`CorneaClinicDB`) is an **offl
 | GET | `/api/v1/sync/logs` | Server sync logs (admin) |
 | POST | `/api/v1/sync/resolve-conflict` | Mark conflict resolved |
 
+### Push payload limits (G6 / pen-test)
+
+| Limit | Value | Enforcement |
+|-------|-------|-------------|
+| Mutations per `POST /sync/push` | **100 max** | `syncService.pushMutations` → `ValidationError` |
+| Client drain batch | 25 typical | `cornea-sync-client.js` background drain |
+| Pull page size | 500 default | `pullChanges` query `limit` |
+| JSON request body | 1 MB | `app.js` (`50mb` only on `/api/v1/admin/migration`) |
+
+Oversized push batches return **400** with `Maximum 100 mutations per push batch`. Covered by `security-pentest.test.js`.
+
 ## Conflict detection
 
 Push rejected when `base_revision ≠ server.revision`. Response:

@@ -11,7 +11,7 @@
 | Rate limiting on auth + API | **Active** | `rateLimit.js` + `auth.js` + `app.js` |
 | Shared store (multi-instance) | **Ready** | Set `REDIS_URL` on DigitalOcean API |
 | Pen-test scope defined | **Done** | Scope below |
-| Pen-test remediation | **In progress** | `docs/PENTEST_REMEDIATION.md`; `npm run pentest:self-check` |
+| Pen-test remediation | **In progress** | Wave 0–1 closed; vendor **postponed** — `npm run stabilize:check` |
 | Formal pen-test scheduled | **Postponed** | `docs/PENTEST_ENGAGEMENT.md` — vendor on hold; interim ASVS + Wave 3 |
 | Formal pen-test executed | Pending | After vendor report + re-test (when reactivated) |
 
@@ -112,6 +112,21 @@ Redis key prefix: `cornea:rl:<namespace>:<key>` (namespaces: `login-ip`, `login-
 - [ ] Re-run `npm run debug:global` with DO token
 - [ ] Review failed login / audit log spikes
 - [ ] Pen-test scheduled or completed per scope above
+
+---
+
+## Edge hardening (Wave 3 — stabilization mode)
+
+Review Cloudflare settings for the clinic origin and API hostname (vendor postponed; interim control):
+
+| Control | Recommendation |
+|---------|----------------|
+| Bot Fight Mode | Enable on `corneaclinic.visionemr.net` |
+| Rate limiting rule | Cap `POST /api/v1/auth/login` at edge (supplement to app limiter) |
+| WAF managed rules | OWASP Core Ruleset on API origin if exposed via custom domain |
+| TLS | Full (strict) between Cloudflare and origin |
+
+Track completion in `docs/PENTEST_ASVS_CHECKLIST.md` § 9.1.3.
 
 ---
 
