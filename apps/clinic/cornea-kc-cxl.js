@@ -1030,8 +1030,8 @@
     refreshUi,
 
     async init() {
-      if (!global.db) return;
       bindKcOfflineUi();
+      if (!global.db) return;
       if (apiEnabled()) await syncWithCloud();
       else await refreshCaches();
       refreshUi();

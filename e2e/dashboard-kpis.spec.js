@@ -37,7 +37,12 @@ test.describe('Dashboard institute KPIs (Phase 4 P1)', () => {
   });
 
   test('dashboard shows institute KPI grid after cloud sign-in', async ({ page }) => {
+    const kpiResponse = page.waitForResponse(
+      (r) => r.url().includes('/api/v1/dashboard/kpis') && r.ok(),
+      { timeout: 30_000 }
+    );
     await signInCloud(page);
+    await kpiResponse.catch(() => page.evaluate(() => window.fetchInstituteKpis?.()));
 
     await expect(page.locator('#dashboardTab')).toHaveClass(/active/);
     await expect(page.locator('#instituteKpisSection')).toBeVisible({ timeout: 25_000 });

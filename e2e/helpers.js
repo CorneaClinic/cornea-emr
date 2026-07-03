@@ -86,8 +86,17 @@ export async function openAppointmentsSchedule(page) {
   await expect(page.locator('#apptSchedulePanel')).toHaveClass(/active/);
 }
 
+/** Wait until cloud registry offline policy is active (post sign-in). */
+export async function waitForCloudRegistryMode(page) {
+  await page.waitForFunction(
+    () => window.__corneaCloudMode && window.CorneaApi?.isEnabled?.() && window.CorneaRegistryOnline,
+    { timeout: 25_000 }
+  );
+}
+
 /** Toggle offline/online and refresh registry UI bindings in the page. */
 export async function setRegistryOffline(page, offline, keys = ['kc']) {
+  await waitForCloudRegistryMode(page);
   if (offline) {
     await page.context().setOffline(true);
     await page.evaluate(() => window.dispatchEvent(new Event('offline')));

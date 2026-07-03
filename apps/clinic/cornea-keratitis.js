@@ -178,8 +178,8 @@
     },
 
     async init() {
-      if (!global.db) return;
       bindKeratitisOfflineUi();
+      if (!global.db) return;
       if (apiOn()) await pullFromCloud();
       else await refresh();
       renderOverview();
