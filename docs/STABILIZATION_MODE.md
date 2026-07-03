@@ -45,7 +45,7 @@ Track progress in `docs/PENTEST_REMEDIATION.md` § Wave 3.
 |------|--------|--------|
 | Sync push batch limit (max 100) | **Enforced** | `syncService.js`; test in `security-pentest.test.js` |
 | ASVS L2 self-assessment | In progress | `docs/PENTEST_ASVS_CHECKLIST.md` |
-| Cloudflare WAF / API rate rules | Review | `docs/CLOUDFLARE_WAF_REVIEW.md` — `npm run check:cloudflare-waf` |
+| Cloudflare WAF / API rate rules | **Reviewed** | Managed Ruleset + Bot Fight Mode active (2026-07-03) — `docs/CLOUDFLARE_WAF_REVIEW.md` |
 | Quarterly role review | Ops | Table below |
 | Staging mirror | Optional | `docs/DEPLOY_ROLLBACK.md` staging E2E |
 

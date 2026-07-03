@@ -58,13 +58,17 @@ Open [Cloudflare Dashboard](https://dash.cloudflare.com) → **visionemr.net** �
 
 ### A3. WAF managed rules (zone)
 
-| Setting | Path | Recommended |
-|---------|------|-------------|
-| OWASP Core Ruleset | Security → WAF → Managed rules | **Deploy** on Free plan if available; else use available managed rulesets |
-| Cloudflare Managed Ruleset | Security → WAF | **On** |
-| Sensitivity | WAF | Start **Medium**; tune if clinic UI breaks |
+> **Can't see "WAF" in Security?** See [Troubleshooting — no WAF menu](#troubleshooting--no-waf-menu) below.
 
-**Scope:** applies to `corneaclinic.visionemr.net` and other hostnames on the zone.
+| Setting | Path (old dashboard) | Path (new dashboard) | Free plan |
+|---------|----------------------|------------------------|-----------|
+| Cloudflare managed rules | Security → WAF → Managed rules | **Security** → **Settings** → filter *Web application exploits* → **Cloudflare managed ruleset** | **On by default** (Free Managed Ruleset) |
+| OWASP Core | Security → WAF → Managed rules | Security → Settings → **OWASP Core** | Often **Pro+ only** — skip if unavailable |
+| Custom rules (5 max) | Security → WAF → Custom rules | **Security** → **Security rules** → **Custom rules** | Available on Free |
+
+**Free plan:** Basic WAF is often **already active** — Cloudflare deploys the Free Managed Ruleset automatically. OWASP Core is not required for stabilization.
+
+**Scope:** applies to hostnames on the `visionemr.net` zone (including `corneaclinic.visionemr.net`).
 
 ### A4. Rate limiting (clinic — optional)
 
@@ -151,17 +155,71 @@ Action: **Block** when rate > **30 requests / 1 minute** per IP.
 
 ## Sign-off checklist
 
-| # | Item | Done | Date |
-|---|------|------|------|
-| 1 | `npm run check:cloudflare-waf` pass | ☐ | |
-| 2 | A1 SSL/TLS reviewed | ☐ | |
-| 3 | A2 Bot Fight Mode on (clinic zone) | ☐ | |
-| 4 | A3 WAF managed rules deployed | ☐ | |
-| 5 | A5 Clinic sign-in smoke after WAF | ☐ | |
-| 6 | B — API app limits confirmed (G6 redis) | ☐ | |
-| 7 | ASVS 9.1.3 updated to Pass | ☐ | |
+**Signed off:** 2026-07-03 · **Status:** Complete (Free plan baseline)
+
+| # | Item | Done | Date | Evidence |
+|---|------|------|------|----------|
+| 1 | `npm run check:cloudflare-waf` pass | Yes | 2026-07-03 | 6/6 automated checks green |
+| 2 | A1 SSL/TLS reviewed | Yes | 2026-07-03 | HTTPS confirmed by probe |
+| 3 | A2 Bot Fight Mode on (clinic zone) | Yes | 2026-07-03 | Dashboard screenshot — JS Detections ON |
+| 4 | A3 WAF managed rules deployed | Yes | 2026-07-03 | Cloudflare Managed Ruleset **Always active** (web-app exploits, DDoS, bot, API abuse) |
+| 5 | A5 Clinic sign-in smoke after WAF | Yes | 2026-07-03 | Cloud sign-in verified after Bot Fight ON |
+| 6 | B — API app limits confirmed (G6 redis) | Yes | 2026-07-03 | `checks.redis.mode=redis` |
+| 7 | ASVS 9.1.3 updated to Pass | Yes | 2026-07-03 | `docs/PENTEST_ASVS_CHECKLIST.md` |
 
 When rows 1–6 are complete, update `docs/PENTEST_ASVS_CHECKLIST.md` § 9.1.3 to **Pass** and `docs/PENTEST_REMEDIATION.md` Wave 3 WAF row to **Reviewed**.
+
+**Free plan shortcut:** If Bot Fight Mode is ON and Security → Events shows managed-rule activity (or Settings shows managed ruleset enabled), mark row 4 done even without a visible "WAF" sidebar item.
+
+---
+
+## Troubleshooting — no WAF menu
+
+### 1. You must be inside the **zone**, not Workers-only
+
+WAF is configured per **domain**, not per Worker.
+
+| Wrong (no WAF) | Right |
+|----------------|-------|
+| Home → **Workers & Pages** → `cornea-emr` | Home → **Websites** / **Domains** → click **`visionemr.net`** → then **Security** |
+
+If `visionemr.net` does **not** appear under Websites/Domains, the DNS zone is not in this Cloudflare account — only the Worker is. WAF for the clinic hostname must be set on whoever owns the zone (or add the zone to your account).
+
+### 2. Cloudflare redesigned the dashboard (2025–2026)
+
+The left menu may show **Security rules** instead of **WAF**:
+
+| What you want | Try these paths |
+|---------------|-----------------|
+| Managed protection | **Security** → **Settings** → enable *Cloudflare managed ruleset* |
+| Custom block/challenge rules | **Security** → **Security rules** → **Custom rules** → Create rule |
+| Bot protection | **Security** → **Bots** → Bot Fight Mode |
+| Block/challenge logs | **Security** → **Events** or **Analytics** |
+
+Direct links (replace `ZONE_ID` after opening your zone once):
+
+- Security settings: `https://dash.cloudflare.com/` → select account → **visionemr.net** → Security
+
+### 3. Free plan limits
+
+| Feature | Free plan |
+|---------|-----------|
+| Cloudflare Free Managed Ruleset | **Default ON** — no deploy step required |
+| OWASP Core Ruleset | Often **Pro+ only** — not required for our checklist |
+| Custom WAF rules | **5 rules** — under Security rules / WAF Custom rules |
+| Bot Fight Mode | **Available** — Security → Bots |
+
+### 4. Minimum checklist without a "WAF" menu
+
+If you still cannot find WAF after opening **visionemr.net**:
+
+1. **Security → Bots** → Bot Fight Mode **ON**
+2. **SSL/TLS** → Always Use HTTPS **ON**
+3. **Security → Settings** → confirm managed rules / web application exploits protection is enabled (wording varies)
+4. **Security → Events** — open after 24 h; you should see `managed_challenge` or managed-rule entries if traffic is filtered
+5. Run `npm run check:cloudflare-waf` + clinic sign-in smoke
+
+That satisfies stabilization **ASVS 9.1.3** on Free plan.
 
 ---
 
