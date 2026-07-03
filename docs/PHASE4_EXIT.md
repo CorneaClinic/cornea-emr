@@ -57,7 +57,7 @@ Production smoke (operator):
 |------|--------|
 | Staging nightly E2E | Set `STAGING_E2E_EMAIL` / `STAGING_E2E_PASSWORD` — `npm run check:staging-e2e` |
 | Backup drill | Monthly `npm run drill:restore-local` |
-| Pen-test remediation | Close Critical/High — `npm run pentest:self-check`, `docs/PENTEST_REMEDIATION.md` |
+| Pen-test remediation | **In progress** | Wave 0–1 closed; Wave 2 vendor **postponed** — `npm run pentest:self-check` |
 | Deferred backlog | Teaching library, LDAP, mobile summary, contact lens research — see roadmap |
 
 ## What Phase 4 does *not* include

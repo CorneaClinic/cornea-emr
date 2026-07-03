@@ -12,8 +12,8 @@
 | Shared store (multi-instance) | **Ready** | Set `REDIS_URL` on DigitalOcean API |
 | Pen-test scope defined | **Done** | Scope below |
 | Pen-test remediation | **In progress** | `docs/PENTEST_REMEDIATION.md`; `npm run pentest:self-check` |
-| Formal pen-test scheduled | **Jul 2026** | `docs/PENTEST_ENGAGEMENT.md` — test window Jul 21–25 |
-| Formal pen-test executed | Pending | After vendor report + re-test |
+| Formal pen-test scheduled | **Postponed** | `docs/PENTEST_ENGAGEMENT.md` — vendor on hold; interim ASVS + Wave 3 |
+| Formal pen-test executed | Pending | After vendor report + re-test (when reactivated) |
 
 **G6 PASS (code):** Redis-backed limiter ships in `main`; production PASS when `REDIS_URL` is set on DO and deploy is healthy.
 
