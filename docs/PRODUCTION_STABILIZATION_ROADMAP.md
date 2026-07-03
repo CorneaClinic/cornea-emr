@@ -234,8 +234,8 @@ Target: run on every PR to `main` and nightly against staging.
 | P1 | Dashboard institute KPIs | Ops visibility; small effort |
 | P2 | Offline research summaries | Reliability extension, not new clinical scope |
 | P3 | Sirius / tomography import | CSV import done (KC + laser); Galilei / server parse deferred |
-| P4 | FHIR export prototype | Cohort + patient bundles; API + UI + CI tests |
-| P5 | Appointments & recall | Large; needs stable sync |
+| P4 | FHIR export prototype | Done — cohort + patient bundles; API + UI + CI tests |
+| P5 | Appointments & recall | Done — day schedule, recall queue, API + UI + CI tests |
 | P6 | DICOM / PACS | XL; depends on media + performance |
 | P7 | New clinical modules (dry eye, OR, ML v2) | Deferred until platform proven |
 

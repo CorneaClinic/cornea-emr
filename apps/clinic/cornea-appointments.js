@@ -214,6 +214,8 @@
     },
     async init() {
       bindAppointmentsOfflineUi();
+      const hint = document.getElementById('apptCloudHint');
+      if (hint) hint.hidden = apiOn();
       setPanel(_activePanel);
       await loadDay(_selectedDate);
       await loadRecallQueue();
