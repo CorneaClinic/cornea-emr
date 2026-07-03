@@ -175,9 +175,11 @@ Not all clinical data uses the sync queue. This is intentional during Phase 2 st
 | Dry eye / OSD | `cornea-dry-eye.js` | Read cached data; **writes blocked** + banner |
 | OR scheduling | `cornea-or-schedule.js` | Read day list cache; **writes blocked** + banner |
 | Eye bank traceability | `cornea-eye-bank-traceability.js` | Custody/cold-chain **writes blocked** + banner (KP tissue sync unchanged) |
-| Appointments / recall | `cornea-appointments.js` | *Planned — same pattern* |
+| Appointments / recall | `cornea-appointments.js` | Read cached schedule; **writes blocked** + banner |
 
 Shared helper: `cornea-registry-online.js` (`CorneaRegistryOnline.guardCloudWrite`).
+
+**Verification (M2.4):** Playwright `registry-offline.spec.js` — offline blocks controls; simulated reconnect clears banner and re-enables saves (KC, dry eye, appointments).
 
 ### Phase 2.1 M2.3 — Conflict resolution policy
 
@@ -194,6 +196,4 @@ Shared helper: `cornea-registry-online.js` (`CorneaRegistryOnline.guardCloudWrit
 | Clinical media | Upload queue | Retry on reconnect | Pending upload indicator |
 
 **Rule:** Modules on the sync queue must never silently overwrite a newer server `revision`. Registry modules using direct REST must either send `baseRevision` (KC, OR) or treat the server as source of truth after every save (keratitis, dry eye).
-
-**Next milestone (M2.4):** offline→reconnect Playwright test verifying banner clears and controls re-enable.
 

@@ -78,3 +78,24 @@ export async function openKcRegistryTab(page) {
   await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
   await expect(tab).toHaveAttribute('aria-hidden', 'false');
 }
+
+export async function openAppointmentsSchedule(page) {
+  await page.locator('#nav-appointmentsTab').click();
+  const tab = page.locator('#appointmentsTab');
+  await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
+  await expect(page.locator('#apptSchedulePanel')).toHaveClass(/active/);
+}
+
+/** Toggle offline/online and refresh registry UI bindings in the page. */
+export async function setRegistryOffline(page, offline, keys = ['kc']) {
+  if (offline) {
+    await page.context().setOffline(true);
+    await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+  } else {
+    await page.context().setOffline(false);
+    await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  }
+  await page.evaluate((registryKeys) => {
+    for (const key of registryKeys) window.CorneaRegistryOnline?.refresh(key);
+  }, keys);
+}

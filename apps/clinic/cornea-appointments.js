@@ -29,6 +29,22 @@
     return global.CorneaApi.request(path, options);
   }
 
+  function guardCloudRegistryWrite(label) {
+    return global.CorneaRegistryOnline?.guardCloudWrite(apiOn(), label || 'Appointments') !== false;
+  }
+
+  function bindAppointmentsOfflineUi() {
+    global.CorneaRegistryOnline?.bindRegistryOfflineUi('appointments', {
+      bannerId: 'appointmentsOfflineBanner',
+      registryLabel: 'Appointments & recall',
+      writeSelectors: [
+        '#apptSchedulePanel .btn-primary',
+        '#apptScheduleBody button',
+        '#appointmentModal .btn-primary'
+      ]
+    });
+  }
+
   function dbAll(store) {
     return new Promise((resolve) => {
       if (!global.db) { resolve([]); return; }
@@ -197,9 +213,11 @@
       }
     },
     async init() {
+      bindAppointmentsOfflineUi();
       setPanel(_activePanel);
       await loadDay(_selectedDate);
       await loadRecallQueue();
+      global.CorneaRegistryOnline?.refresh('appointments');
     },
     async refreshDay() {
       await loadDay(document.getElementById('apptDatePicker')?.value || _selectedDate);
@@ -241,6 +259,7 @@
       global.openEmrModal('appointmentModal');
     },
     async save() {
+      if (!guardCloudRegistryWrite()) return;
       const payload = collectModal();
       if (!payload.patientName || !payload.appointmentDate) {
         alert('Patient name and date are required.');
@@ -276,6 +295,7 @@
       await loadDay(_selectedDate);
     },
     async markArrived(id) {
+      if (!guardCloudRegistryWrite()) return;
       const row = _dayAppointments.find((a) => String(a.id) === String(id) || String(a.localId) === String(id));
       if (!row) return;
       if (apiOn() && row.id) {
