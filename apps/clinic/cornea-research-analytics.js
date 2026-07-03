@@ -92,13 +92,13 @@
     if (source === 'empty') {
       badge.setAttribute('hidden', 'hidden');
       badge.textContent = '';
-      if (hint && !apiOn()) hint.removeAttribute('hidden');
+      if (hint && !apiOn()) hint.hidden = false;
       return;
     }
 
     badge.textContent = labels[source] || labels.local;
     badge.removeAttribute('hidden');
-    if (hint) hint.setAttribute('hidden', 'hidden');
+    if (hint) hint.hidden = true;
   }
 
   function monthsBetween(start, end) {
