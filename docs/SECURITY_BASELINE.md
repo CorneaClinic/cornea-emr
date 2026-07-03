@@ -119,12 +119,14 @@ Redis key prefix: `cornea:rl:<namespace>:<key>` (namespaces: `login-ip`, `login-
 
 Review Cloudflare settings for the clinic origin and API hostname (vendor postponed; interim control):
 
+**Runbook:** `docs/CLOUDFLARE_WAF_REVIEW.md` · **Probe:** `npm run check:cloudflare-waf`
+
 | Control | Recommendation |
 |---------|----------------|
-| Bot Fight Mode | Enable on `corneaclinic.visionemr.net` |
-| Rate limiting rule | Cap `POST /api/v1/auth/login` at edge (supplement to app limiter) |
-| WAF managed rules | OWASP Core Ruleset on API origin if exposed via custom domain |
-| TLS | Full (strict) between Cloudflare and origin |
+| Bot Fight Mode | Enable on `visionemr.net` zone (clinic hostname) |
+| WAF managed rules | OWASP / Cloudflare managed rulesets on `visionemr.net` |
+| API rate limits | App-level Redis (G6) — custom API domain optional for zone WAF |
+| TLS | Full (strict) on zone; Always Use HTTPS |
 
 Track completion in `docs/PENTEST_ASVS_CHECKLIST.md` § 9.1.3.
 

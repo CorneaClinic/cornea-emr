@@ -31,6 +31,7 @@
     "pentest:engagement-ready": "node scripts/pentest-engagement-ready.mjs",
     "pentest:vendor-user": "powershell -ExecutionPolicy Bypass -File scripts/setup-pentest-vendor-user.ps1",
     "stabilize:check": "node scripts/stabilization-check.mjs",
+    "check:cloudflare-waf": "node scripts/cloudflare-waf-check.mjs",
     "test:unit": "npm test --prefix apps/api",
     "test:topography-import": "node apps/clinic/tests/topography-import.test.mjs",
     "test:api-live": "npm run verify:api --prefix apps/api",
