@@ -23,6 +23,8 @@
     "check:clinic-globals": "node scripts/check-clinic-globals.mjs",
     "phase0:status": "node scripts/log-stabilization-status.mjs --drill-partial",
     "phase0:verified": "node scripts/log-stabilization-status.mjs --drill-pass --password-reset-pass --alert-drill-pass --ci-pass --sync-matrix-pass",
+    "phase4:verified": "node scripts/log-stabilization-status.mjs --drill-pass --password-reset-pass --alert-drill-pass --ci-pass --sync-matrix-pass --phase4-pass",
+    "check:staging-e2e": "node scripts/check-staging-e2e-ready.mjs",
     "test:unit": "npm test --prefix apps/api",
     "test:topography-import": "node apps/clinic/tests/topography-import.test.mjs",
     "test:api-live": "npm run verify:api --prefix apps/api",

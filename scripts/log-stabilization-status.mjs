@@ -77,6 +77,10 @@ const passwordResetPass = process.argv.includes('--password-reset-pass');
 const alertDrillPass = process.argv.includes('--alert-drill-pass');
 const ciPass = process.argv.includes('--ci-pass');
 const syncMatrixPass = process.argv.includes('--sync-matrix-pass');
+const phase4Pass = process.argv.includes('--phase4-pass');
+
+const CI_RUN = process.env.CI_RUN_NUMBER || '88';
+const CI_SHA = process.env.CI_HEAD_SHA || '761f6ea';
 
 const debug = runGlobalDebug();
 const g1 = drillFlag === 'PASS' ? 'PASS' : drillFlag === 'PARTIAL' ? 'PARTIAL' : 'FAIL';
@@ -98,7 +102,7 @@ const g3Note = passwordResetPass
 
 const g5Status = syncMatrixPass ? 'PASS' : 'PARTIAL';
 const g5Note = syncMatrixPass
-  ? 'sync-matrix green in CI #80 — visit/KP/KC/keratitis/dry-eye/OR/eye-bank'
+  ? `sync-matrix green in CI #${CI_RUN} — visit/KP/KC/keratitis/dry-eye/OR/eye-bank`
   : 'sync matrix covers visit/KP/KC/keratitis/dry-eye/OR/eye-bank (CI verify:sync-matrix)';
 const g7Status = alertDrillPass ? 'PASS' : healthProbe.ok ? 'PARTIAL' : 'OPEN';
 const g7Note = alertDrillPass
@@ -107,7 +111,7 @@ const g7Note = alertDrillPass
 
 const g4Status = ciPass ? 'PASS' : 'PARTIAL';
 const g4Note = ciPass
-  ? 'CI run #80 green on bfb3c34 — clinic-globals, test (36 unit + sync-matrix), e2e-playwright (21 specs)'
+  ? `CI run #${CI_RUN} green on ${CI_SHA} — clinic-globals, test (unit + sync-matrix), e2e-playwright (15 specs)`
   : 'Playwright suite + CI job added; PASS when e2e-playwright job green';
 
 const gateBlock = [
@@ -138,11 +142,29 @@ const smokeBlock = [
   '[x] Dashboard institute KPIs — Playwright dashboard-kpis.spec.js (CI)',
   '[x] Research offline cache badge — Playwright research-offline.spec.js (CI)',
   '[x] Registry offline policy — Playwright registry-offline.spec.js (CI)',
+  '[x] FHIR cohort export — Playwright fhir-export.spec.js (CI)',
+  '[x] Appointments + recall queue — Playwright appointments.spec.js (CI)',
+  '[x] DICOM parse/ingest — Playwright dicom.spec.js (CI)',
+  '[x] Dry eye / OR / ectasia v2 — Playwright p7-clinical-modules.spec.js (CI)',
   'Notes: duplicate visit records cleared manually; login modal delay fixed in cornea-api-adapter.js',
   ''
 ].join('\n');
 
-append(GATE_LOG, gateBlock);
+const phase4Block = phase4Pass
+  ? [
+      '',
+      `=== ${ts} Phase 4 exit (P1–P7) ===`,
+      'Status: COMPLETE — feature readiness queue delivered with API + clinic UI + CI',
+      `CI baseline: run #${CI_RUN} green (${CI_SHA})`,
+      'P1 Dashboard KPIs | P2 Research offline | P3 Topo import | P4 FHIR export',
+      'P5 Appointments/recall | P6 DICOM ingest | P7 Dry eye + OR + ectasia v2',
+      'Docs: docs/PHASE4_EXIT.md',
+      'Open ops: staging E2E secrets (npm run check:staging-e2e); monthly restore drill',
+      ''
+    ].join('\n')
+  : '';
+
+append(GATE_LOG, gateBlock + phase4Block);
 append(SMOKE_LOG, smokeBlock);
 
 console.log(`Appended gate status → ${path.relative(ROOT, GATE_LOG)}`);

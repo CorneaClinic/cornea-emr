@@ -239,22 +239,20 @@ Target: run on every PR to `main` and nightly against staging.
 | P6 | DICOM / PACS | Done — Part 10 ingest prototype; API + UI + CI tests |
 | P7 | Dry eye, OR schedule, ectasia AI v2 | Done — registries + theatre list + v2 modifiers; API + UI + CI tests |
 
+**Phase 4 exit:** See [PHASE4_EXIT.md](./PHASE4_EXIT.md). Log snapshot: `npm run phase4:verified`.
+
 ---
 
-## Deferred clinical backlog (explicit freeze list)
+## Deferred clinical backlog (post–Phase 4)
 
-These items from the audit **Top 20** are **out of scope** until Phase 4:
+These audit **Top 20** items remain **out of scope** until pen-test remediation and operator prioritization:
 
-- Appointment & recall module  
-- DICOM ingest for topography/OCT  
-- Dedicated dry eye / OSD module  
-- OR scheduling integration  
 - Teaching case library + anonymization  
-- FHIR / national registry export  
 - LDAP/SSO  
-- Topography ML ectasia model (v2)  
 - Contact lens outcomes in research tab  
 - Mobile-optimized visit summary  
+
+**Delivered in Phase 4 (no longer deferred):** appointments/recall, DICOM ingest, dry eye/OSD, OR scheduling, FHIR export prototype, topography ML ectasia v2 modifiers.
 
 Exception: **bug fixes** and **security patches** in existing clinical modules remain in scope at all times.
 
