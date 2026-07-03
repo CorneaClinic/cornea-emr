@@ -21,6 +21,7 @@
     "test:smtp": "node scripts/test-smtp.js",
     "verify:password-reset": "node scripts/verify-password-reset.js",
     "test": "vitest run",
+    "test:security": "vitest run tests/security-pentest.test.js",
     "test:watch": "vitest",
     "migrate:idb": "node src/db/migrate-indexeddb-cli.js",
     "migrate:media": "node src/db/migrate-media-cli.js",

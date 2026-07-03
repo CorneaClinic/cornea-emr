@@ -27,6 +27,7 @@
     "check:staging-e2e": "node scripts/check-staging-e2e-ready.mjs",
     "check:staging-login": "node scripts/staging-api-login-check.mjs",
     "check:production-operator": "node scripts/production-operator-check.mjs",
+    "pentest:self-check": "node scripts/pentest-self-check.mjs",
     "test:unit": "npm test --prefix apps/api",
     "test:topography-import": "node apps/clinic/tests/topography-import.test.mjs",
     "test:api-live": "npm run verify:api --prefix apps/api",

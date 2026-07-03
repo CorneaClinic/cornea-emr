@@ -11,7 +11,8 @@
 | Rate limiting on auth + API | **Active** | `rateLimit.js` + `auth.js` + `app.js` |
 | Shared store (multi-instance) | **Ready** | Set `REDIS_URL` on DigitalOcean API |
 | Pen-test scope defined | **Done** | Scope below |
-| Pen-test executed | **Scheduled** | Target: Q3 2026 (before feature freeze lift) |
+| Pen-test remediation | **In progress** | `docs/PENTEST_REMEDIATION.md`; `npm run pentest:self-check` |
+| Formal pen-test executed | **Scheduled** | Target: Q3 2026 (vendor / OWASP ASVS) |
 
 **G6 PASS (code):** Redis-backed limiter ships in `main`; production PASS when `REDIS_URL` is set on DO and deploy is healthy.
 
