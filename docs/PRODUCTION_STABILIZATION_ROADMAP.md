@@ -234,7 +234,7 @@ Target: run on every PR to `main` and nightly against staging.
 | P1 | Dashboard institute KPIs | Ops visibility; small effort |
 | P2 | Offline research summaries | Reliability extension, not new clinical scope |
 | P3 | Sirius / tomography import | CSV import done (KC + laser); Galilei / server parse deferred |
-| P4 | FHIR export prototype | Tertiary bridge |
+| P4 | FHIR export prototype | Cohort + patient bundles; API + UI + CI tests |
 | P5 | Appointments & recall | Large; needs stable sync |
 | P6 | DICOM / PACS | XL; depends on media + performance |
 | P7 | New clinical modules (dry eye, OR, ML v2) | Deferred until platform proven |
@@ -327,6 +327,8 @@ gantt
 - `docs/PRODUCTION_DEPLOY.md` — deployment checklist
 - `docs/DEPLOY_ROLLBACK.md` — clinic/API rollback and staging E2E setup  
 - `docs/SYNC_ARCHITECTURE.md` — sync design  
+- `docs/PENTACAM_IMPORT.md` — Pentacam + Sirius topography CSV import
+- `docs/FHIR_EXPORT.md` — FHIR R4 cohort export prototype
 - `scripts/backup-restore-drill.ps1` — restore verification  
 
 ---
