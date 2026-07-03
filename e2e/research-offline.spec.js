@@ -6,10 +6,14 @@ test.describe('Research offline summaries (Phase 4 P2)', () => {
     await signInCloud(page);
     await waitForCloudRegistryMode(page);
 
+    const badge = page.locator('#raSourceBadge');
+    const overviewResponse = page.waitForResponse(
+      (r) => r.url().includes('/api/v1/research-analytics/overview') && r.ok(),
+      { timeout: 30_000 }
+    );
     await page.locator('#nav-researchTab').click();
     await expect(page.locator('#researchTab')).toHaveClass(/active/);
-
-    const badge = page.locator('#raSourceBadge');
+    await overviewResponse;
     await expect(badge).toContainText(/Live institute data from cloud/i, { timeout: 25_000 });
 
     await page.context().setOffline(true);

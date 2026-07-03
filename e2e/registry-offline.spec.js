@@ -14,7 +14,6 @@ test.describe('Registry offline policy (M2.2 / M2.4)', () => {
     await openKcRegistryTab(page);
     await page.locator('[data-kc-panel="kcPatientsPanel"]').click();
     await expect(page.locator('#kcPatientsPanel')).toHaveClass(/active/);
-    await expect(page.locator('#kcPatientsPanel')).toHaveClass(/active/);
 
     const banner = page.locator('#kcRegistryOfflineBanner');
     const enrolBtn = page.locator('#kcPatientsPanel button.btn-primary').first();

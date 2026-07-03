@@ -36,6 +36,7 @@ if (!validEnv.includes(NODE_ENV)) {
 
 const isProduction = NODE_ENV === 'production';
 const isDevelopment = NODE_ENV === 'development';
+const isTest = NODE_ENV === 'test';
 
 const jwtSecret = optional('JWT_SECRET', isProduction ? '' : 'dev-only-change-me-in-production');
 if (!jwtSecret) {
@@ -155,8 +156,8 @@ export const env = Object.freeze({
   }),
   rateLimit: Object.freeze({
     loginWindowMs: parseIntEnv('RATE_LIMIT_LOGIN_WINDOW_MS', 15 * 60 * 1000),
-    loginMaxPerIp: parseIntEnv('RATE_LIMIT_LOGIN_MAX_PER_IP', 20),
-    loginMaxPerEmail: parseIntEnv('RATE_LIMIT_LOGIN_MAX_PER_EMAIL', 10),
+    loginMaxPerIp: parseIntEnv('RATE_LIMIT_LOGIN_MAX_PER_IP', isTest ? 500 : 20),
+    loginMaxPerEmail: parseIntEnv('RATE_LIMIT_LOGIN_MAX_PER_EMAIL', isTest ? 500 : 10),
     resetWindowMs: parseIntEnv('RATE_LIMIT_RESET_WINDOW_MS', 60 * 60 * 1000),
     resetMaxPerIp: parseIntEnv('RATE_LIMIT_RESET_MAX_PER_IP', 10),
     apiWindowMs: parseIntEnv('RATE_LIMIT_API_WINDOW_MS', 60 * 1000),

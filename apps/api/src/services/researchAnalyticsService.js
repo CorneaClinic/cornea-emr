@@ -46,7 +46,9 @@ export async function getResearchDashboard(clinicId) {
     query(
       `
         SELECT COUNT(*)::int AS total
-        FROM visits WHERE clinic_id = $1 AND deleted_at IS NULL
+        FROM visits
+       WHERE clinic_id = $1
+         AND status != 'cancelled'
       `,
       [clinicId]
     )

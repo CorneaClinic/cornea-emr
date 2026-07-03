@@ -20,7 +20,10 @@ export async function apiLogin(request, deviceId = 'playwright-e2e-device') {
     data: { email: creds.email, password: creds.password },
     headers: { 'X-Device-Id': deviceId }
   });
-  expect(login.ok()).toBeTruthy();
+  if (!login.ok()) {
+    const detail = await login.text();
+    throw new Error(`API login failed (${login.status()}): ${detail}`);
+  }
   const body = await login.json();
   expect(body.accessToken).toBeTruthy();
   return { token: body.accessToken, creds, deviceId };
@@ -57,8 +60,16 @@ export async function signInCloud(page) {
   await page.locator('#corneaLoginPassword').fill(creds.password);
 
   const started = Date.now();
+  const loginResponse = page.waitForResponse(
+    (r) => r.url().includes('/api/v1/auth/login'),
+    { timeout: 20_000 }
+  );
   await page.locator('#corneaLoginSubmitBtn').click();
-  await expect(modal).not.toHaveClass(/is-open/, { timeout: 15_000 });
+  const loginRes = await loginResponse;
+  if (!loginRes.ok()) {
+    throw new Error(`Cloud login failed (${loginRes.status()}): ${await loginRes.text()}`);
+  }
+  await expect(modal).not.toHaveClass(/is-open/, { timeout: 20_000 });
   const elapsed = Date.now() - started;
 
   await expect(page.locator('body')).not.toHaveClass(/cornea-auth-pending/, { timeout: 10_000 });
@@ -92,6 +103,25 @@ export async function waitForCloudRegistryMode(page) {
     () => window.__corneaCloudMode && window.CorneaApi?.isEnabled?.() && window.CorneaRegistryOnline,
     { timeout: 25_000 }
   );
+}
+
+/** Load institute KPIs on the dashboard after cloud sign-in. */
+export async function waitForInstituteKpis(page) {
+  await waitForCloudRegistryMode(page);
+  const kpiResponse = page.waitForResponse(
+    (r) => r.url().includes('/api/v1/dashboard/kpis') && r.ok(),
+    { timeout: 30_000 }
+  );
+  await page.evaluate(async () => {
+    if (typeof window.updateDashboardStats === 'function') {
+      await window.updateDashboardStats();
+    } else if (typeof window.fetchInstituteKpis === 'function') {
+      await window.fetchInstituteKpis();
+    }
+  });
+  await kpiResponse;
+  await expect(page.locator('#instituteKpisSection')).toBeVisible({ timeout: 25_000 });
+  await expect(page.locator('#instituteKpisHint')).toBeHidden();
 }
 
 /** Toggle offline/online and refresh registry UI bindings in the page. */
