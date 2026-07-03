@@ -15,6 +15,8 @@
     "docker:down": "docker compose -f infra/docker-compose.yml down",
     "clinic:dev": "node apps/clinic/clinic-server.js",
     "deploy:clinic": "wrangler deploy",
+    "rollback:clinic": "powershell -ExecutionPolicy Bypass -File scripts/rollback-clinic.ps1",
+    "setup:staging-e2e": "powershell -ExecutionPolicy Bypass -File scripts/setup-staging-e2e.ps1",
     "debug:global": "node scripts/global-debug.mjs",
     "debug:deep": "node scripts/deep-verify-http.mjs",
     "debug:all": "npm run test:unit && npm run debug:global && npm run debug:deep",

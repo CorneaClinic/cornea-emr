@@ -22,7 +22,7 @@ Use this when the clinic UI, API, sync, or backups behave unexpectedly.
 2. Check clinic: open https://corneaclinic.visionemr.net/Cornea?cloud=1 — browser console for errors
 3. **Offline fallback:** users can choose **Continue offline** (local IndexedDB only on that device)
 4. DigitalOcean → App Platform → `cornea-emr-api` → Runtime logs
-5. Rollback: redeploy previous API release or revert last clinic Wrangler deploy
+5. Rollback: see **`docs/DEPLOY_ROLLBACK.md`** — `npm run rollback:clinic` or DO API release rollback
 
 ---
 

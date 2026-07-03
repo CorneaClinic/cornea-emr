@@ -164,10 +164,10 @@ Target: run on every PR to `main` and nightly against staging.
 
 | Runbook | Contents |
 |---------|----------|
-| Incident response | Login down, sync stuck, API 5xx |
-| Deployment | Clinic (Wrangler) + API (DO) rollback steps |
-| Backup restore | Step-by-step from `BACKUP_RECOVERY.md` |
-| Migration | How to apply new DB migrations safely |
+| Incident response | `docs/INCIDENT_RESPONSE.md` — login down, sync stuck, API 5xx |
+| Deploy & rollback | `docs/DEPLOY_ROLLBACK.md` — clinic `npm run rollback:clinic`, DO API rollback |
+| Backup restore | `docs/BACKUP_RECOVERY.md` |
+| Migration | Apply via API deploy; rollback cautions in `DEPLOY_ROLLBACK.md` |
 
 ### 2.4 Monitoring and alerts
 
@@ -324,7 +324,8 @@ gantt
 
 - `docs/Global_Production_Audit_Tertiary_Cornea_EMR.docx` — source audit  
 - `docs/BACKUP_RECOVERY.md` — backup procedures  
-- `docs/PRODUCTION_DEPLOY.md` — deployment checklist  
+- `docs/PRODUCTION_DEPLOY.md` — deployment checklist
+- `docs/DEPLOY_ROLLBACK.md` — clinic/API rollback and staging E2E setup  
 - `docs/SYNC_ARCHITECTURE.md` — sync design  
 - `scripts/backup-restore-drill.ps1` — restore verification  
 
