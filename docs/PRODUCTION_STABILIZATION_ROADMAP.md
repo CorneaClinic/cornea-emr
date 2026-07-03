@@ -236,7 +236,7 @@ Target: run on every PR to `main` and nightly against staging.
 | P3 | Sirius / tomography import | CSV import done (KC + laser); Galilei / server parse deferred |
 | P4 | FHIR export prototype | Done — cohort + patient bundles; API + UI + CI tests |
 | P5 | Appointments & recall | Done — day schedule, recall queue, API + UI + CI tests |
-| P6 | DICOM / PACS | XL; depends on media + performance |
+| P6 | DICOM / PACS | Done — Part 10 ingest prototype; API + UI + CI tests |
 | P7 | New clinical modules (dry eye, OR, ML v2) | Deferred until platform proven |
 
 ---

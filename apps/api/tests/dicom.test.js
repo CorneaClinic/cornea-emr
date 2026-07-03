@@ -4,8 +4,10 @@ import {
   formatDicomPatientName,
   formatDicomDate,
   formatDicomTime,
-  suggestMediaCategory
+  suggestMediaCategory,
+  parseDicomBuffer
 } from '../src/services/dicomParserService.js';
+import { buildMinimalDicomBuffer } from '../../../e2e/fixtures/minimal-dicom.js';
 
 describe('DICOM parser helpers (P6)', () => {
   it('detects DICOM Part 10 preamble', () => {
@@ -31,5 +33,12 @@ describe('DICOM parser helpers (P6)', () => {
     expect(suggestMediaCategory('', 'Sirius tomography', '')).toBe('tomography');
     expect(suggestMediaCategory('OP', 'Slit lamp photo', '')).toBe('slit_lamp');
     expect(suggestMediaCategory('XX', 'unknown study', '')).toBe('other');
+  });
+
+  it('parses synthetic Part 10 fixture', () => {
+    const parsed = parseDicomBuffer(buildMinimalDicomBuffer());
+    expect(parsed.suggestedCategory).toBe('topography');
+    expect(parsed.tags.patientName).toBe('John Doe');
+    expect(parsed.tags.modality).toBe('OT');
   });
 });
