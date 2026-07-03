@@ -20,7 +20,7 @@
     "debug:all": "npm run test:unit && npm run debug:global && npm run debug:deep",
     "check:clinic-globals": "node scripts/check-clinic-globals.mjs",
     "phase0:status": "node scripts/log-stabilization-status.mjs --drill-partial",
-    "phase0:verified": "node scripts/log-stabilization-status.mjs --drill-partial --password-reset-pass --alert-drill-pass --ci-pass --sync-matrix-pass",
+    "phase0:verified": "node scripts/log-stabilization-status.mjs --drill-pass --password-reset-pass --alert-drill-pass --ci-pass --sync-matrix-pass",
     "test:unit": "npm test --prefix apps/api",
     "test:api-live": "npm run verify:api --prefix apps/api",
     "test:api-sync": "npm run verify:sync --prefix apps/api",

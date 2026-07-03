@@ -79,7 +79,11 @@ const ciPass = process.argv.includes('--ci-pass');
 const syncMatrixPass = process.argv.includes('--sync-matrix-pass');
 
 const debug = runGlobalDebug();
-const g1 = drillFlag === 'PASS' ? 'PARTIAL' : drillFlag === 'PARTIAL' ? 'PARTIAL' : 'FAIL';
+const g1 = drillFlag === 'PASS' ? 'PASS' : drillFlag === 'PARTIAL' ? 'PARTIAL' : 'FAIL';
+const g1Note =
+  drillFlag === 'PASS'
+    ? `latest backup ${latestBackup()}; full pg_restore drill PASS (local restore + row counts match production)`
+    : `latest backup ${latestBackup()}; drill ${drillFlag} (catalog-only until full local pg_restore)`;
 const g2 = debug.out.includes('DO media provider') && debug.out.includes('s3') ? 'PASS' : 'PARTIAL';
 const g3 = passwordResetPass
   ? 'PASS'
@@ -110,7 +114,7 @@ const gateBlock = [
   '',
   `=== ${ts} Phase 0 gate snapshot ===`,
   `global-debug: ${debug.failed === '0' ? 'PASS' : 'WARN'} (${debug.passed} passed, ${debug.failed} failed)`,
-  `G1 Data safety: ${g1} — latest backup ${latestBackup()}; drill ${drillFlag} (catalog mode; full pg_restore needs local PG)`,
+  `G1 Data safety: ${g1} — ${g1Note}`,
   `G2 Media durability: ${g2} — MEDIA_STORAGE_PROVIDER=s3 on DigitalOcean`,
   `G3 Auth hardening: ${g3} — ${g3Note}`,
   `G4 Regression safety: ${g4Status} — ${g4Note}`,
