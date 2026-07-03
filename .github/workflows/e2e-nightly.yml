@@ -55,16 +55,21 @@ jobs:
 
   staging-secrets-reminder:
     runs-on: ubuntu-latest
-    if: ${{ secrets.STAGING_E2E_EMAIL == '' || secrets.STAGING_E2E_PASSWORD == '' }}
     steps:
       - name: Staging secrets not configured
+        env:
+          STAGING_E2E_EMAIL: ${{ secrets.STAGING_E2E_EMAIL }}
+          STAGING_E2E_PASSWORD: ${{ secrets.STAGING_E2E_PASSWORD }}
         run: |
+          if [ -n "$STAGING_E2E_EMAIL" ] && [ -n "$STAGING_E2E_PASSWORD" ]; then
+            echo "Staging secrets configured"
+            exit 0
+          fi
           echo "::warning::STAGING_E2E_EMAIL / STAGING_E2E_PASSWORD not set — live staging smoke skipped"
           echo "Run: npm run e2e:staging-user then add secrets (see docs/DEPLOY_ROLLBACK.md)"
 
   staging-smoke:
     runs-on: ubuntu-latest
-    if: ${{ secrets.STAGING_E2E_EMAIL != '' && secrets.STAGING_E2E_PASSWORD != '' }}
     env:
       CI: true
       STAGING_E2E_EMAIL: ${{ secrets.STAGING_E2E_EMAIL }}
@@ -83,5 +88,13 @@ jobs:
       - run: npx playwright install chromium --with-deps
         working-directory: .
       - name: Live staging smoke (browser)
-        run: npm run test:e2e:staging
+        env:
+          STAGING_E2E_EMAIL: ${{ secrets.STAGING_E2E_EMAIL }}
+          STAGING_E2E_PASSWORD: ${{ secrets.STAGING_E2E_PASSWORD }}
+        run: |
+          if [ -z "$STAGING_E2E_EMAIL" ] || [ -z "$STAGING_E2E_PASSWORD" ]; then
+            echo "Skipping staging smoke — add STAGING_E2E_EMAIL and STAGING_E2E_PASSWORD repository secrets."
+            exit 0
+          fi
+          npm run test:e2e:staging
         working-directory: .

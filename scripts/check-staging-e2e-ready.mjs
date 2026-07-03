@@ -59,10 +59,12 @@ async function main() {
       const { smoke, reminder } = await stagingJobStatus(run.id);
       if (smoke) {
         console.log(`  staging-smoke: ${smoke.conclusion || smoke.status}`);
-      } else if (reminder) {
-        console.log('  staging-smoke: skipped (secrets missing — see staging-secrets-reminder job)');
-      } else {
-        console.log('  staging-smoke: not found on last run (workflow may predate job split)');
+      }
+      if (reminder) {
+        console.log(`  staging-secrets-reminder: ${reminder.conclusion || reminder.status}`);
+      }
+      if (!localSecretsReady()) {
+        console.log('  (If secrets are not in GitHub, staging-smoke logs "Skipping".)');
       }
       console.log('');
     }
