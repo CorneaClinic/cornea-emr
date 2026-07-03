@@ -42,7 +42,7 @@ services:
       - key: AUTH_EXPOSE_REFRESH_IN_BODY
         value: "false"
       - key: AUTH_COOKIE_SAME_SITE
-        value: lax
+        value: none
       - key: LOG_LEVEL
         value: info
       - key: MEDIA_STORAGE_PATH

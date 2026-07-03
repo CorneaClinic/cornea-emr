@@ -120,7 +120,30 @@
     if (resolve) resolve('offline');
   }
 
-  async function api(path, options = {}) {
+  async function tryRefreshToken() {
+    if (!baseUrl) return false;
+    try {
+      const res = await fetch(`${baseUrl}/api/v1/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Device-Id': localStorage.getItem('corneaEmr_deviceId') || ''
+        },
+        credentials: 'include',
+        body: '{}'
+      });
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (!data.accessToken) return false;
+      token = data.accessToken;
+      localStorage.setItem(STORAGE_TOKEN, token);
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  async function api(path, options = {}, retried = false) {
     const headers = {
       'Content-Type': 'application/json',
       'X-Device-Id': localStorage.getItem('corneaEmr_deviceId') || '',
@@ -141,6 +164,15 @@
       throw err;
     }
     if (!res.ok) {
+      if (
+        res.status === 401 &&
+        !retried &&
+        path !== '/api/v1/auth/refresh' &&
+        path !== '/api/v1/auth/login'
+      ) {
+        const refreshed = await tryRefreshToken();
+        if (refreshed) return api(path, options, true);
+      }
       const body = await res.json().catch(() => ({}));
       const message = body.error?.message || body.error || res.statusText;
       const err = new Error(typeof message === 'string' ? message : 'Request failed');

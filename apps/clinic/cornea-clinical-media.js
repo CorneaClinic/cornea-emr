@@ -34,7 +34,15 @@
   }
 
   function getBaseUrl() {
-    return global.CorneaApi?.getBaseUrl?.() || global.CorneaAuthEnv?.getApiBaseUrl?.() || '';
+    const fromApi = global.CorneaApi?.getBaseUrl?.();
+    if (fromApi) return String(fromApi).replace(/\/$/, '');
+    const stored = localStorage.getItem('corneaEmr_apiBase') || '';
+    if (stored) return stored.replace(/\/$/, '');
+    return global.CorneaAuthPages?.getApiBase?.()?.replace(/\/$/, '') || '';
+  }
+
+  function isCloudReady() {
+    return global.CorneaApi?.isEnabled?.() === true;
   }
 
   function getToken() {
@@ -42,21 +50,64 @@
   }
 
   async function apiFetch(path, opts) {
+    const apiPath = path.startsWith('/api/v1') ? path : `/api/v1${path}`;
+
+    if (global.CorneaApi?.request) {
+      try {
+        return await global.CorneaApi.request(apiPath, opts);
+      } catch (err) {
+        if (err.status === 401 && global.CorneaApi?.signIn) {
+          const ok = await global.CorneaApi.signIn();
+          if (ok) return await global.CorneaApi.request(apiPath, opts);
+        }
+        throw err;
+      }
+    }
+
     const base = getBaseUrl();
     const token = getToken();
     if (!base || !token) throw new Error('Cloud connection required');
-    const res = await fetch(`${base}/api/v1${path}`, {
+    const res = await fetch(`${base}${apiPath}`, {
       ...opts,
+      credentials: 'include',
       headers: {
         Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+        'X-Device-Id': localStorage.getItem('corneaEmr_deviceId') || '',
         ...(opts?.headers || {})
       }
     });
     if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.message || `Request failed (${res.status})`);
+      const body = await res.json().catch(() => ({}));
+      const message = body.error?.message || body.message || `Request failed (${res.status})`;
+      const err = new Error(message);
+      err.status = res.status;
+      throw err;
     }
+    if (res.status === 204) return null;
     return res.json();
+  }
+
+  function showLibraryAuthMessage(message) {
+    const body = document.getElementById('clinicalMediaLibraryBody');
+    if (body) {
+      body.innerHTML = `<tr><td colspan="7" class="clinical-media-empty">${escapeHtml(message)}</td></tr>`;
+    }
+    const meta = document.getElementById('clinicalMediaLibraryMeta');
+    if (meta) meta.textContent = '';
+  }
+
+  async function handleLibraryError(err) {
+    const msg = String(err?.message || err);
+    if (err?.status === 401 || /expired|authentication required|invalid.*token/i.test(msg)) {
+      showLibraryAuthMessage('Session expired — use Sign in to Cloud in the header, then click Refresh.');
+      return;
+    }
+    if (msg === 'Cloud connection required') {
+      showLibraryAuthMessage('Sign in to cloud to load media library.');
+      return;
+    }
+    alert(msg);
   }
 
   function categoryLabel(v) {
@@ -112,6 +163,10 @@
   }
 
   async function loadLibrary() {
+    if (!isCloudReady()) {
+      showLibraryAuthMessage('Sign in to cloud to load media library.');
+      return;
+    }
     const search = document.getElementById('clinicalMediaSearch')?.value?.trim() || '';
     const category = document.getElementById('clinicalMediaCategoryFilter')?.value || '';
     const qs = new URLSearchParams({ limit: '100', sort: 'created_at', dir: 'desc' });
@@ -200,15 +255,15 @@
 
   function bindEvents() {
     document.getElementById('clinicalMediaRefreshBtn')?.addEventListener('click', () => {
-      loadLibrary().catch((e) => alert(e.message));
+      loadLibrary().catch(handleLibraryError);
       loadTimeline().catch(() => {});
       loadAdminStats().catch(() => {});
     });
     document.getElementById('clinicalMediaSearch')?.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') loadLibrary().catch((err) => alert(err.message));
+      if (e.key === 'Enter') loadLibrary().catch(handleLibraryError);
     });
     document.getElementById('clinicalMediaCategoryFilter')?.addEventListener('change', () => {
-      loadLibrary().catch((e) => alert(e.message));
+      loadLibrary().catch(handleLibraryError);
     });
     document.getElementById('clinicalMediaLibraryBody')?.addEventListener('click', async (e) => {
       const btn = e.target.closest('button[data-action]');
@@ -288,8 +343,8 @@
   function init() {
     populateCategoryFilter();
     bindEvents();
-    if (getToken()) {
-      loadLibrary().catch(() => {});
+    if (isCloudReady()) {
+      loadLibrary().catch(handleLibraryError);
       loadAdminStats().catch(() => {});
     }
   }
