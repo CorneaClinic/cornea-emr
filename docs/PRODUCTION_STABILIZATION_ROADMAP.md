@@ -249,7 +249,7 @@ These audit **Top 20** items remain **out of scope** until pen-test remediation 
 
 - Teaching case library + anonymization  
 - LDAP/SSO  
-- Contact lens outcomes in research tab  
+- Contact lens outcomes in research tab — **Done (B1)** — see [BACKLOG.md](./BACKLOG.md)
 - Mobile-optimized visit summary  
 
 **Delivered in Phase 4 (no longer deferred):** appointments/recall, DICOM ingest, dry eye/OSD, OR scheduling, FHIR export prototype, topography ML ectasia v2 modifiers.

@@ -14,7 +14,8 @@ const COHORT_CONDITION = {
   cxl: 'Keratoconus — cross-linking candidate',
   keratitis: 'Microbial keratitis',
   kp: 'Keratoplasty',
-  'kp-graft': 'Post-keratoplasty graft follow-up'
+  'kp-graft': 'Post-keratoplasty graft follow-up',
+  'contact-lens': 'Contact lens fitting'
 };
 
 /**
@@ -307,6 +308,21 @@ export function cohortRowToFhirResources(cohortType, row, index, options = {}) {
       performedDateTime: row.procedureDate,
       code: { text: 'Corneal cross-linking (CXL)' }
     });
+  }
+
+  if (cohortType === 'contact-lens' && row.lensType && row.lensType !== '—') {
+    const lensObs = toFhirObservation(
+      patientId,
+      'Contact lens type',
+      1,
+      '{score}',
+      `cl-type-${patientId}`
+    );
+    if (lensObs) {
+      lensObs.valueString = String(row.lensType);
+      delete lensObs.valueQuantity;
+      resources.push(lensObs);
+    }
   }
 
   const metricFields = [

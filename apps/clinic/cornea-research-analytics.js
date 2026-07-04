@@ -10,7 +10,8 @@
     { id: 'cxl', label: 'CXL procedures' },
     { id: 'keratitis', label: 'Keratitis / ulcer cases' },
     { id: 'kp', label: 'Keratoplasty patients' },
-    { id: 'kp-graft', label: 'Post-graft outcomes' }
+    { id: 'kp-graft', label: 'Post-graft outcomes' },
+    { id: 'contact-lens', label: 'Contact lens fitting outcomes' }
   ];
 
   const CACHE_KEY = 'corneaEmr_researchCache';
@@ -20,6 +21,7 @@
   const STORE_KP = 'kpPatients';
   const STORE_EXAMS = 'kpGraftExams';
   const STORE_REJECTIONS = 'kpRejections';
+  const STORE_PATIENTS = 'patients';
 
   let _lastSource = 'empty';
   let _lastCohortRows = [];
@@ -132,6 +134,47 @@
     }).join('')}</div>`;
   }
 
+  function hasContactLensData(raw) {
+    if (!raw) return false;
+    try {
+      const p = typeof raw === 'string' ? JSON.parse(raw) : raw;
+      if ((p.fit?.indication || []).length) return true;
+      if ((p.fit?.complications || []).length) return true;
+      if ((p.history || []).length) return true;
+      const od = p.fit?.finalRx?.od || {};
+      const os = p.fit?.finalRx?.os || {};
+      return [...Object.values(od), ...Object.values(os)].some((v) => String(v ?? '').trim());
+    } catch {
+      return false;
+    }
+  }
+
+  function summarizeLocalContactLens(raw) {
+    let p;
+    try {
+      p = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    } catch {
+      return null;
+    }
+    const fit = p?.fit || {};
+    const sharedSel = fit.lensSelection?.shared || {};
+    const sharedRx = fit.finalRx?.shared || {};
+    const rxParts = (eye) => ['baseCurve', 'power', 'diameter', 'brand']
+      .map((k) => eye?.[k])
+      .filter((v) => String(v ?? '').trim())
+      .join(' / ');
+    const checklist = fit.dispensing?.checklist || [];
+    const solutions = fit.dispensing?.solutions || [];
+    return {
+      indications: (fit.indication || []).join('; ') || '—',
+      lensType: sharedRx.lensType || sharedSel.lensType || '—',
+      finalRxOd: rxParts(fit.finalRx?.od) || '—',
+      finalRxOs: rxParts(fit.finalRx?.os) || '—',
+      complications: (fit.complications || []).join('; ') || '—',
+      dispensingDocumented: checklist.length > 0 || solutions.length > 0 ? 'Yes' : 'No'
+    };
+  }
+
   function renderCohortTable(rows) {
     const body = document.getElementById('raCohortBody');
     const head = document.getElementById('raCohortHead');
@@ -154,6 +197,8 @@
     setText('raUkTotal', d.registries?.keratitis?.total ?? 0);
     setText('raUkResolved', d.registries?.keratitis?.resolved ?? 0);
     setText('raKpCompleted', d.registries?.keratoplasty?.completed ?? 0);
+    setText('raClFits', d.registries?.contactLens?.visitCount ?? 0);
+    setText('raClPatients', d.registries?.contactLens?.uniquePatients ?? 0);
     setText('raGraftExams', d.registries?.graft?.postGraftExams ?? 0);
     setText('raRejections', d.registries?.graft?.rejectionEpisodes ?? 0);
   }
@@ -165,14 +210,18 @@
   }
 
   async function buildLocalOverview() {
-    const [kc, cxl, uk, kp, exams, rejections] = await Promise.all([
+    const [kc, cxl, uk, kp, exams, rejections, patients] = await Promise.all([
       idbGetAll(STORE_KC),
       idbGetAll(STORE_CXL),
       idbGetAll(STORE_UK),
       idbGetAll(STORE_KP),
       idbGetAll(STORE_EXAMS),
-      idbGetAll(STORE_REJECTIONS)
+      idbGetAll(STORE_REJECTIONS),
+      idbGetAll(STORE_PATIENTS)
     ]);
+
+    const clVisits = patients.filter((p) => hasContactLensData(p.contactLensJSON));
+    const clPatientKeys = new Set(clVisits.map((p) => p.patientId || p.mrn || p.id));
 
     return {
       generatedAt: new Date().toISOString(),
@@ -194,6 +243,10 @@
         graft: {
           postGraftExams: exams.length,
           rejectionEpisodes: rejections.length
+        },
+        contactLens: {
+          visitCount: clVisits.length,
+          uniquePatients: clPatientKeys.size
         }
       }
     };
@@ -300,6 +353,22 @@
       }));
     }
 
+    if (type === 'contact-lens') {
+      const patients = await idbGetAll(STORE_PATIENTS);
+      return patients
+        .filter((p) => hasContactLensData(p.contactLensJSON))
+        .map((p) => {
+          const summary = summarizeLocalContactLens(p.contactLensJSON) || {};
+          return {
+            visitDate: p.visitDate || p.date || '—',
+            mrn: p.mrn || p.patientId || '—',
+            fullName: p.fullName || p.name || '—',
+            ...summary
+          };
+        })
+        .sort((a, b) => String(b.visitDate).localeCompare(String(a.visitDate)));
+    }
+
     return kp
       .filter((p) => p.kpStatus === 'Completed')
       .map((p) => {
@@ -385,6 +454,8 @@
       setText('raUkTotal', '—');
       setText('raUkResolved', '—');
       setText('raKpCompleted', '—');
+      setText('raClFits', '—');
+      setText('raClPatients', '—');
       setText('raGraftExams', '—');
       setText('raRejections', '—');
       setText('raGraftSurvival', '—');

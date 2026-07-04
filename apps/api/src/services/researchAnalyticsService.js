@@ -3,8 +3,9 @@ import { ValidationError } from '../core/errors.js';
 import { getKcRegistryOverview } from './kcRegistryService.js';
 import { getKeratitisOverview } from './keratitisRegistryService.js';
 import { getGraftOutcomesOverview } from './kpGraftOutcomesService.js';
+import { getContactLensOverview, listContactLensOutcomes } from './contactLensOutcomesService.js';
 
-const COHORT_TYPES = Object.freeze(['kc', 'cxl', 'keratitis', 'kp', 'kp-graft']);
+const COHORT_TYPES = Object.freeze(['kc', 'cxl', 'keratitis', 'kp', 'kp-graft', 'contact-lens']);
 
 function csvEscape(val) {
   if (val == null) return '';
@@ -29,7 +30,7 @@ function monthsBetween(start, end) {
 }
 
 export async function getResearchDashboard(clinicId) {
-  const [kc, keratitis, graft, kpStats, visitStats] = await Promise.all([
+  const [kc, keratitis, graft, kpStats, visitStats, contactLens] = await Promise.all([
     getKcRegistryOverview(clinicId),
     getKeratitisOverview(clinicId),
     getGraftOutcomesOverview(clinicId),
@@ -51,7 +52,8 @@ export async function getResearchDashboard(clinicId) {
          AND status != 'cancelled'
       `,
       [clinicId]
-    )
+    ),
+    getContactLensOverview(clinicId)
   ]);
 
   return {
@@ -60,7 +62,8 @@ export async function getResearchDashboard(clinicId) {
       kc,
       keratitis,
       graft,
-      keratoplasty: kpStats.rows[0]
+      keratoplasty: kpStats.rows[0],
+      contactLens
     },
     visits: visitStats.rows[0],
     cohorts: COHORT_TYPES.map((id) => ({ id, label: cohortLabel(id) }))
@@ -73,7 +76,8 @@ function cohortLabel(id) {
     cxl: 'CXL procedures',
     keratitis: 'Keratitis / ulcer cases',
     kp: 'Keratoplasty patients',
-    'kp-graft': 'Post-graft outcomes (completed KP)'
+    'kp-graft': 'Post-graft outcomes (completed KP)',
+    'contact-lens': 'Contact lens fitting outcomes'
   };
   return labels[id] || id;
 }
@@ -175,6 +179,10 @@ export async function listCohortRows(clinicId, cohortType, queryParams = {}) {
       surgeryDate: r.surgery_date,
       graftOutcome: r.graft_outcome_status
     }));
+  }
+
+  if (type === 'contact-lens') {
+    return listContactLensOutcomes(clinicId, { limit });
   }
 
   // kp-graft
