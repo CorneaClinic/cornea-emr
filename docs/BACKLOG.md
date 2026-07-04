@@ -10,7 +10,7 @@
 | ID | Feature | Status | Notes |
 |----|---------|--------|-------|
 | B1 | Contact lens outcomes in research tab | **Done** | Cohort `contact-lens`, overview stats, CSV/FHIR export |
-| B2 | Mobile-optimized visit summary | Planned | Responsive print/summary view |
+| B2 | Mobile-optimized visit summary | **Done** | Bottom sheet, FAB, compact print |
 | B3 | Teaching case library + anonymization | Planned | Builds on `teaching_case` media category |
 | B4 | LDAP/SSO | Planned | Large — identity provider integration |
 
@@ -36,6 +36,27 @@
 ### Data source
 
 Contact lens data is captured in the visit form (`contactLensJSON` hidden field) and synced to `visits.payload` JSONB. Only visits with documented indication, final Rx, complications, or history are included.
+
+---
+
+## B2 — Mobile visit summary
+
+### What shipped
+
+- **Module:** `cornea-mobile-visit-summary.js` — card-based summary from current form or visit history record
+- **UI:** Bottom sheet on phones; centered dialog on wider screens
+- **FAB:** Floating action button (≤768px) when patient form is open
+- **Toolbar:** **Summary** / **Mobile Summary** buttons in form actions (mobile-visible)
+- **Visit history:** **Mobile summary** on each past visit in the sidebar
+- **Print:** Single-column compact layout optimized for phone paper/PDF share
+
+### Verify
+
+1. Open a patient visit on a phone or narrow browser window (≤768px)
+2. Tap the floating **file-medical** button or **Summary** in the toolbar
+3. Confirm diagnosis, VA/IOP vitals, medications, and follow-up cards
+4. Tap **Print** — compact layout opens in print preview
+5. In visit history sidebar, select a past visit → **Mobile summary**
 
 ---
 

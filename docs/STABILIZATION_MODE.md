@@ -77,7 +77,7 @@ See `docs/PHASE4_EXIT.md` § Exit verification — dashboard KPIs, FHIR export, 
 Choose one:
 
 1. **Resume vendor pen-test** — reactivation triggers in `docs/PENTEST_ENGAGEMENT.md`
-2. **Start deferred backlog** — see [BACKLOG.md](./BACKLOG.md) (B1 contact lens outcomes **done** 2026-07-04)
+2. **Start deferred backlog** — see [BACKLOG.md](./BACKLOG.md) (B1 contact lens **done**, B2 mobile summary **done** 2026-07-04)
 
 ---
 

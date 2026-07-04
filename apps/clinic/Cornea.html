@@ -565,6 +565,262 @@
         .visit-history-list { max-height: 160px; }
     }
 
+    /* Mobile visit summary (backlog B2) */
+    .mvs-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 12000;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+    }
+    .mvs-overlay[hidden] { display: none !important; }
+    body.mvs-open { overflow: hidden; }
+    .mvs-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(13, 27, 42, 0.45);
+    }
+    .mvs-sheet {
+        position: relative;
+        width: 100%;
+        max-width: 520px;
+        max-height: 92vh;
+        background: var(--surface);
+        border-radius: 16px 16px 0 0;
+        box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.18);
+        display: flex;
+        flex-direction: column;
+        animation: mvsSlideUp 0.28s ease;
+    }
+    @keyframes mvsSlideUp {
+        from { transform: translateY(100%); opacity: 0.6; }
+        to { transform: translateY(0); opacity: 1; }
+    }
+    @media (min-width: 769px) {
+        .mvs-overlay { align-items: center; }
+        .mvs-sheet {
+            border-radius: var(--radius-lg);
+            max-height: 85vh;
+            animation: pageIn 0.25s ease;
+        }
+    }
+    .mvs-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 12px 14px;
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    .mvs-toolbar h2 {
+        flex: 1;
+        margin: 0;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--primary);
+        text-align: center;
+    }
+    .mvs-btn-icon {
+        width: 36px;
+        height: 36px;
+        border: none;
+        border-radius: var(--radius-sm);
+        background: var(--surface-raised);
+        color: var(--text-secondary);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .mvs-scroll {
+        flex: 1;
+        overflow-y: auto;
+        padding: 14px 16px 8px;
+        -webkit-overflow-scrolling: touch;
+    }
+    .mvs-footer {
+        display: flex;
+        gap: 10px;
+        padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0));
+        border-top: 1px solid var(--border);
+        flex-shrink: 0;
+    }
+    .mvs-footer .btn-teal { flex: 1; }
+    .mvs-header { margin-bottom: 14px; }
+    .mvs-clinic {
+        font-size: 0.68rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin: 0;
+    }
+    .mvs-patient {
+        margin: 4px 0 2px;
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--primary);
+    }
+    .mvs-meta {
+        margin: 0;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+    }
+    .mvs-diagnosis {
+        background: linear-gradient(135deg, var(--primary-faint), #e8f1fb);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        margin-bottom: 14px;
+        border-left: 4px solid var(--primary-mid);
+    }
+    .mvs-diagnosis span {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+    .mvs-diagnosis strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 0.95rem;
+        color: var(--text);
+        line-height: 1.4;
+    }
+    .mvs-card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        margin-bottom: 12px;
+        overflow: hidden;
+    }
+    .mvs-card-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 12px;
+        background: var(--surface-raised);
+        border-bottom: 1px solid var(--border);
+    }
+    .mvs-card-head h3 {
+        margin: 0;
+        font-size: 0.82rem;
+        font-weight: 700;
+        color: var(--primary-mid);
+    }
+    .mvs-card-icon { font-size: 1rem; }
+    .mvs-card-body { padding: 10px 12px 12px; }
+    .mvs-row { margin-bottom: 10px; }
+    .mvs-row:last-child { margin-bottom: 0; }
+    .mvs-label {
+        display: block;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        color: var(--text-muted);
+    }
+    .mvs-value {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.88rem;
+        color: var(--text-secondary);
+        line-height: 1.45;
+        word-break: break-word;
+    }
+    .mvs-vitals {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+    .mvs-vital {
+        background: var(--surface-raised);
+        border-radius: var(--radius-sm);
+        padding: 8px 10px;
+    }
+    .mvs-vital-lbl {
+        display: block;
+        font-size: 0.62rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+    }
+    .mvs-vital-val {
+        display: block;
+        margin-top: 2px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        color: var(--text);
+        line-height: 1.35;
+    }
+    .mvs-med-list { margin-top: 8px; }
+    .mvs-med {
+        display: flex;
+        gap: 10px;
+        padding: 10px 0;
+        border-top: 1px solid var(--border);
+    }
+    .mvs-med:first-child { border-top: none; padding-top: 0; }
+    .mvs-med-num {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: var(--primary-mid);
+        color: #fff;
+        font-size: 0.72rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .mvs-med-eye {
+        margin-left: 6px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        color: var(--primary-light);
+    }
+    .mvs-med-detail, .mvs-med-inst {
+        margin: 2px 0 0;
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        line-height: 1.4;
+    }
+    .mvs-empty {
+        text-align: center;
+        color: var(--text-muted);
+        padding: 24px 12px;
+        font-size: 0.88rem;
+    }
+    .mvs-fab {
+        position: fixed;
+        right: 16px;
+        bottom: calc(16px + env(safe-area-inset-bottom, 0));
+        z-index: 9000;
+        width: 52px;
+        height: 52px;
+        border: none;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--primary-mid), var(--primary));
+        color: #fff;
+        font-size: 1.2rem;
+        box-shadow: 0 4px 20px rgba(10, 77, 140, 0.35);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .mvs-fab[hidden] { display: none !important; }
+    .mvs-fab:active { transform: scale(0.96); }
+    @media (min-width: 769px) {
+        .mvs-fab { display: none !important; }
+    }
+    .btn-mobile-summary { display: none; }
+    @media (max-width: 768px) {
+        .btn-mobile-summary { display: inline-flex; }
+    }
+
     /* =============================================
        TAB SYSTEM (Hidden, controlled by sidebar nav)
     ============================================= */
@@ -3694,6 +3950,9 @@
                         <button type="button" class="btn-secondary btn-sm" id="btnEditPatientVisit" onclick="openPatientFormModal('edit')" hidden>
                             <i class="fa-solid fa-pen"></i> Edit
                         </button>
+                        <button type="button" class="btn-secondary btn-sm btn-mobile-summary" onclick="CorneaMobileVisitSummary.openFromForm()">
+                            <i class="fa-solid fa-mobile-screen"></i> Summary
+                        </button>
                         <button type="button" class="btn-secondary btn-sm" id="btnPreviewPatient" onclick="generateSummary()" hidden>
                             <i class="fa-solid fa-file-lines"></i> Preview
                         </button>
@@ -4733,6 +4992,9 @@
             <div class="form-actions-bar no-print emr-form-actions-source" hidden>
                 <button type="button" class="btn-danger" onclick="clearForm()">
                     <i class="fa-solid fa-trash-can"></i> Clear Form
+                </button>
+                <button type="button" class="btn-secondary btn-mobile-summary" onclick="CorneaMobileVisitSummary.openFromForm()">
+                    <i class="fa-solid fa-mobile-screen"></i> Mobile Summary
                 </button>
                 <button type="button" class="btn-secondary" onclick="generateSummary()">
                     <i class="fa-solid fa-file-lines"></i> Preview Summary
@@ -6437,6 +6699,7 @@
 <script src="js/diagnosis.js"></script>
 <script src="js/dashboard.js"></script>
 <script src="js/printing.js"></script>
+<script src="cornea-mobile-visit-summary.js"></script>
 <script src="js/lid-autocomplete.js"></script>
 <script src="js/clinical-exam.js"></script>
 <script src="js/medical-advice.js"></script>

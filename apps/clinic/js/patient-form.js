@@ -324,6 +324,7 @@ function populateFormFromData(data) {
     if (window.CorneaOpinionReferral) {
         window.CorneaOpinionReferral.onFormPopulated(data);
     }
+    window.CorneaMobileVisitSummary?.refreshFab?.();
 }
 
 window.renderPatientReadOnly = function(data, containerId) {
@@ -581,6 +582,7 @@ window.openPatientFormModal = function(mode) {
             repositionOpenLidAutocompleteLists();
             repositionOpenDiagnosisAutocomplete();
             window.refreshExamFindingHighlights();
+            window.CorneaMobileVisitSummary?.refreshFab?.();
         };
 
         const seedNewVisit = (record) => {
@@ -620,6 +622,7 @@ window.openPatientFormModal = function(mode) {
         repositionOpenDiagnosisAutocomplete();
         window.refreshPatientVisitHistory();
         window.refreshExamFindingHighlights();
+        window.CorneaMobileVisitSummary?.refreshFab?.();
     });
 };
 
@@ -809,9 +812,13 @@ function selectVisitHistoryItem(recordId, visits) {
     }
 
     const isCurrent = currentRecordId && String(record.id) === String(currentRecordId);
+    const recordIdAttr = String(record.id).replace(/"/g, '&quot;');
     detail.innerHTML = `
         ${buildVisitSummaryHtml(record)}
         <div class="visit-summary-actions">
+            <button type="button" class="btn-secondary btn-sm btn-mobile-summary" style="width:100%;margin-bottom:8px;" data-visit-summary-id="${recordIdAttr}">
+                <i class="fa-solid fa-mobile-screen"></i> Mobile summary
+            </button>
             ${isCurrent
                 ? '<p style="margin:0 0 8px;font-size:0.78rem;color:var(--success);font-weight:600;"><i class="fa-solid fa-circle-check"></i> This visit is open in the form</p>'
                 : `<button type="button" class="btn-primary btn-sm" style="width:100%;" onclick="openVisitFromHistory(${record.id})">
@@ -819,6 +826,9 @@ function selectVisitHistoryItem(recordId, visits) {
                    </button>`}
         </div>
     `;
+    detail.querySelector('[data-visit-summary-id]')?.addEventListener('click', () => {
+        window.CorneaMobileVisitSummary?.openFromRecord(record);
+    });
 }
 
 function renderVisitHistorySidebar(visits, currentRecordId) {
