@@ -23,34 +23,115 @@ function familyId() {
   return crypto.randomUUID();
 }
 
+async function getClinicIdBySlug(slug) {
+  const res = await db.query(`SELECT id FROM clinics WHERE slug = $1`, [slug]);
+  return res.rows[0]?.id ?? null;
+}
+
+/**
+ * Remove pen-test data without deleting clinics or audit_logs (append-only).
+ * @param {string} clinicId
+ */
+async function resetClinicTestData(clinicId) {
+  const steps = [
+    [`DELETE FROM sync_conflicts WHERE clinic_id = $1`, [clinicId]],
+    [`DELETE FROM client_mutations WHERE clinic_id = $1`, [clinicId]],
+    [`DELETE FROM sync_cursors WHERE clinic_id = $1`, [clinicId]],
+    [`DELETE FROM sync_logs WHERE clinic_id = $1`, [clinicId]],
+    [`DELETE FROM record_edit_locks WHERE clinic_id = $1`, [clinicId]],
+    [`DELETE FROM visits WHERE clinic_id = $1`, [clinicId]],
+    [`DELETE FROM patients WHERE clinic_id = $1`, [clinicId]],
+    [`DELETE FROM user_sessions WHERE clinic_id = $1`, [clinicId]]
+  ];
+
+  for (const [sql, params] of steps) {
+    try {
+      await db.query(sql, params);
+    } catch (_) {
+      /* table may be absent on older migration snapshots */
+    }
+  }
+}
+
+/**
+ * Reset pen-test fixtures. Clinics and audit_logs are kept (append-only policy).
+ * @param {string[]} slugs
+ */
+export async function cleanupClinicFixtures(slugs) {
+  for (const slug of slugs) {
+    const clinicId = await getClinicIdBySlug(slug);
+    if (!clinicId) continue;
+    await resetClinicTestData(clinicId);
+    await db.query(`UPDATE users SET is_active = false WHERE clinic_id = $1`, [clinicId]);
+    await db.query(`UPDATE clinics SET status = 'suspended' WHERE id = $1`, [clinicId]);
+  }
+}
+
 /**
  * @param {{ name: string, slug: string, userEmail: string, role?: string, password?: string }} opts
  */
 export async function createClinicFixture(opts) {
   const password = opts.password || 'PenTest-Clinic-User1!';
   const role = opts.role || 'cornea_consultant';
-  const clinicRes = await db.query(
-    `
-      INSERT INTO clinics (name, slug, status)
-      VALUES ($1, $2, 'active')
-      RETURNING id
-    `,
-    [opts.name, opts.slug]
-  );
-  const clinicId = clinicRes.rows[0].id;
+
+  let clinicId = await getClinicIdBySlug(opts.slug);
+  if (clinicId) {
+    await resetClinicTestData(clinicId);
+    await db.query(
+      `UPDATE clinics SET name = $2, status = 'active' WHERE id = $1`,
+      [clinicId, opts.name]
+    );
+  } else {
+    const clinicRes = await db.query(
+      `
+        INSERT INTO clinics (name, slug, status)
+        VALUES ($1, $2, 'active')
+        RETURNING id
+      `,
+      [opts.name, opts.slug]
+    );
+    clinicId = clinicRes.rows[0].id;
+  }
 
   const hash = await bcrypt.hash(password, 10);
-  const userRes = await db.query(
-    `
-      INSERT INTO users (
-        clinic_id, email, password_hash, full_name, role, is_active, must_change_password
-      )
-      VALUES ($1, $2, $3, $4, $5, true, false)
-      RETURNING id, email, role, clinic_id
-    `,
-    [clinicId, opts.userEmail, hash, `${opts.name} User`, role]
+  const existingUser = await db.query(
+    `SELECT id FROM users WHERE clinic_id = $1 AND email = $2`,
+    [clinicId, opts.userEmail]
   );
-  const user = userRes.rows[0];
+
+  let user;
+  if (existingUser.rows.length) {
+    const userRes = await db.query(
+      `
+        UPDATE users
+           SET password_hash = $2,
+               full_name = $3,
+               role = $4,
+               is_active = true,
+               failed_login_count = 0,
+               locked_until = NULL,
+               must_change_password = false
+         WHERE id = $1
+         RETURNING id, email, role, clinic_id
+      `,
+      [existingUser.rows[0].id, hash, `${opts.name} User`, role]
+    );
+    user = userRes.rows[0];
+    await db.query(`DELETE FROM user_sessions WHERE user_id = $1`, [user.id]);
+  } else {
+    const userRes = await db.query(
+      `
+        INSERT INTO users (
+          clinic_id, email, password_hash, full_name, role, is_active, must_change_password
+        )
+        VALUES ($1, $2, $3, $4, $5, true, false)
+        RETURNING id, email, role, clinic_id
+      `,
+      [clinicId, opts.userEmail, hash, `${opts.name} User`, role]
+    );
+    user = userRes.rows[0];
+  }
+
   const sessionFamilyId = familyId();
   const refreshToken = crypto.randomBytes(32).toString('base64url');
   await db.query(
@@ -91,18 +172,6 @@ export async function createPatient(clinicId, opts = {}) {
     [clinicId, mrn, fullName]
   );
   return res.rows[0];
-}
-
-export async function cleanupClinicFixtures(slugs) {
-  for (const slug of slugs) {
-    await db.query(
-      `
-        DELETE FROM clinics
-         WHERE slug = $1
-      `,
-      [slug]
-    );
-  }
 }
 
 export function authHeader(token, deviceId = 'pentest-device') {
