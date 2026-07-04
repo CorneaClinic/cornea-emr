@@ -324,7 +324,7 @@ function populateFormFromData(data) {
     if (window.CorneaOpinionReferral) {
         window.CorneaOpinionReferral.onFormPopulated(data);
     }
-    window.CorneaMobileVisitSummary?.refreshFab?.();
+    window.CorneaMobileVisitSummary?.refreshFab?.(); // B2 FAB visibility
 }
 
 window.renderPatientReadOnly = function(data, containerId) {
