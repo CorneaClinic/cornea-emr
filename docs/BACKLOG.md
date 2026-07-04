@@ -31,7 +31,7 @@
 1. Sign in to cloud with research export permission
 2. Open **Research** tab → confirm **CL visits** / **CL patients** stats
 3. Cohort builder → **Contact lens fitting outcomes** → table + CSV export
-4. API unit tests: `npm run test --workspace=apps/api -- contact-lens-outcomes`
+4. API unit tests: `npm test --prefix apps/api -- contact-lens-outcomes`
 
 ### Data source
 

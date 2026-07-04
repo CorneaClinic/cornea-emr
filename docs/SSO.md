@@ -20,7 +20,7 @@ Users are linked by `users.auth_provider` + `users.external_subject`, or matched
 Run on the API host:
 
 ```bash
-npm run migrate --workspace=apps/api
+npm run api:migrate
 ```
 
 Migration `023_sso_auth.sql` adds `auth_provider` (`local` \| `ldap` \| `oidc`) and `external_subject`.
