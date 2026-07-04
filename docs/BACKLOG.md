@@ -12,7 +12,7 @@
 | B1 | Contact lens outcomes in research tab | **Done** | Cohort `contact-lens`, overview stats, CSV/FHIR export |
 | B2 | Mobile-optimized visit summary | **Done** | Bottom sheet, FAB, compact print |
 | B3 | Teaching case library + anonymization | **Done** | API + teaching grid, publish/export |
-| B4 | LDAP/SSO | Planned | Large — identity provider integration |
+| B4 | LDAP/SSO | **Done** | OIDC + LDAP API, clinic SSO buttons, user linking |
 
 ---
 
@@ -77,6 +77,25 @@ Contact lens data is captured in the visit form (`contactLensJSON` hidden field)
 4. **Preview anon** — confirm no patient identifiers
 5. **Publish** then **Export JSON** — snapshot saved to metadata
 6. API tests: `npm test -- teaching-cases` (in `apps/api`)
+
+---
+
+## B4 — LDAP / SSO
+
+### What shipped
+
+- **Migration:** `023_sso_auth.sql` — `auth_provider`, `external_subject` on `users`
+- **API:** OIDC authorization code flow, LDAP bind/search/auth, `/api/v1/auth/sso/*`
+- **Services:** `ssoConfig`, `oidcService`, `ldapService`, `ssoUserService`, shared `issueAuthTokens`
+- **Clinic:** `cornea-sso.js`, `sso-callback.html`, SSO buttons in cloud login modal
+- **Docs:** [SSO.md](./SSO.md)
+
+### Verify
+
+1. With SSO env vars unset — local login only; no SSO panel
+2. `GET /api/v1/auth/sso/config` — `{ oidc: { enabled: false }, ldap: { enabled: false } }`
+3. Configure OIDC or LDAP on staging; confirm buttons appear in cloud sign-in
+4. API tests: `npm test -- sso-config` (in `apps/api`)
 
 ---
 

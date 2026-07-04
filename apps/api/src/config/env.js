@@ -216,6 +216,24 @@ export const env = Object.freeze({
     get enabled() {
       return Boolean(this.host && this.from);
     }
+  }),
+  sso: Object.freeze({
+    oidcEnabled: optional('SSO_OIDC_ENABLED', 'false') === 'true',
+    oidcIssuer: optional('SSO_OIDC_ISSUER', ''),
+    oidcClientId: optional('SSO_OIDC_CLIENT_ID', ''),
+    oidcClientSecret: optional('SSO_OIDC_CLIENT_SECRET', ''),
+    oidcRedirectUri: optional('SSO_OIDC_REDIRECT_URI', ''),
+    oidcScopes: optional('SSO_OIDC_SCOPES', 'openid email profile'),
+    ldapEnabled: optional('SSO_LDAP_ENABLED', 'false') === 'true',
+    ldapUrl: optional('SSO_LDAP_URL', ''),
+    ldapBindDn: optional('SSO_LDAP_BIND_DN', ''),
+    ldapBindPassword: optional('SSO_LDAP_BIND_PASSWORD', ''),
+    ldapSearchBase: optional('SSO_LDAP_SEARCH_BASE', ''),
+    ldapSearchFilter: optional('SSO_LDAP_SEARCH_FILTER', '(mail={{email}})'),
+    ldapTlsRejectUnauthorized: optional('SSO_LDAP_TLS_REJECT_UNAUTHORIZED', 'true') === 'true',
+    defaultRole: optional('SSO_DEFAULT_ROLE', 'ophthalmologist'),
+    autoProvision: optional('SSO_AUTO_PROVISION', 'false') === 'true',
+    defaultClinicId: optional('SSO_DEFAULT_CLINIC_ID', '')
   })
 });
 

@@ -182,14 +182,38 @@ export async function login({ req, email, password }) {
 
   await clearFailedLogins(user.id);
 
+  return issueAuthTokens({
+    req,
+    user,
+    auditAction: 'login',
+    auditDiff: { method: 'local' }
+  });
+}
+
+/**
+ * Issue JWT session tokens for an authenticated user (local, LDAP, OIDC).
+ * @param {object} params
+ * @param {import('express').Request} params.req
+ * @param {object} params.user
+ * @param {string} [params.auditAction]
+ * @param {Record<string, unknown>} [params.auditDiff]
+ */
+export async function issueAuthTokens({ req, user, auditAction = 'login', auditDiff = {} }) {
+  if (!user?.is_active) {
+    throw new UnauthorizedError('Account is inactive');
+  }
+  if (user.clinic_status !== 'active') {
+    throw new UnauthorizedError('Clinic account is suspended');
+  }
+
   const session = await createSession({ req, user });
 
   await auditAuthEvent({
     req,
     userId: user.id,
     clinicId: user.clinic_id,
-    action: 'login',
-    diff: { sessionFamilyId: session.familyId }
+    action: auditAction,
+    diff: auditDiff
   });
 
   return {

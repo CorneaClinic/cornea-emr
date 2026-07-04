@@ -16,10 +16,13 @@ import {
   requestPasswordReset,
   confirmPasswordReset
 } from '../services/authService.js';
+import ssoAuthRouter from './sso-auth.js';
 
 const router = Router();
 
 router.use(auditContextMiddleware);
+
+router.use('/sso', ssoAuthRouter);
 
 const loginIpLimiter = createRateLimiter({
   windowMs: env.rateLimit.loginWindowMs,

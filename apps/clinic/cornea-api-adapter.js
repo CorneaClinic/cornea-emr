@@ -108,6 +108,7 @@
         : 'Server unreachable — start the API before signing in.';
       statusEl.style.color = 'var(--danger, #c62828)';
     }
+    void global.CorneaSso?.refreshLoginPanel?.(url);
   }
 
   function beginOfflineFallbackFromCloudModal() {
@@ -274,6 +275,15 @@
             <input type="password" id="corneaLoginPassword" autocomplete="current-password" /></div>
           <p id="corneaLoginApiStatus" class="form-hint" style="display:none;margin-top:4px;"></p>
           <p id="corneaLoginError" class="form-hint" style="color:var(--danger,#c62828);display:none;"></p>
+          <div id="corneaLoginSsoPanel" style="display:none;margin-top:12px;">
+            <p class="form-hint" style="text-align:center;margin-bottom:8px;">— or —</p>
+            <button type="button" class="btn-secondary" id="corneaLoginOidcBtn" style="width:100%;display:none;">
+              <i class="fa-solid fa-building-shield"></i> Sign in with organization SSO
+            </button>
+            <button type="button" class="btn-secondary" id="corneaLoginLdapBtn" style="width:100%;display:none;margin-top:8px;">
+              <i class="fa-solid fa-sitemap"></i> Sign in with directory (LDAP)
+            </button>
+          </div>
           <p style="margin-top:8px;text-align:center;font-size:0.85rem;">
             <a href="forgot-password.html" id="corneaForgotPasswordLink">Forgot password?</a>
           </p>

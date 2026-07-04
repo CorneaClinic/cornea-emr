@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Signing in — Cornea Clinic</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      background: linear-gradient(145deg, #0d2137 0%, #1a3a5c 50%, #0f2840 100%);
+      color: #fff;
+    }
+    .panel { text-align: center; padding: 24px; max-width: 420px; }
+    .panel h1 { font-size: 1.25rem; margin: 0 0 8px; }
+    .panel p { opacity: 0.85; margin: 0; font-size: 0.95rem; }
+    .panel.error p { color: #ffcdd2; }
+    a { color: #90caf9; }
+  </style>
+</head>
+<body>
+  <div class="panel" id="panel" role="main">
+    <h1><i class="fa-solid fa-spinner fa-spin"></i> Completing sign-in…</h1>
+    <p>Please wait while your session is established.</p>
+  </div>
+  <script>
+    (function () {
+      const STORAGE_TOKEN = 'corneaEmr_apiToken';
+      const STORAGE_BASE = 'corneaEmr_apiBase';
+      const STORAGE_EMAIL = 'corneaEmr_apiEmail';
+      const DEFAULT_API_BASE = 'https://corneaclinic-2zfpt.ondigitalocean.app';
+
+      const panel = document.getElementById('panel');
+      const params = new URLSearchParams(location.search);
+      const accessToken = params.get('accessToken');
+      const userB64 = params.get('user');
+
+      function fail(message) {
+        panel.classList.add('error');
+        panel.innerHTML = '<h1><i class="fa-solid fa-circle-exclamation"></i> Sign-in failed</h1>'
+          + '<p>' + message + '</p>'
+          + '<p style="margin-top:16px;"><a href="Cornea.html?cloud=1">Return to sign in</a></p>';
+      }
+
+      if (!accessToken) {
+        fail('Missing access token from identity provider.');
+        return;
+      }
+
+      localStorage.setItem(STORAGE_TOKEN, accessToken);
+      if (!localStorage.getItem(STORAGE_BASE)) {
+        localStorage.setItem(STORAGE_BASE, DEFAULT_API_BASE);
+      }
+
+      if (userB64) {
+        try {
+          const json = atob(userB64.replace(/-/g, '+').replace(/_/g, '/'));
+          const user = JSON.parse(json);
+          if (user?.email) localStorage.setItem(STORAGE_EMAIL, user.email);
+        } catch (_) { /* optional profile */ }
+      }
+
+      location.replace('Cornea.html?cloud=1');
+    })();
+  </script>
+</body>
+</html>
