@@ -116,6 +116,10 @@ MEDIA_S3_FORCE_PATH_STYLE=true
 | POST | `/api/v1/media/:id/archive` | Soft archive |
 | POST | `/api/v1/media/:id/restore` | Restore archived |
 | GET | `/api/v1/media/:id/content` | Authenticated stream |
+| GET | `/api/v1/teaching-cases` | Teaching case library (list, search, tag filter) |
+| PUT | `/api/v1/teaching-cases/:id` | Teaching metadata (`metadata.teaching`) |
+| GET | `/api/v1/teaching-cases/:id/export` | Anonymized JSON export |
+| POST | `/api/v1/teaching-cases/:id/publish` | Save anonymized snapshot to metadata |
 
 ## Frontend
 

@@ -25,6 +25,7 @@ import adminAuditLogsRouter from './admin-audit-logs.js';
 import auditLogsRouter from './audit-logs.js';
 import mediaRouter from './media.js';
 import mediaLibraryRouter from './media-library.js';
+import teachingCasesRouter from './teaching-cases.js';
 import drawingRouter from './drawing.js';
 import icdRouter from './icd.js';
 import dashboardRouter from './dashboard.js';
@@ -82,6 +83,7 @@ router.use('/corneal-tissues/:id/media', createEntityMediaRouter({
 }));
 router.use('/corneal-tissues', cornealTissuesRouter);
 router.use('/media-library', mediaLibraryRouter);
+router.use('/teaching-cases', teachingCasesRouter);
 router.use('/media', mediaRouter);
 router.use('/sync', syncRouter);
 router.use('/icd', icdRouter);

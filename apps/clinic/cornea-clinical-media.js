@@ -157,6 +157,7 @@
           <button type="button" class="btn-secondary btn-sm" data-action="compare-a" data-id="${escapeHtml(a.id)}">A</button>
           <button type="button" class="btn-secondary btn-sm" data-action="compare-b" data-id="${escapeHtml(a.id)}">B</button>
           <button type="button" class="btn-secondary btn-sm" data-action="download" data-id="${escapeHtml(a.id)}">↓</button>
+          <button type="button" class="btn-secondary btn-sm" data-action="teaching" data-id="${escapeHtml(a.id)}" title="Mark as teaching case">🎓</button>
         </td>
       </tr>`;
     }).join('');
@@ -281,6 +282,13 @@
         a.download = libraryItems.find((x) => x.id === id)?.originalFilename || 'download';
         a.click();
       }
+      if (action === 'teaching') {
+        if (global.CorneaTeachingLibrary?.markAssetAsTeaching) {
+          await global.CorneaTeachingLibrary.markAssetAsTeaching(id);
+        } else {
+          alert('Teaching library module not loaded.');
+        }
+      }
     });
     document.getElementById('clinicalMediaTimeline')?.addEventListener('click', (e) => {
       const btn = e.target.closest('.timeline-view');
@@ -353,6 +361,8 @@
     init,
     loadLibrary,
     loadTimeline,
-    CATEGORIES
+    CATEGORIES,
+    apiFetch,
+    categoryLabel
   };
 })(window);

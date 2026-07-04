@@ -11,7 +11,7 @@
 |----|---------|--------|-------|
 | B1 | Contact lens outcomes in research tab | **Done** | Cohort `contact-lens`, overview stats, CSV/FHIR export |
 | B2 | Mobile-optimized visit summary | **Done** | Bottom sheet, FAB, compact print |
-| B3 | Teaching case library + anonymization | Planned | Builds on `teaching_case` media category |
+| B3 | Teaching case library + anonymization | **Done** | API + teaching grid, publish/export |
 | B4 | LDAP/SSO | Planned | Large — identity provider integration |
 
 ---
@@ -57,6 +57,26 @@ Contact lens data is captured in the visit form (`contactLensJSON` hidden field)
 3. Confirm diagnosis, VA/IOP vitals, medications, and follow-up cards
 4. Tap **Print** — compact layout opens in print preview
 5. In visit history sidebar, select a past visit → **Mobile summary**
+
+---
+
+## B3 — Teaching case library
+
+### What shipped
+
+- **API:** `/api/v1/teaching-cases` — list, metadata update, anonymized export, publish snapshot
+- **Anonymizer:** Strips patient name/MRN, scrubs PHI patterns, generic filenames, `TC-` case refs
+- **UI:** Teaching Case Library grid in Clinical Media tab; 🎓 mark-from-library; edit/preview/publish/export
+- **Storage:** `metadata.teaching` JSONB on `media_assets` (existing schema)
+
+### Verify
+
+1. Sign in to cloud with media read/write permission
+2. Clinical Media → upload or select media → click 🎓 **Mark as teaching**
+3. Teaching Case Library → **Edit** → add title, tags, learning objectives
+4. **Preview anon** — confirm no patient identifiers
+5. **Publish** then **Export JSON** — snapshot saved to metadata
+6. API tests: `npm test -- teaching-cases` (in `apps/api`)
 
 ---
 

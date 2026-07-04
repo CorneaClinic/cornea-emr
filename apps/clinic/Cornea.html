@@ -1567,6 +1567,61 @@
         .clinical-media-timeline-item { grid-template-columns: 1fr; }
     }
 
+    /* Teaching case library (backlog B3) */
+    .teaching-case-toolbar {
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 14px;
+    }
+    .teaching-case-toolbar .form-group { margin: 0; min-width: 200px; flex: 1; }
+    #teachingCaseGrid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+        gap: 14px;
+    }
+    .teaching-case-card {
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        padding: 12px 14px;
+        background: var(--surface);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .teaching-case-card header {
+        display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    }
+    .teaching-case-ref {
+        font-size: 0.68rem; font-weight: 700; color: var(--text-muted);
+        font-family: monospace;
+    }
+    .teaching-case-badge {
+        font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+        padding: 2px 8px; border-radius: 999px;
+        background: var(--success, #2e7d32); color: #fff;
+    }
+    .teaching-case-card h4 {
+        margin: 0; font-size: 0.92rem; line-height: 1.35; color: var(--text);
+    }
+    .teaching-case-meta, .teaching-case-patient {
+        margin: 0; font-size: 0.75rem; color: var(--text-muted);
+    }
+    .teaching-case-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+    .teaching-tag {
+        font-size: 0.65rem; padding: 2px 8px; border-radius: 999px;
+        background: var(--primary-faint); color: var(--primary-mid); font-weight: 600;
+    }
+    .teaching-case-actions {
+        display: flex; flex-wrap: wrap; gap: 6px; margin-top: auto; padding-top: 6px;
+    }
+    .teaching-case-empty {
+        grid-column: 1 / -1; text-align: center; color: var(--text-muted);
+        padding: 20px 12px; font-size: 0.85rem;
+    }
+    #teachingCasePreviewBody {
+        max-height: 50vh; overflow: auto; font-size: 0.75rem;
+        background: #0d1b2a; color: #e8eef6; padding: 12px; border-radius: 8px;
+        white-space: pre-wrap; word-break: break-word;
+    }
+
     /* Contact Lens module */
     .cl-subnav {
         display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px;
@@ -5268,6 +5323,18 @@
                         </table>
                     </div>
 
+                    <h3 class="mt-4" style="font-size:0.95rem;"><i class="fa-solid fa-graduation-cap"></i> Teaching Case Library</h3>
+                    <p class="form-hint">Curate anonymized teaching cases for grand rounds and resident education. Mark media with 🎓 in the table above, then add metadata and publish an anonymized snapshot.</p>
+                    <div class="teaching-case-toolbar no-print">
+                        <div class="form-group">
+                            <label for="teachingCaseSearch">Search cases</label>
+                            <input type="search" id="teachingCaseSearch" placeholder="Title, diagnosis, tags…" />
+                        </div>
+                        <button type="button" class="btn-secondary btn-sm" id="teachingCaseRefreshBtn"><i class="fa-solid fa-rotate"></i> Refresh</button>
+                        <span id="teachingCaseMeta" class="form-hint" style="margin-left:auto;"></span>
+                    </div>
+                    <div id="teachingCaseGrid" class="teaching-case-grid"></div>
+
                     <h3 class="mt-4" style="font-size:0.95rem;">DICOM ingest (prototype)</h3>
                     <div class="card section-theme-clinical-media no-print" style="margin-top:8px;">
                         <div class="card-body">
@@ -6689,6 +6756,41 @@
     </div>
 </div>
 
+<div id="teachingCaseEditorModal" class="emr-modal-overlay" aria-hidden="true" role="presentation">
+    <div class="emr-modal" role="dialog" aria-modal="true" aria-labelledby="teachingCaseEditorTitle">
+        <div class="emr-modal-header">
+            <h2 id="teachingCaseEditorTitle">Teaching case metadata</h2>
+            <button type="button" class="emr-modal-close" id="teachingCaseEditorClose" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <div class="form-group"><label for="tcEditTitle">Title</label><input type="text" id="tcEditTitle" placeholder="Case title for teaching file" /></div>
+            <div class="form-group"><label for="tcEditDiagnosis">Public diagnosis (anonymized)</label><input type="text" id="tcEditDiagnosis" placeholder="Diagnosis shown after anonymization" /></div>
+            <div class="form-group"><label for="tcEditSummary">Teaching summary</label><textarea id="tcEditSummary" rows="3" placeholder="Key teaching points…"></textarea></div>
+            <div class="form-group"><label for="tcEditObjectives">Learning objectives (one per line)</label><textarea id="tcEditObjectives" rows="3"></textarea></div>
+            <div class="form-group"><label for="tcEditTags">Tags (comma-separated)</label><input type="text" id="tcEditTags" placeholder="keratoconus, hydrops, CXL" /></div>
+            <label class="form-check"><input type="checkbox" id="tcEditInteresting" /> Interesting case</label>
+            <label class="form-check"><input type="checkbox" id="tcEditComplication" /> Complication / adverse event</label>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" id="tcEditCancelBtn">Cancel</button>
+            <button type="button" class="btn-primary" id="tcEditSaveBtn">Save metadata</button>
+        </div>
+    </div>
+</div>
+
+<div id="teachingCasePreviewModal" class="emr-modal-overlay" aria-hidden="true" role="presentation">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="teachingCasePreviewTitle">
+        <div class="emr-modal-header">
+            <h2 id="teachingCasePreviewTitle">Anonymized export preview</h2>
+            <button type="button" class="emr-modal-close" id="teachingCasePreviewClose" aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <p class="form-hint">No patient name, MRN, or visit identifiers are included.</p>
+            <pre id="teachingCasePreviewBody"></pre>
+        </div>
+    </div>
+</div>
+
 <script src="js/storage.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/form-section-collapse.js"></script>
@@ -6732,6 +6834,7 @@
 <script src="cornea-kc-cxl.js"></script>
 <script src="cornea-media-blob-store.js"></script>
 <script src="cornea-clinical-media.js"></script>
+<script src="cornea-teaching-library.js"></script><!-- backlog B3 -->
 <script src="cornea-dicom-import.js"></script>
 <script src="js/init.js"></script>
 <script src="cornea-sync-client.js"></script>

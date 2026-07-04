@@ -247,7 +247,7 @@ Target: run on every PR to `main` and nightly against staging.
 
 These audit **Top 20** items remain **out of scope** until pen-test remediation and operator prioritization:
 
-- Teaching case library + anonymization  
+- Teaching case library + anonymization — **Done (B3)** — see [BACKLOG.md](./BACKLOG.md)
 - LDAP/SSO  
 - Contact lens outcomes in research tab — **Done (B1)** — see [BACKLOG.md](./BACKLOG.md)
 - Mobile-optimized visit summary — **Done (B2)** — see [BACKLOG.md](./BACKLOG.md)
