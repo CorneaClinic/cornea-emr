@@ -1,5 +1,5 @@
 import { query } from '../db/pool.js';
-import { NotFoundError, ValidationError } from '../core/errors.js';
+import { NotFoundError, ValidationError, ConflictError } from '../core/errors.js';
 import {
   optionalString,
   parseDate,
@@ -238,6 +238,16 @@ export async function addColdChainEvent(req, tissueId, body) {
 export async function updateQuarantine(req, tissueId, body) {
   const clinicId = req.user.clinicId;
   const existing = await assertTissue(clinicId, tissueId);
+
+  if (body.baseRevision != null && Number(body.baseRevision) !== Number(existing.revision)) {
+    throw new ConflictError('Corneal tissue revision conflict', {
+      entityType: 'kp_tissue',
+      entityId: tissueId,
+      expectedRevision: body.baseRevision,
+      serverRevision: existing.revision
+    });
+  }
+
   const status = String(body.quarantineStatus || '').trim();
   if (!QUARANTINE_STATUSES.includes(status)) {
     throw new ValidationError(`quarantineStatus must be one of: ${QUARANTINE_STATUSES.join(', ')}`);

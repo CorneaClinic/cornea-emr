@@ -325,7 +325,16 @@
     }
   };
 
-  global.openKcPatientModal = function (mode) {
+  global.openKcPatientModal = async function (mode) {
+    const lock = global.CorneaRecordLock;
+    if (mode === 'edit' && apiEnabled() && lock) {
+      const p = _kcPatientsCache.find((x) => x.id === global._kcSelectedPatientId);
+      if (p?.uuid) {
+        const editResult = await lock.beforeEditEntity(lock.ENTITY.kc_patient, p.uuid, { entityLabel: 'KC patient' });
+        if (!editResult.ok) return;
+      }
+    }
+    if (mode === 'new') await lock?.releaseActive?.();
     const title = document.getElementById('kcPatientModalTitle');
     if (mode === 'new') {
       document.getElementById('kcRecordId').value = '';
@@ -401,6 +410,9 @@
 
     if (apiEnabled() && row.uuid) {
       try {
+        if (!(await global.CorneaRecordLock?.beforeSaveEntity?.(
+          global.CorneaRecordLock.ENTITY.kc_patient, row.uuid, row.revision, 'KC patient'
+        ))) return;
         const res = await apiRequest(`/api/v1/kc-registry/${row.uuid}`, {
           method: 'PUT',
           body: JSON.stringify(patientToApi(row))
@@ -410,6 +422,7 @@
           await kcDbPut(STORE_KC_PATIENTS, row);
         }
       } catch (err) {
+        if (global.CorneaRecordLock?.handleSaveConflict?.(err, 'KC patient')) return;
         console.warn('[KC Registry] Cloud sync failed:', err);
         alert('Saved on this device but cloud sync failed. Sign in to cloud and open KC & CXL again to retry.');
       }

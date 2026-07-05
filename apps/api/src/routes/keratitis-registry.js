@@ -8,6 +8,7 @@ import {
   listKeratitisCases,
   getKeratitisCaseById,
   createKeratitisCase,
+  updateKeratitisCase,
   createCulture,
   createAssessment
 } from '../services/keratitisRegistryService.js';
@@ -48,6 +49,16 @@ router.post(
   asyncHandler(async (req, res) => {
     const row = await createKeratitisCase(req, req.body || {});
     res.status(201).json({ data: row });
+  })
+);
+
+router.put(
+  '/:id',
+  authenticate,
+  requirePermission(PERMISSIONS.KERATITIS_WRITE),
+  asyncHandler(async (req, res) => {
+    const row = await updateKeratitisCase(req, req.params.id, req.body || {});
+    res.json({ data: row });
   })
 );
 

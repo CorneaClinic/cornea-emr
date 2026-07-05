@@ -1,8 +1,16 @@
 import { query } from '../db/pool.js';
 import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../core/errors.js';
 import { requireUuid } from '../core/validation.js';
+import { auditMutation } from './auditService.js';
 
-const ENTITY_TYPES = Object.freeze(['visit', 'kp_patient', 'kp_tissue']);
+export const ENTITY_TYPES = Object.freeze([
+  'visit',
+  'kp_patient',
+  'kp_tissue',
+  'kc_patient',
+  'keratitis_case',
+  'dry_eye_case'
+]);
 const DEFAULT_TTL_MINUTES = 5;
 
 function mapLock(row) {
@@ -90,6 +98,15 @@ export async function acquireLock(req, body) {
     if (req.user.role !== 'admin') {
       throw new ForbiddenError('Only administrators can force-acquire a record lock');
     }
+    await auditMutation(req, 'record_edit_lock', entityId, 'force_acquire', {
+      entityType,
+      previousLock: {
+        lockedByUserId: existing.lockedByUserId,
+        lockedByName: existing.lockedByName,
+        deviceId: existing.deviceId,
+        acquiredAt: existing.acquiredAt
+      }
+    });
     await query(
       `DELETE FROM record_edit_locks WHERE clinic_id = $1 AND entity_type = $2 AND entity_id = $3`,
       [clinicId, entityType, entityId]

@@ -13,9 +13,9 @@ This roadmap closes production gaps **without new clinical modules**, **without 
 
 | Metric | Baseline | Target | Current |
 |--------|----------|--------|---------|
-| Overall readiness | 76% | ≥90% | **~88%** (P1–P3) |
+| Overall readiness | 76% | ≥90% | **~93%** (P1–P4) |
 | Patient safety | 72% | ≥90% | **~80%** |
-| Clinical readiness | 82% | ≥90% | 82% |
+| Clinical readiness | 82% | ≥90% | **~87%** |
 | Technical readiness | 74% | ≥90% | **~82%** |
 | Operational readiness | 68% | ≥90% | 68% |
 | Security readiness | 74% | ≥90% | **~90%** (P3 encryption) |
@@ -67,8 +67,8 @@ gantt
 | 1 | Stabilization gates G1–G7 | **Critical** | 1–2 weeks | +6% ops/security | **Complete** (7/7 PASS) |
 | 2 | Duplicate patient prevention | **Critical** | 1–2 weeks | +8% patient safety | **Complete** |
 | 3 | Offline data security | **Critical** | 2–3 weeks | +10% security | **Complete** |
-| 4 | Registry concurrency | **High** | 2 weeks | +5% clinical | **Next** |
-| 5 | Backup & disaster recovery | **High** | 2 weeks | +8% ops | Pending |
+| 4 | Registry concurrency | **High** | 2 weeks | +5% clinical | **Complete** |
+| 5 | Backup & disaster recovery | **High** | 2 weeks | +8% ops | **Next** |
 | 6 | Security hardening | **High** | 2 weeks | +6% security | Pending |
 | 7 | Production validation | **High** | 1 week | +4% technical | Pending |
 | 8 | Clinical validation | **High** | 1 week | +5% clinical | Pending |

@@ -1,5 +1,5 @@
 import { query } from '../db/pool.js';
-import { NotFoundError, ValidationError } from '../core/errors.js';
+import { NotFoundError, ValidationError, ConflictError } from '../core/errors.js';
 import {
   parsePagination,
   buildPaginationMeta,
@@ -177,7 +177,80 @@ export async function createKeratitisCase(req, body) {
       optionalString(body.notes, 'notes'), optionalInt(body.legacyLocalId, 'legacyLocalId')
     ]
   );
-  await auditMutation(req, { action: 'create', entityType: 'keratitis_case', entityId: rows[0].id, summary: `Keratitis case ${caseId}` });
+  await auditMutation(req, 'keratitis_case', rows[0].id, 'create', { caseId });
+  return mapCase(rows[0]);
+}
+
+export async function updateKeratitisCase(req, id, body) {
+  const clinicId = req.user.clinicId;
+  const existing = await assertCase(clinicId, id);
+
+  if (body.baseRevision != null && Number(body.baseRevision) !== Number(existing.revision)) {
+    throw new ConflictError('Keratitis case revision conflict', {
+      entityType: 'keratitis_case',
+      entityId: id,
+      expectedRevision: body.baseRevision,
+      serverRevision: existing.revision
+    });
+  }
+
+  const fullName = body.fullName != null ? requireString(body.fullName, 'fullName') : existing.full_name;
+  const eye = body.eye != null ? requireString(body.eye, 'eye') : existing.eye;
+  const presentationDate = body.presentationDate != null
+    ? parseDate(body.presentationDate, 'presentationDate')
+    : existing.presentation_date;
+  if (!presentationDate) throw new ValidationError('presentationDate is required');
+
+  const { rows } = await query(
+    `
+      UPDATE keratitis_ulcer_cases SET
+        emr_patient_uuid = COALESCE($3, emr_patient_uuid),
+        emr_patient_mrn = COALESCE($4, emr_patient_mrn),
+        full_name = $5,
+        age = COALESCE($6, age),
+        gender = COALESCE($7, gender),
+        phone = COALESCE($8, phone),
+        eye = $9,
+        presentation_date = $10,
+        etiology = COALESCE($11, etiology),
+        contact_lens = COALESCE($12, contact_lens),
+        risk_factors = COALESCE($13, risk_factors),
+        ulcer_size_mm = COALESCE($14, ulcer_size_mm),
+        depth = COALESCE($15, depth),
+        hypopyon_mm = COALESCE($16, hypopyon_mm),
+        severity_score = COALESCE($17, severity_score),
+        antimicrobial_plan = COALESCE($18, antimicrobial_plan),
+        status = COALESCE($19, status),
+        notes = COALESCE($20, notes),
+        revision = revision + 1
+      WHERE id = $1 AND clinic_id = $2
+      RETURNING *
+    `,
+    [
+      id,
+      clinicId,
+      body.emrPatientUuid !== undefined ? body.emrPatientUuid : undefined,
+      body.emrPatientMrn !== undefined ? optionalString(body.emrPatientMrn, 'emrPatientMrn') : undefined,
+      fullName,
+      body.age !== undefined ? optionalInt(body.age, 'age') : undefined,
+      body.gender !== undefined ? optionalString(body.gender, 'gender') : undefined,
+      body.phone !== undefined ? optionalString(body.phone, 'phone') : undefined,
+      eye,
+      presentationDate,
+      body.etiology !== undefined ? optionalString(body.etiology, 'etiology') : undefined,
+      body.contactLens !== undefined ? optionalBool(body.contactLens, 'contactLens') : undefined,
+      body.riskFactors !== undefined ? optionalString(body.riskFactors, 'riskFactors') : undefined,
+      body.ulcerSizeMm !== undefined ? optionalNumber(body.ulcerSizeMm, 'ulcerSizeMm') : undefined,
+      body.depth !== undefined ? optionalString(body.depth, 'depth') : undefined,
+      body.hypopyonMm !== undefined ? optionalNumber(body.hypopyonMm, 'hypopyonMm') : undefined,
+      body.severityScore !== undefined ? optionalString(body.severityScore, 'severityScore') : undefined,
+      body.antimicrobialPlan !== undefined ? optionalString(body.antimicrobialPlan, 'antimicrobialPlan') : undefined,
+      body.status !== undefined ? optionalString(body.status, 'status') : undefined,
+      body.notes !== undefined ? optionalString(body.notes, 'notes') : undefined
+    ]
+  );
+
+  await auditMutation(req, 'keratitis_case', id, 'update', { caseId: existing.case_id });
   return mapCase(rows[0]);
 }
 

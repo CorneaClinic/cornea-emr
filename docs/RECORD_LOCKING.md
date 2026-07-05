@@ -12,7 +12,7 @@ Prevents two clinicians from editing the same cloud-synced visit at the same tim
 | `GET` | `/active?entityType=visit` | List active locks for the clinic |
 | `GET` | `/:entityType/:entityId` | Lock status for one entity |
 
-**Entity types:** `visit`, `kp_patient`, `kp_tissue`
+**Entity types:** `visit`, `kp_patient`, `kp_tissue`, `kc_patient`, `keratitis_case`, `dry_eye_case`
 
 **409 Conflict** — another user holds the lock; response includes `lock.lockedByName`.
 
@@ -30,4 +30,4 @@ Migration `018_record_edit_locks.sql` — table `record_edit_locks` with unique 
 
 ## Permissions
 
-Acquire/renew require `visits:write` or `kp:write`. Release also allowed with `kp:read`. List/read require `visits:read`.
+Acquire/renew require any of: `visits:write`, `kp:write`, `kc:write`, `keratitis:write`, `dry_eye:write`. List/read require any registry read permission.

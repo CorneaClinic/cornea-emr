@@ -81,7 +81,8 @@
           ukStatus: remote.status,
           ukAntimicrobialPlan: remote.antimicrobialPlan,
           ukEmrMrn: remote.emrPatientMrn,
-          ukNotes: remote.notes
+          ukNotes: remote.notes,
+          revision: remote.revision
         };
         const id = await dbPut(STORE_CASES, row);
         if (!row.id) row.id = id;
@@ -198,28 +199,37 @@
     },
 
     openCaseModal(mode) {
-      if (mode === 'new') {
-        document.getElementById('ukRecordId').value = '';
-        document.getElementById('ukCaseId').value = nextCaseId();
-        document.getElementById('ukFullName').value = '';
-        document.getElementById('ukPresentationDate').value = new Date().toISOString().slice(0, 10);
-      } else {
-        const c = _cases.find((x) => x.id === _selectedId);
-        if (!c) { alert('Select a case first.'); return; }
-        document.getElementById('ukRecordId').value = c.id;
-        document.getElementById('ukCaseId').value = c.ukCaseId || '';
-        document.getElementById('ukFullName').value = c.ukFullName || '';
-        document.getElementById('ukEye').value = c.ukEye || '';
-        document.getElementById('ukPresentationDate').value = c.ukPresentationDate || '';
-        document.getElementById('ukEtiology').value = c.ukEtiology || '';
-        document.getElementById('ukStatus').value = c.ukStatus || 'Active';
-        document.getElementById('ukAntimicrobialPlan').value = c.ukAntimicrobialPlan || '';
-        document.getElementById('ukEmrMrn').value = c.ukEmrMrn || '';
-        document.getElementById('ukNotes').value = c.ukNotes || '';
-        const cl = document.getElementById('ukContactLens');
-        if (cl) cl.value = c.ukContactLens || '';
-      }
-      global.openEmrModal('ukCaseModal');
+      const open = async () => {
+        if (mode === 'new') {
+          document.getElementById('ukRecordId').value = '';
+          document.getElementById('ukCaseId').value = nextCaseId();
+          document.getElementById('ukFullName').value = '';
+          document.getElementById('ukPresentationDate').value = new Date().toISOString().slice(0, 10);
+        } else {
+          const c = _cases.find((x) => x.id === _selectedId);
+          if (!c) { alert('Select a case first.'); return; }
+          const lock = global.CorneaRecordLock;
+          if (apiOn() && c.uuid && lock) {
+            const editResult = await lock.beforeEditEntity(lock.ENTITY.keratitis_case, c.uuid, { entityLabel: 'keratitis case' });
+            if (!editResult.ok) return;
+          }
+          document.getElementById('ukRecordId').value = c.id;
+          document.getElementById('ukCaseId').value = c.ukCaseId || '';
+          document.getElementById('ukFullName').value = c.ukFullName || '';
+          document.getElementById('ukEye').value = c.ukEye || '';
+          document.getElementById('ukPresentationDate').value = c.ukPresentationDate || '';
+          document.getElementById('ukEtiology').value = c.ukEtiology || '';
+          document.getElementById('ukStatus').value = c.ukStatus || 'Active';
+          document.getElementById('ukAntimicrobialPlan').value = c.ukAntimicrobialPlan || '';
+          document.getElementById('ukEmrMrn').value = c.ukEmrMrn || '';
+          document.getElementById('ukNotes').value = c.ukNotes || '';
+          const cl = document.getElementById('ukContactLens');
+          if (cl) cl.value = c.ukContactLens || '';
+        }
+        global.openEmrModal('ukCaseModal');
+      };
+      if (mode === 'new') global.CorneaRecordLock?.releaseActive?.();
+      open();
     },
 
     async saveCase() {
@@ -239,11 +249,18 @@
         ukNotes: document.getElementById('ukNotes')?.value
       };
       const rid = document.getElementById('ukRecordId')?.value;
-      if (rid) row.id = Number(rid);
+      if (rid) {
+        row.id = Number(rid);
+        const existing = _cases.find((c) => c.id === row.id);
+        if (existing) {
+          row.uuid = existing.uuid;
+          row.revision = existing.revision;
+        }
+      }
       const id = await dbPut(STORE_CASES, row);
       if (!row.id) row.id = id;
 
-      if (apiOn() && !row.uuid) {
+      if (apiOn()) {
         try {
           const payload = {
             caseId: row.ukCaseId,
@@ -255,11 +272,29 @@
             status: row.ukStatus,
             antimicrobialPlan: row.ukAntimicrobialPlan,
             emrPatientMrn: row.ukEmrMrn,
-            notes: row.ukNotes
+            notes: row.ukNotes,
+            baseRevision: row.revision
           };
-          const res = await api('/api/v1/keratitis-registry', { method: 'POST', body: JSON.stringify(payload) });
-          if (res?.data?.id) { row.uuid = res.data.id; row.ukCaseId = res.data.caseId || row.ukCaseId; await dbPut(STORE_CASES, row); }
+          const lock = global.CorneaRecordLock;
+          if (row.uuid) {
+            if (!(await lock?.beforeSaveEntity?.(lock.ENTITY.keratitis_case, row.uuid, row.revision, 'keratitis case'))) return;
+            const res = await api(`/api/v1/keratitis-registry/${row.uuid}`, { method: 'PUT', body: JSON.stringify(payload) });
+            if (res?.data) {
+              row.revision = res.data.revision;
+              row.ukCaseId = res.data.caseId || row.ukCaseId;
+              await dbPut(STORE_CASES, row);
+            }
+          } else {
+            const res = await api('/api/v1/keratitis-registry', { method: 'POST', body: JSON.stringify(payload) });
+            if (res?.data?.id) {
+              row.uuid = res.data.id;
+              row.revision = res.data.revision;
+              row.ukCaseId = res.data.caseId || row.ukCaseId;
+              await dbPut(STORE_CASES, row);
+            }
+          }
         } catch (err) {
+          if (global.CorneaRecordLock?.handleSaveConflict?.(err, 'Keratitis case')) return;
           console.warn('[Keratitis] Cloud save failed:', err);
         }
       }

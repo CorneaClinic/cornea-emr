@@ -121,4 +121,61 @@ test.describe('Record lock API', () => {
     expect(afterRelease.ok()).toBeTruthy();
     expect((await afterRelease.json()).data).toBeNull();
   });
+
+  test('acquire lock on kc_patient entity', async ({ request }) => {
+    const { token, creds } = await apiLogin(request, DEVICE_ID);
+    const headers = authHeaders(token, DEVICE_ID);
+    const suffix = Date.now();
+
+    const create = await request.post(`${creds.apiUrl}/api/v1/kc-registry`, {
+      headers,
+      data: {
+        fullName: 'Playwright Lock KC',
+        kcRegistryId: `PW-LOCK-KC-${suffix}`,
+        eyeInvolvement: 'OD',
+        diagnosis: 'Keratoconus',
+        status: 'Active'
+      }
+    });
+    expect(create.status()).toBe(201);
+    const entityId = (await create.json()).data.id;
+
+    const acquire = await request.post(`${creds.apiUrl}/api/v1/record-locks/acquire`, {
+      headers,
+      data: { entityType: 'kc_patient', entityId, deviceId: DEVICE_ID, ttlMinutes: 5 }
+    });
+    expect(acquire.ok()).toBeTruthy();
+    expect((await acquire.json()).data.entityType).toBe('kc_patient');
+
+    await request.post(`${creds.apiUrl}/api/v1/record-locks/release`, {
+      headers,
+      data: { entityType: 'kc_patient', entityId }
+    });
+    await request.delete(`${creds.apiUrl}/api/v1/kc-registry/${entityId}`, { headers });
+  });
+});
+
+test.describe('Keratitis registry update concurrency', () => {
+  test('PUT returns 409 when baseRevision is stale', async ({ request }) => {
+    const { token, creds } = await apiLogin(request, DEVICE_ID);
+    const headers = authHeaders(token, DEVICE_ID);
+    const suffix = Date.now();
+
+    const create = await request.post(`${creds.apiUrl}/api/v1/keratitis-registry`, {
+      headers,
+      data: {
+        fullName: 'Playwright UK Conflict',
+        eye: 'OD',
+        presentationDate: '2026-01-15',
+        status: 'Active'
+      }
+    });
+    expect(create.status()).toBe(201);
+    const created = (await create.json()).data;
+    const stale = await request.put(`${creds.apiUrl}/api/v1/keratitis-registry/${created.id}`, {
+      headers,
+      data: { status: 'Healing', baseRevision: 0 }
+    });
+    expect(stale.status()).toBe(409);
+  });
 });

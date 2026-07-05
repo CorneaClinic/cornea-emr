@@ -1,5 +1,5 @@
 import { query } from '../db/pool.js';
-import { NotFoundError } from '../core/errors.js';
+import { NotFoundError, ConflictError } from '../core/errors.js';
 import {
   parsePagination,
   buildPaginationMeta,
@@ -149,7 +149,53 @@ export async function createDryEyeCase(req, body) {
       optionalString(body.notes, 'notes')
     ]
   );
-  await auditMutation(req, 'dry_eye_case.create', { entityId: rows[0].id, caseId });
+  await auditMutation(req, 'dry_eye_case', rows[0].id, 'create', { caseId });
+  return mapDryEyeCase(rows[0]);
+}
+
+export async function updateDryEyeCase(req, id, body) {
+  const clinicId = req.user.clinicId;
+  const existing = await assertCase(clinicId, id);
+
+  if (body.baseRevision != null && Number(body.baseRevision) !== Number(existing.revision)) {
+    throw new ConflictError('Dry eye case revision conflict', {
+      entityType: 'dry_eye_case',
+      entityId: id,
+      expectedRevision: body.baseRevision,
+      serverRevision: existing.revision
+    });
+  }
+
+  const fullName = body.fullName != null ? requireString(body.fullName, 'fullName') : existing.full_name;
+
+  const { rows } = await query(
+    `
+      UPDATE dry_eye_cases SET
+        emr_patient_uuid = COALESCE($3, emr_patient_uuid),
+        emr_patient_mrn = COALESCE($4, emr_patient_mrn),
+        full_name = $5,
+        primary_subtype = COALESCE($6, primary_subtype),
+        status = COALESCE($7, status),
+        onset_date = COALESCE($8, onset_date),
+        notes = COALESCE($9, notes),
+        revision = revision + 1
+      WHERE id = $1 AND clinic_id = $2
+      RETURNING *
+    `,
+    [
+      id,
+      clinicId,
+      body.emrPatientUuid !== undefined ? body.emrPatientUuid : undefined,
+      body.emrPatientMrn !== undefined ? optionalString(body.emrPatientMrn, 'emrPatientMrn') : undefined,
+      fullName,
+      body.primarySubtype !== undefined ? optionalString(body.primarySubtype, 'primarySubtype') : undefined,
+      body.status !== undefined ? optionalString(body.status, 'status') : undefined,
+      body.onsetDate !== undefined ? parseDate(body.onsetDate, 'onsetDate', false) : undefined,
+      body.notes !== undefined ? optionalString(body.notes, 'notes') : undefined
+    ]
+  );
+
+  await auditMutation(req, 'dry_eye_case', id, 'update', { caseId: existing.case_id });
   return mapDryEyeCase(rows[0]);
 }
 

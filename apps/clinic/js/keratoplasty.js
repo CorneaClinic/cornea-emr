@@ -62,7 +62,16 @@ function renderKpTissueReadOnly(t) {
     }
 }
 
-window.openKpPatientModal = function(mode) {
+window.openKpPatientModal = async function(mode) {
+    const lock = window.CorneaRecordLock;
+    if (mode === 'edit' && window.__corneaCloudMode && window.CorneaApi?.isEnabled?.() && lock) {
+        const p = _kpPatientsCache.find(x => x.id === window._kpSelectedPatientId);
+        if (p?.uuid) {
+            const editResult = await lock.beforeEditEntity(lock.ENTITY.kp_patient, p.uuid, { entityLabel: 'keratoplasty patient' });
+            if (!editResult.ok) return;
+        }
+    }
+    if (mode === 'new') await lock?.releaseActive?.();
     const title = document.getElementById('kpPatientModalTitle');
     if (mode === 'new') {
         resetKpPatientForm();
@@ -81,7 +90,16 @@ window.openKpPatientModal = function(mode) {
     openEmrModal('kpPatientModal');
 };
 
-window.openKpTissueModal = function(mode) {
+window.openKpTissueModal = async function(mode) {
+    const lock = window.CorneaRecordLock;
+    if (mode === 'edit' && window.__corneaCloudMode && window.CorneaApi?.isEnabled?.() && lock) {
+        const t = _kpTissuesCache.find(x => x.id === window._kpSelectedTissueId);
+        if (t?.uuid) {
+            const editResult = await lock.beforeEditEntity(lock.ENTITY.kp_tissue, t.uuid, { entityLabel: 'corneal tissue' });
+            if (!editResult.ok) return;
+        }
+    }
+    if (mode === 'new') await lock?.releaseActive?.();
     const title = document.getElementById('kpTissueModalTitle');
     if (mode === 'new') {
         resetKpTissueForm();

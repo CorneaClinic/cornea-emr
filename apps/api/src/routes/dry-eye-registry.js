@@ -8,6 +8,7 @@ import {
   listDryEyeCases,
   getDryEyeCaseById,
   createDryEyeCase,
+  updateDryEyeCase,
   createDryEyeAssessment
 } from '../services/dryEyeRegistryService.js';
 
@@ -47,6 +48,16 @@ router.post(
   asyncHandler(async (req, res) => {
     const row = await createDryEyeCase(req, req.body || {});
     res.status(201).json({ data: row });
+  })
+);
+
+router.put(
+  '/:id',
+  authenticate,
+  requirePermission(PERMISSIONS.DRY_EYE_WRITE),
+  asyncHandler(async (req, res) => {
+    const row = await updateDryEyeCase(req, req.params.id, req.body || {});
+    res.json({ data: row });
   })
 );
 

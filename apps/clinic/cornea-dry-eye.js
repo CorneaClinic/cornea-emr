@@ -72,7 +72,8 @@
           deSubtype: remote.primarySubtype,
           deStatus: remote.status,
           deMrn: remote.emrPatientMrn,
-          deNotes: remote.notes
+          deNotes: remote.notes,
+          revision: remote.revision
         };
         const id = await dbPut(STORE_CASES, row);
         if (!row.id) row.id = id;
@@ -181,16 +182,26 @@
       document.querySelectorAll('#dryEyeTab .de-subnav-btn').forEach((b) => b.classList.toggle('active', b.dataset.dePanel === panelId));
     },
     openCaseModal(mode) {
-      const c = mode === 'edit' ? _cases.find((x) => x.id === _selectedId) : null;
-      document.getElementById('deCaseRecordId').value = c?.id || '';
-      document.getElementById('deCaseUuid').value = c?.uuid || '';
-      document.getElementById('deCaseIdField').value = c?.deCaseId || nextCaseId();
-      document.getElementById('deFullName').value = c?.deFullName || '';
-      document.getElementById('deMrn').value = c?.deMrn || document.getElementById('patientId')?.value || '';
-      document.getElementById('deSubtype').value = c?.deSubtype || 'MGD';
-      document.getElementById('deStatus').value = c?.deStatus || 'Active';
-      document.getElementById('deNotes').value = c?.deNotes || '';
-      global.openEmrModal('deCaseModal');
+      const open = async () => {
+        const c = mode === 'edit' ? _cases.find((x) => x.id === _selectedId) : null;
+        if (mode === 'edit' && !c) { alert('Select a case first.'); return; }
+        const lock = global.CorneaRecordLock;
+        if (mode === 'edit' && apiOn() && c?.uuid && lock) {
+          const editResult = await lock.beforeEditEntity(lock.ENTITY.dry_eye_case, c.uuid, { entityLabel: 'dry eye case' });
+          if (!editResult.ok) return;
+        }
+        document.getElementById('deCaseRecordId').value = c?.id || '';
+        document.getElementById('deCaseUuid').value = c?.uuid || '';
+        document.getElementById('deCaseIdField').value = c?.deCaseId || nextCaseId();
+        document.getElementById('deFullName').value = c?.deFullName || '';
+        document.getElementById('deMrn').value = c?.deMrn || document.getElementById('patientId')?.value || '';
+        document.getElementById('deSubtype').value = c?.deSubtype || 'MGD';
+        document.getElementById('deStatus').value = c?.deStatus || 'Active';
+        document.getElementById('deNotes').value = c?.deNotes || '';
+        global.openEmrModal('deCaseModal');
+      };
+      if (mode === 'new') global.CorneaRecordLock?.releaseActive?.();
+      open();
     },
     openAssessModal() {
       if (!_selectedId) { alert('Select a case first.'); return; }
@@ -217,6 +228,10 @@
         deNotes: document.getElementById('deNotes').value.trim()
       };
       if (!row.deFullName) { alert('Patient name required.'); return; }
+      if (row.id) {
+        const existing = _cases.find((c) => c.id === row.id);
+        if (existing?.revision != null) row.revision = existing.revision;
+      }
       if (apiOn()) {
         try {
           const payload = {
@@ -224,16 +239,26 @@
             emrPatientMrn: row.deMrn,
             primarySubtype: row.deSubtype,
             status: row.deStatus,
-            notes: row.deNotes
+            notes: row.deNotes,
+            baseRevision: row.revision
           };
+          const lock = global.CorneaRecordLock;
           if (row.uuid) {
-            /* updates not in MVP API */
+            if (!(await lock?.beforeSaveEntity?.(lock.ENTITY.dry_eye_case, row.uuid, row.revision, 'dry eye case'))) return;
+            const res = await api(`/api/v1/dry-eye-registry/${encodeURIComponent(row.uuid)}`, {
+              method: 'PUT',
+              body: JSON.stringify(payload)
+            });
+            row.revision = res?.data?.revision;
+            row.deCaseId = res?.data?.caseId || row.deCaseId;
           } else {
             const res = await api('/api/v1/dry-eye-registry', { method: 'POST', body: JSON.stringify(payload) });
             row.uuid = res?.data?.id;
+            row.revision = res?.data?.revision;
             row.deCaseId = res?.data?.caseId || row.deCaseId;
           }
         } catch (err) {
+          if (global.CorneaRecordLock?.handleSaveConflict?.(err, 'Dry eye case')) return;
           console.warn('[DryEye] Cloud save failed:', err);
         }
       }
