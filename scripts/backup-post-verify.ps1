@@ -1,4 +1,4 @@
-# Post-backup verification — pg_restore catalog + off-site size check.
+# Post-backup verification - pg_restore catalog + off-site size check.
 # Called automatically from backup-db.ps1 after a successful dump.
 param(
     [Parameter(Mandatory = $true)]
@@ -67,7 +67,7 @@ if (Test-Path $ConfigFile) {
             }
         }
     } catch {
-        Write-VerifyLog "VERIFY WARN: config parse failed — $($_.Exception.Message)"
+        Write-VerifyLog "VERIFY WARN: config parse failed - $($_.Exception.Message)"
     }
 }
 

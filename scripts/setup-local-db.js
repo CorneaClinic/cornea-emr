@@ -71,6 +71,7 @@ async function main() {
   }
 
   await client.query(`GRANT ALL PRIVILEGES ON DATABASE ${dbName} TO ${dbUser}`);
+  await client.query(`ALTER USER ${dbUser} CREATEDB`);
   await client.query(`ALTER DATABASE ${dbName} OWNER TO ${dbUser}`);
   await client.end();
 

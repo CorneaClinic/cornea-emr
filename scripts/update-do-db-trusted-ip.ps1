@@ -69,7 +69,7 @@ $preserved = @($existing | Where-Object { $_.type -ne 'ip_addr' })
 $currentIps = @($existing | Where-Object { $_.type -eq 'ip_addr' } | ForEach-Object { $_.value })
 
 if ($currentIps -contains $publicIp) {
-    Write-Host 'Trusted IP already present — no API change needed.'
+    Write-Host 'Trusted IP already present - no API change needed.'
     exit 0
 }
 

@@ -6,7 +6,10 @@
 #   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1
 #   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -BackupFile backups\production\file.dump
 #   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -EnvFile apps\api\.env.production -SkipFreshBackup
-#   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -PostgresUser postgres
+#   powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -PostgresUser postgres -PostgresPassword 'your-postgres-password'
+#
+# Or create scripts\postgres-drill.local.ps1 (gitignored) with:
+#   $script:PostgresDrillPassword = 'your-postgres-password'
 #
 # Managed cloud Postgres (DigitalOcean) often blocks CREATEDB on the public endpoint.
 # In that case the drill restores to local PostgreSQL and compares row counts against
@@ -15,12 +18,40 @@
 param(
     [string]$BackupFile = '',
     [string]$PostgresUser = '',
+    [string]$PostgresPassword = '',
     [string]$EnvFile = '',
     [switch]$SkipFreshBackup
 )
 
 $ErrorActionPreference = 'Stop'
 $RepoRoot = Split-Path -Parent $PSScriptRoot
+
+$localDrillConfig = Join-Path $PSScriptRoot 'postgres-drill.local.ps1'
+if (Test-Path $localDrillConfig) {
+    . $localDrillConfig
+}
+function Test-IsPlaceholderPassword([string]$Value) {
+    if (-not $Value) { return $true }
+    return $Value -match 'REPLACE_WITH|your[_-]?postgres|changeme|^password$|^xxx+$'
+}
+
+if (-not $PostgresPassword -and $script:PostgresDrillPassword) {
+    $PostgresPassword = $script:PostgresDrillPassword
+}
+if (-not $PostgresPassword -and $env:POSTGRES_PASSWORD) {
+    $PostgresPassword = $env:POSTGRES_PASSWORD
+}
+if (Test-IsPlaceholderPassword $PostgresPassword) {
+    if ($PostgresPassword) {
+        Write-Output 'Ignoring placeholder postgres password in postgres-drill.local.ps1 (set your real PostgreSQL 18 install password).'
+    }
+    $PostgresPassword = ''
+    $PostgresUser = ''
+    Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
+} elseif ($PostgresPassword) {
+    $env:PGPASSWORD = $PostgresPassword
+    if (-not $PostgresUser) { $PostgresUser = 'postgres' }
+}
 if (-not $EnvFile) {
     $EnvFile = Join-Path $RepoRoot 'apps\api\.env'
 }
@@ -87,12 +118,59 @@ function Get-LatestBackupFile {
     return $null
 }
 
+function Show-DrillPasswordHelp([string]$Reason) {
+    Write-Output ''
+    Write-Output "BLOCKED: $Reason"
+    Write-Output ''
+    Write-Output 'The drill needs either:'
+    Write-Output '  A) Correct postgres superuser password (from PostgreSQL 18 install), OR'
+    Write-Output '  B) CREATEDB granted to local user cornea (one-time setup).'
+    Write-Output ''
+    Write-Output 'Option B (recommended - then drills work without postgres password):'
+    Write-Output "  `$env:POSTGRES_PASSWORD='YourPostgresInstallPassword'"
+    Write-Output '  node scripts/grant-cornea-createdb.js'
+    Write-Output '  powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -EnvFile apps\api\.env.production -SkipFreshBackup'
+    Write-Output ''
+    Write-Output 'Option A (postgres each time):'
+    Write-Output '  Copy-Item scripts\postgres-drill.local.ps1.example scripts\postgres-drill.local.ps1'
+    Write-Output '  notepad scripts\postgres-drill.local.ps1   # set real install password'
+    Write-Output '  npm run drill:monthly'
+    Write-Output ''
+}
+
+function Resolve-LocalDrillAdmin([hashtable]$LocalDb, [string]$CreatedbExe) {
+    if (Test-CanCreateDatabase $CreatedbExe $LocalDb $LocalDb.User $LocalDb.Pass) {
+        Write-Output "Using local user '$($LocalDb.User)' for test database create/drop."
+        return @{ User = $LocalDb.User; Pass = $LocalDb.Pass }
+    }
+    if ($PostgresPassword -or $PostgresUser) {
+        $user = if ($PostgresUser) { $PostgresUser } else { 'postgres' }
+        $pass = if ($PostgresPassword) { $PostgresPassword } else { $env:PGPASSWORD }
+        if ($pass -and -not (Test-IsPlaceholderPassword $pass)) {
+            if (Test-CanCreateDatabase $CreatedbExe $LocalDb $user $pass) {
+                Write-Output "Using postgres superuser '$user' for test database create/drop."
+                return @{ User = $user; Pass = $pass }
+            }
+            Write-Output "PostgreSQL rejected password for user '$user' (not the cloud doadmin password - use your local PostgreSQL 18 install password)."
+        }
+    }
+    return $null
+}
+
 function Test-CanCreateDatabase([string]$CreatedbExe, [hashtable]$Db, [string]$AdminUser, [string]$AdminPass) {
+    $probeDb = "${TestDb}_probe"
+    $dropdbExe = Join-Path (Split-Path $CreatedbExe) 'dropdb.exe'
     try {
-        Invoke-Pg $CreatedbExe $Db @('-h', $Db.Host, '-p', $Db.Port, '-U', $AdminUser, '-O', $Db.User, "${TestDb}_probe") $AdminPass
-        Invoke-Pg (Join-Path (Split-Path $CreatedbExe) 'dropdb.exe') $Db @('-h', $Db.Host, '-p', $Db.Port, '-U', $AdminUser, "${TestDb}_probe") $AdminPass
+        Invoke-Pg $dropdbExe $Db @('-h', $Db.Host, '-p', $Db.Port, '-U', $AdminUser, '--if-exists', $probeDb) $AdminPass
+        Invoke-Pg $CreatedbExe $Db @('-h', $Db.Host, '-p', $Db.Port, '-U', $AdminUser, '-O', $Db.User, $probeDb) $AdminPass
+        Invoke-Pg $dropdbExe $Db @('-h', $Db.Host, '-p', $Db.Port, '-U', $AdminUser, $probeDb) $AdminPass
         return $true
     } catch {
+        try {
+            Invoke-Pg $dropdbExe $Db @('-h', $Db.Host, '-p', $Db.Port, '-U', $AdminUser, '--if-exists', $probeDb) $AdminPass
+        } catch {
+            # ignore probe cleanup failure
+        }
         return $false
     }
 }
@@ -169,16 +247,22 @@ $countSource = $db
 $useLocalRestore = $false
 
 if ($db.Host -match 'ondigitalocean\.com') {
+  $localEnvPath = Join-Path $RepoRoot 'apps\api\.env.local'
+  $hasLocalPg = Test-Path $localEnvPath
+  if (-not $hasLocalPg -and (Test-Path $LocalEnvFile)) {
+    $candidate = Parse-DatabaseUrlFromFile $LocalEnvFile
+    $hasLocalPg = $candidate.Host -match '^(127\.0\.0\.1|localhost)$'
+  }
   $preferLocal = $false
-  if ($PostgresUser -and (Test-Path (Join-Path $RepoRoot 'apps\api\.env.local'))) {
+  if ($hasLocalPg) {
+    # Managed Postgres public endpoint cannot run createdb/dropdb (template1 blocked).
     $preferLocal = $true
-  } elseif (-not $PostgresUser) {
-    if (-not (Test-CanCreateDatabase $createdb $db $adminUser $adminPass)) {
-      $preferLocal = $true
-    }
+  } elseif ($PostgresUser) {
+    $preferLocal = $false
+  } elseif (-not (Test-CanCreateDatabase $createdb $db $adminUser $adminPass)) {
+    $preferLocal = $true
   }
   if ($preferLocal) {
-    $localEnvPath = Join-Path $RepoRoot 'apps\api\.env.local'
     $localDb = $null
     if (Test-Path $localEnvPath) {
       $localDb = Parse-DatabaseUrlFromFile $localEnvPath
@@ -215,23 +299,31 @@ if ($db.Host -match 'ondigitalocean\.com') {
 }
 
 Write-Step "Restore into test database '$TestDb'"
-if ($useLocalRestore -and $PostgresUser) {
-    $adminUser = $PostgresUser
-    $adminPass = $env:PGPASSWORD
-} elseif ($useLocalRestore) {
-    $adminUser = $restoreTarget.User
-    $adminPass = $restoreTarget.Pass
+$adminUser = $restoreTarget.User
+$adminPass = $restoreTarget.Pass
+
+if ($useLocalRestore) {
+    $localAdmin = Resolve-LocalDrillAdmin $restoreTarget $createdb
+    if ($localAdmin) {
+        $adminUser = $localAdmin.User
+        $adminPass = $localAdmin.Pass
+        if ($adminPass) { $env:PGPASSWORD = $adminPass }
+    } else {
+        Show-DrillPasswordHelp 'local cornea user lacks CREATEDB and no valid postgres password was provided'
+        exit 2
+    }
 } elseif ($PostgresUser) {
     $adminUser = $PostgresUser
-    $adminPass = $env:PGPASSWORD
-} else {
-    $adminUser = $db.User
-    $adminPass = $db.Pass
+    $adminPass = if ($PostgresPassword) { $PostgresPassword } else { $env:PGPASSWORD }
 }
 
 try {
     Invoke-Pg $dropdb $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $adminUser, '--if-exists', $TestDb) $adminPass
 } catch {
+    if ($_.Exception.Message -match 'authentication failed|password authentication') {
+        Show-DrillPasswordHelp "PostgreSQL rejected password for user '$adminUser'"
+        exit 2
+    }
     if ($PostgresUser) { throw }
     if ($useLocalRestore) { throw }
     Write-Output "App user cannot drop/create databases; retry with -PostgresUser postgres"
@@ -241,8 +333,11 @@ try {
 try {
     Invoke-Pg $createdb $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $adminUser, '-O', $restoreTarget.User, $TestDb) $adminPass
 } catch {
+    if ($useLocalRestore) {
+        Show-DrillPasswordHelp "cannot create test database as user '$adminUser'"
+        exit 2
+    }
     if ($PostgresUser) { throw }
-    if ($useLocalRestore) { throw }
     Write-Output ""
     Write-Output "BLOCKED: user '$($db.User)' needs CREATEDB, or run:"
     Write-Output "  powershell -ExecutionPolicy Bypass -File scripts\backup-restore-drill.ps1 -PostgresUser postgres"
@@ -255,31 +350,60 @@ try {
     $env:PGPASSWORD = $restoreTarget.Pass
     & $pgRestore -h $restoreTarget.Host -p $restoreTarget.Port -U $restoreTarget.User -d $TestDb --no-owner --no-acl $BackupFile 2>&1 | Out-Null
     Write-Output "pg_restore exit: $LASTEXITCODE"
-    if ($null -eq $prev) { Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue }
-    else { $env:PGPASSWORD = $prev }
+    if ($PostgresPassword) {
+        $env:PGPASSWORD = $PostgresPassword
+    } elseif ($null -eq $prev) {
+        Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
+    } else {
+        $env:PGPASSWORD = $prev
+    }
 
     Write-Step 'Row counts (production vs restored)'
-    $tables = @('users', 'patients', 'visits', 'schema_migrations')
+    $clinicalTables = @('users', 'patients', 'visits')
     $allOk = $true
-    foreach ($table in $tables) {
+    $staleBackupNote = $null
+    foreach ($table in $clinicalTables) {
         $prod = Invoke-Pg $psql $countSource @('-h', $countSource.Host, '-p', $countSource.Port, '-U', $countSource.User, '-d', $countSource.Db, '-t', '-A', '-c', "SELECT count(*) FROM $table;") $countSource.Pass
         $test = Invoke-Pg $psql $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $restoreTarget.User, '-d', $TestDb, '-t', '-A', '-c', "SELECT count(*) FROM $table;") $restoreTarget.Pass
         $ok = if ($prod -eq $test) { 'OK' } else { 'MISMATCH'; $allOk = $false }
         $label = if ($useLocalRestore) { 'cloud' } else { 'prod' }
         Write-Output "  $table : $label=$prod restored=$test [$ok]"
     }
+
+    $prodMig = Invoke-Pg $psql $countSource @('-h', $countSource.Host, '-p', $countSource.Port, '-U', $countSource.User, '-d', $countSource.Db, '-t', '-A', '-c', 'SELECT count(*) FROM schema_migrations;') $countSource.Pass
+    $testMig = Invoke-Pg $psql $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $restoreTarget.User, '-d', $TestDb, '-t', '-A', '-c', 'SELECT count(*) FROM schema_migrations;') $restoreTarget.Pass
+    $label = if ($useLocalRestore) { 'cloud' } else { 'prod' }
+    if ($prodMig -eq $testMig) {
+        Write-Output "  schema_migrations : $label=$prodMig restored=$testMig [OK]"
+    } elseif ([int]$testMig -lt [int]$prodMig) {
+        $delta = [int]$prodMig - [int]$testMig
+        $staleBackupNote = "backup predates cloud by $delta migration(s) - run backup-production.ps1 for a fresh dump"
+        Write-Output "  schema_migrations : $label=$prodMig restored=$testMig [STALE BACKUP - expected when cloud migrated after dump; $staleBackupNote]"
+    } else {
+        Write-Output "  schema_migrations : $label=$prodMig restored=$testMig [MISMATCH]"
+        $allOk = $false
+    }
+
     if (-not $allOk) { throw 'Row count mismatch between production and restored database' }
 
     Write-Step 'Cleanup test database'
     Invoke-Pg $dropdb $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $adminUser, $TestDb) $adminPass
 
     $mode = if ($useLocalRestore) { ' (cloud backup verified via local restore)' } else { '' }
+    if ($staleBackupNote) {
+        Write-Output ""
+        Write-Output "NOTE: $staleBackupNote"
+    }
     Write-Output ""
     Write-Output "DRILL PASSED: backup, decrypt, catalog, restore, and verification succeeded.$mode"
-    & node (Join-Path $RepoRoot 'scripts\log-dr-drill.mjs') --pass --note "backup-restore-drill.ps1$mode"
+    $drillNote = "backup-restore-drill.ps1$mode"
+    if ($staleBackupNote) { $drillNote += " [$staleBackupNote]" }
+    & node (Join-Path $RepoRoot 'scripts\log-dr-drill.mjs') --pass --note $drillNote
 } catch {
     try {
         Invoke-Pg $dropdb $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $adminUser, '--if-exists', $TestDb) $adminPass
-    } catch { /* ignore cleanup failure */ }
+    } catch {
+        # ignore cleanup failure
+    }
     throw
 }

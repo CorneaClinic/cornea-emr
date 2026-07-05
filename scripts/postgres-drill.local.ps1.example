@@ -1,0 +1,7 @@
+# Copy to postgres-drill.local.ps1 and set your PostgreSQL 18 superuser password.
+# This file is gitignored — never commit the real password.
+#
+#   Copy-Item scripts\postgres-drill.local.ps1.example scripts\postgres-drill.local.ps1
+#   notepad scripts\postgres-drill.local.ps1
+#
+$script:PostgresDrillPassword = VisionEMR145
