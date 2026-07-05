@@ -165,12 +165,15 @@
       return { matches: [], hasBlocker: false, highestSeverity: 'none' };
     }
 
-    const rows = await new Promise((resolve, reject) => {
-      const req = global.db.transaction([global.STORE_NAME], 'readonly')
-        .objectStore(global.STORE_NAME).getAll();
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
-    });
+    const rows = window.CorneaSecurePatients?.getAll
+      ? await window.CorneaSecurePatients.getAll()
+      : await new Promise((resolve, reject) => {
+        if (!global.db) return resolve([]);
+        const req = global.db.transaction([global.STORE_NAME], 'readonly')
+          .objectStore(global.STORE_NAME).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
 
     const currentId = document.getElementById('currentRecordId')?.value;
     const byPatient = new Map();

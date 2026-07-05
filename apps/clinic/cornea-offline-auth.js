@@ -470,6 +470,9 @@
 
     const user = publicUser(row);
     writeSession(user);
+    if (global.CorneaOfflineSecurity?.unlockAfterOfflineLogin) {
+      await global.CorneaOfflineSecurity.unlockAfterOfflineLogin(password);
+    }
     applyAccess(user);
     showApp(true);
     resetIdleTimer();
@@ -517,6 +520,10 @@
     applyAccess(publicUser(row));
     showApp(true);
     resetIdleTimer();
+    if (global.CorneaIdbCrypto?.restoreSessionKeyFromStorage) {
+      const restored = await global.CorneaIdbCrypto.restoreSessionKeyFromStorage();
+      if (restored) global.CorneaOfflineSecurity?.resetIdleTimer?.();
+    }
     return true;
   }
 

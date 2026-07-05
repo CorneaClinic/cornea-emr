@@ -44,6 +44,26 @@
     });
   }
 
+  async function patientsGet(id) {
+    if (global.CorneaSecurePatients?.get) return global.CorneaSecurePatients.get(id);
+    return promisifyRequest(tx([STORE_PATIENTS], 'readonly').objectStore(STORE_PATIENTS).get(id));
+  }
+
+  async function patientsPut(record) {
+    if (global.CorneaSecurePatients?.put) return global.CorneaSecurePatients.put(record);
+    return promisifyRequest(tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS).put(record));
+  }
+
+  async function patientsGetAll() {
+    if (global.CorneaSecurePatients?.getAll) return global.CorneaSecurePatients.getAll();
+    return promisifyRequest(tx([STORE_PATIENTS], 'readonly').objectStore(STORE_PATIENTS).getAll());
+  }
+
+  async function patientsDelete(id) {
+    if (global.CorneaSecurePatients?.remove) return global.CorneaSecurePatients.remove(id);
+    return promisifyRequest(tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS).delete(id));
+  }
+
   function getDeviceId() {
     let id = localStorage.getItem('corneaEmr_deviceId');
     if (!id) {
@@ -360,20 +380,19 @@
       await this.clearQueueForLocalRecord('visit', localId);
 
       {
-        const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
         if (serverState) {
-          await promisifyRequest(store.put({
+          await patientsPut({
             ...serverState,
             id: localId,
             uuid: serverState.uuid || serverState.entityId,
             revision: serverRevision ?? serverState.revision ?? 0,
             sync_status: 'synced'
-          }));
+          });
         } else {
-          const record = await promisifyRequest(store.get(localId));
+          const record = await patientsGet(localId);
           if (record && (record.sync_status === 'conflict' || record.sync_status === 'pending')) {
             record.sync_status = 'synced';
-            await promisifyRequest(store.put(record));
+            await patientsPut(record);
           }
         }
       }
@@ -386,8 +405,7 @@
         }
       }
 
-      const readStore = tx([STORE_PATIENTS], 'readonly').objectStore(STORE_PATIENTS);
-      return promisifyRequest(readStore.get(localId));
+      return patientsGet(localId);
     },
 
     async markQueueError(mutationId, error, attempts) {
@@ -567,8 +585,7 @@
     async saveVisitLocal(data) {
       let existing = null;
       if (data?.id != null) {
-        const readStore = tx([STORE_PATIENTS], 'readonly').objectStore(STORE_PATIENTS);
-        existing = await promisifyRequest(readStore.get(data.id));
+        existing = await patientsGet(data.id);
       }
       if (existing) {
         if (existing.uuid && !data.uuid) data.uuid = existing.uuid;
@@ -582,8 +599,7 @@
       data.sync_status = 'pending';
       data.lastModified = new Date().toISOString();
 
-      const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
-      const savedId = await promisifyRequest(store.put(data));
+      const savedId = await patientsPut(data);
 
       await this.enqueue({
         entityType: 'visit',
@@ -602,8 +618,7 @@
       if (!record?.id) return;
       record.sync_status = 'pending';
       record.lastModified = new Date().toISOString();
-      const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
-      await promisifyRequest(store.put(record));
+      await patientsPut(record);
       await this.enqueue({
         entityType: 'visit',
         operation: 'upsert',
@@ -615,12 +630,10 @@
     },
 
     async deleteVisitLocal(id) {
-      const store = tx([STORE_PATIENTS], 'readonly').objectStore(STORE_PATIENTS);
-      const existing = await promisifyRequest(store.get(id));
+      const existing = await patientsGet(id);
       if (!existing) return;
 
-      const writeStore = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
-      await promisifyRequest(writeStore.delete(id));
+      await patientsDelete(id);
 
       await this.enqueue({
         entityType: 'visit',
@@ -688,8 +701,7 @@
           data.localId != null ? Number(data.localId) : null
         );
         if (legacyId != null && !Number.isNaN(legacyId)) {
-          const readStore = tx([STORE_PATIENTS]).objectStore(STORE_PATIENTS);
-          const existing = await promisifyRequest(readStore.get(legacyId));
+          const existing = await patientsGet(legacyId);
           if (!existing || !existing.uuid || !serverUuid || existing.uuid === serverUuid) {
             localId = legacyId;
           }
@@ -698,7 +710,6 @@
 
       if (localId != null && await this.hasLocalEdits(STORE_PATIENTS, localId)) return;
 
-      const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
       const record = {
         ...data,
         uuid: serverUuid,
@@ -709,10 +720,10 @@
 
       if (localId != null) {
         record.id = localId;
-        await promisifyRequest(store.put(record));
+        await patientsPut(record);
       } else {
         delete record.id;
-        await promisifyRequest(store.put(record));
+        await patientsPut(record);
       }
     },
 
@@ -989,8 +1000,7 @@
           revision: result.revision,
           sync_status: 'synced'
         };
-        const store = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
-        await promisifyRequest(store.put(record));
+        await patientsPut(record);
         if (global.CorneaVisitMedia && result.entityId) {
           global.CorneaVisitMedia.flushPendingUploads(result.entityId, { recordId: result.localId }).then(async (mediaResult) => {
             if (mediaResult.uploaded > 0) {
@@ -1040,8 +1050,7 @@
     async migrateExistingRecords() {
       if (!global.db) return;
 
-      const patientsStore = tx([STORE_PATIENTS], 'readwrite').objectStore(STORE_PATIENTS);
-      const patients = await promisifyRequest(patientsStore.getAll());
+      const patients = await patientsGetAll();
       for (const record of patients) {
         if (record.sync_status) continue;
 
@@ -1049,14 +1058,13 @@
         record.client_mutation_id = record.client_mutation_id || uuid();
 
         if (record.uuid) {
-          // Already linked to the cloud — pull will refresh revision; do not blind-push.
           record.sync_status = 'synced';
-          await promisifyRequest(patientsStore.put(record));
+          await patientsPut(record);
           continue;
         }
 
         record.sync_status = 'pending_upload';
-        await promisifyRequest(patientsStore.put(record));
+        await patientsPut(record);
         await this.enqueue({
           entityType: 'visit',
           operation: 'upsert',

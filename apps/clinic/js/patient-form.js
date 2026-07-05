@@ -707,6 +707,12 @@ function loadPatientVisits(patientId, callback) {
         callback([]);
         return;
     }
+    if (window.CorneaSecurePatients?.getAllByIndex) {
+        window.CorneaSecurePatients.getAllByIndex('patientId', patientId)
+            .then((rows) => callback(sortVisitsChronological(rows || [])))
+            .catch(() => callback([]));
+        return;
+    }
     const req = window.db.transaction([STORE_NAME], 'readonly')
         .objectStore(STORE_NAME).index('patientId').getAll(patientId);
     req.onsuccess = () => callback(sortVisitsChronological(req.result || []));

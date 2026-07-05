@@ -78,12 +78,16 @@ window.saveToDatabase = async function() {
     try {
         let existingForAudit = null;
         if (data.id != null && !Number.isNaN(data.id)) {
-            existingForAudit = await new Promise((resolve) => {
-                const req = window.db.transaction([STORE_NAME], 'readonly')
-                    .objectStore(STORE_NAME).get(data.id);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(null);
-            });
+            if (window.CorneaSecurePatients?.get) {
+                existingForAudit = await window.CorneaSecurePatients.get(data.id);
+            } else {
+                existingForAudit = await new Promise((resolve) => {
+                    const req = window.db.transaction([STORE_NAME], 'readonly')
+                        .objectStore(STORE_NAME).get(data.id);
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => resolve(null);
+                });
+            }
         }
 
         // Editing an existing record: carry over sync metadata so offline
@@ -124,20 +128,15 @@ window.saveToDatabase = async function() {
             const saved = await CorneaSync.saveVisitLocal(data);
             savedId = saved.id;
             savedRecord = saved;
-        } else {
-            savedId = await new Promise((resolve, reject) => {
-                const req = window.db.transaction([STORE_NAME], 'readwrite')
-                    .objectStore(STORE_NAME).put(data);
-                req.onsuccess = (event) => resolve(event.target.result);
-                req.onerror = () => reject(req.error);
-            });
+        } else if (window.CorneaSecurePatients?.put) {
+            savedId = await window.CorneaSecurePatients.put(data);
             savedRecord = { ...data, id: savedId };
             if (window.CorneaAudit) {
                 const view = collectFormDataObject();
                 view.id = savedId;
                 await window.CorneaAudit.logDirectSave(existingForAudit, view, savedId);
             }
-        }
+        } else {
 
         document.getElementById('currentRecordId').value = savedId;
         window._currentViewRecordId = savedId;
@@ -167,55 +166,75 @@ function loadRecords() {
     if (!body) return;
     body.innerHTML = '';
 
-    const transaction = window.db.transaction([STORE_NAME], "readonly");
-    const store = transaction.objectStore(STORE_NAME);
-    let hasRows = false;
-
-    store.openCursor(null, 'prev').onsuccess = (event) => {
-        const cursor = event.target.result;
-        if (cursor) {
-            hasRows = true;
-            const row = document.createElement('tr');
-            const canEdit = window.CorneaOfflineAuth?.hasPermission?.('visits:write') ?? false;
-            const canDelete = window.CorneaOfflineAuth?.hasPermission?.('visits:delete') ?? false;
-            const editBtn = canEdit ? `<button type="button" class="btn-secondary btn-sm" onclick="loadAndEditRecord(${cursor.value.id})"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>` : '';
-            const deleteBtn = canDelete ? `<button type="button" class="btn-danger btn-sm" onclick="deleteRecord(${cursor.value.id})"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>` : '';
-            row.innerHTML = `
-                <td><span class="patient-id-badge">${escapeHtml(cursor.value.patientId ?? '') || '—'}</span></td>
-                <td>${escapeHtml(cursor.value.fullName ?? '') || 'Unnamed'}</td>
-                <td>${escapeHtml(cursor.value.visitDate ?? '') || '—'}</td>
-                <td>${escapeHtml(cursor.value.phone ?? '') || '—'}</td>
-                <td class="no-print records-actions">
-                    <button type="button" class="btn-info" onclick="viewRecordReadOnly(${cursor.value.id}, 'records')"><i class="fa-solid fa-eye" aria-hidden="true"></i> View</button>
-                    ${editBtn}
-                    ${deleteBtn}
-                </td>
-            `;
-            body.appendChild(row);
-            cursor.continue();
-        } else if (!hasRows) {
-            body.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No records found. Register your first patient.</p></div></td></tr>`;
-        }
+    const renderRow = (record) => {
+        const row = document.createElement('tr');
+        const canEdit = window.CorneaOfflineAuth?.hasPermission?.('visits:write') ?? false;
+        const canDelete = window.CorneaOfflineAuth?.hasPermission?.('visits:delete') ?? false;
+        const editBtn = canEdit ? `<button type="button" class="btn-secondary btn-sm" onclick="loadAndEditRecord(${record.id})"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>` : '';
+        const deleteBtn = canDelete ? `<button type="button" class="btn-danger btn-sm" onclick="deleteRecord(${record.id})"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>` : '';
+        row.innerHTML = `
+            <td><span class="patient-id-badge">${escapeHtml(record.patientId ?? '') || '—'}</span></td>
+            <td>${escapeHtml(record.fullName ?? '') || 'Unnamed'}</td>
+            <td>${escapeHtml(record.visitDate ?? '') || '—'}</td>
+            <td>${escapeHtml(record.phone ?? '') || '—'}</td>
+            <td class="no-print records-actions">
+                <button type="button" class="btn-info" onclick="viewRecordReadOnly(${record.id}, 'records')"><i class="fa-solid fa-eye" aria-hidden="true"></i> View</button>
+                ${editBtn}
+                ${deleteBtn}
+            </td>
+        `;
+        body.appendChild(row);
     };
+
+    if (window.CorneaSecurePatients?.forEachCursor) {
+        let hasRows = false;
+        window.CorneaSecurePatients.forEachCursor('prev', (record) => {
+            hasRows = true;
+            renderRow(record);
+        }).then(() => {
+            if (!hasRows) {
+                body.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No records found. Register your first patient.</p></div></td></tr>`;
+            }
+        }).catch(() => loadRecordsLegacy());
+        return;
+    }
+    loadRecordsLegacy();
+
+    function loadRecordsLegacy() {
+        const store = window.db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME);
+        let hasRows = false;
+        store.openCursor(null, 'prev').onsuccess = (event) => {
+            const cursor = event.target.result;
+            if (cursor) {
+                hasRows = true;
+                renderRow(cursor.value);
+                cursor.continue();
+            } else if (!hasRows) {
+                body.innerHTML = `<tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-folder-open"></i><p>No records found. Register your first patient.</p></div></td></tr>`;
+            }
+        };
+    }
 }
 
-window.loadAndEditRecord = function(id) {
+window.loadAndEditRecord = async function(id) {
     if (!window.CorneaOfflineAuth?.hasPermission?.('visits:write')) {
         alert('You do not have permission to edit patient records.');
         return;
     }
     if (!window.db) return;
-    window.db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).get(id).onsuccess = (e) => {
-        const data = e.target.result;
-        if (!data) return;
-        window._currentViewRecordId = data.id;
-        document.getElementById('currentRecordId').value = data.id;
-        const uuidEl = document.getElementById('currentRecordUuid');
-        if (uuidEl) uuidEl.value = data.uuid || '';
-        populateFormFromData(data);
-        window.refreshPatientVisitHistory();
-        openPatientFormModal('edit');
-    };
+    const data = window.CorneaSecurePatients?.get
+        ? await window.CorneaSecurePatients.get(id)
+        : await new Promise((resolve) => {
+            window.db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).get(id).onsuccess = (e) => resolve(e.target.result);
+        });
+    if (!data) return;
+    window._currentViewRecordId = data.id;
+    document.getElementById('currentRecordId').value = data.id;
+    const uuidEl = document.getElementById('currentRecordUuid');
+    if (uuidEl) uuidEl.value = data.uuid || '';
+    populateFormFromData(data);
+    window.refreshPatientVisitHistory();
+    openPatientFormModal('edit');
 };
 
 window.editRecord = function(id) {
@@ -232,18 +251,9 @@ window.deleteRecord = async function(id) {
     try {
         if (window.CorneaSync) {
             await CorneaSync.deleteVisitLocal(id);
-        } else {
-            const existing = await new Promise((resolve) => {
-                const req = window.db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).get(id);
-                req.onsuccess = () => resolve(req.result);
-                req.onerror = () => resolve(null);
-            });
-            await new Promise((resolve, reject) => {
-                const req = window.db.transaction([STORE_NAME], "readwrite")
-                    .objectStore(STORE_NAME).delete(id);
-                req.onsuccess = resolve;
-                req.onerror = () => reject(req.error);
-            });
+        } else if (window.CorneaSecurePatients?.remove) {
+            const existing = await window.CorneaSecurePatients.get(id);
+            await window.CorneaSecurePatients.remove(id);
             if (window.CorneaAudit && existing) {
                 await window.CorneaAudit.logVisit({
                     action: 'delete',
@@ -252,7 +262,7 @@ window.deleteRecord = async function(id) {
                     recordId: id
                 });
             }
-        }
+        } else {
         loadRecords();
         updateDashboardStats();
         window.refreshPatientVisitHistory();

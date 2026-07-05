@@ -5470,7 +5470,7 @@
         <div id="databaseTab" class="tab-content" role="tabpanel" aria-labelledby="nav-databaseTab" aria-hidden="true">
             <div class="alert alert-info no-print">
                 <i class="fa-solid fa-circle-info"></i>
-                <span>Patient records are stored locally in IndexedDB. When signed in to cloud sync, WHO ICD-11 keys are stored encrypted on the server — search terms only are sent to WHO for diagnosis suggestions.</span>
+                <span>Patient records are stored locally in IndexedDB with AES-256-GCM encryption when signed in. Sync metadata (patient ID, visit date) stays unencrypted for indexing; clinical fields and media blobs are encrypted at rest.</span>
             </div>
 
             <div class="card section-theme-database" id="section-database">
@@ -5521,6 +5521,21 @@
                             </button>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <div class="card mt-4 section-theme-database" id="section-offline-security">
+                <div class="card-header">
+                    <div class="card-header-left">
+                        <div class="card-icon slate"><i class="fa-solid fa-shield-halved"></i></div>
+                        <span class="card-title">Offline Data Security</span>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p style="font-size:0.85rem;color:var(--text-secondary);margin-bottom:12px;">
+                        Project 3 controls: encrypted local cache, idle session lock (15 min cloud / 30 min offline), optional trusted device (90 days), and local data refresh after 30 days without trust.
+                    </p>
+                    <div id="offlineSecurityStatus">Loading…</div>
                 </div>
             </div>
 
@@ -6900,6 +6915,8 @@
 </div>
 
 <script src="js/storage.js"></script>
+<script src="cornea-idb-crypto.js"></script>
+<script src="cornea-secure-patients.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/form-section-collapse.js"></script>
 <script src="js/form-section-nav.js"></script>
@@ -6949,6 +6966,7 @@
 <script src="cornea-sync-client.js"></script>
 <script src="cornea-visit-media.js"></script>
 <script src="cornea-offline-auth.js"></script>
+<script src="cornea-offline-security.js"></script>
 <script src="cornea-section-attribution.js"></script>
 <script src="cornea-visual-acuity.js"></script>
 <script src="cornea-audit-trail.js"></script>

@@ -85,18 +85,20 @@ window.fetchInstituteKpis = async function () {
     }
 };
 
-window.updateDashboardStats = function() {
+window.updateDashboardStats = async function() {
     if (!window.db) {
         window.fetchInstituteKpis().catch(() => {});
         return;
     }
-    const transaction = window.db.transaction([STORE_NAME], "readonly");
-    const store = transaction.objectStore(STORE_NAME);
-    const request = store.getAll();
+    const records = window.CorneaSecurePatients?.getAll
+        ? await window.CorneaSecurePatients.getAll()
+        : await new Promise((resolve) => {
+            const request = window.db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).getAll();
+            request.onsuccess = () => resolve(request.result || []);
+            request.onerror = () => resolve([]);
+        });
 
-    request.onsuccess = () => {
-        const records = request.result;
-        const total = records.length;
+    const total = records.length;
         const today = new Date().toISOString().split('T')[0];
 
         let todayCount = 0, maleCount = 0, femaleCount = 0;
@@ -121,5 +123,4 @@ window.updateDashboardStats = function() {
         }
 
         window.fetchInstituteKpis().catch(() => {});
-    };
 };

@@ -1,6 +1,25 @@
 # Changelog — Production Readiness
 
-## [Unreleased] — Project 2: Duplicate Patient Prevention (2026-07-05)
+## [Unreleased] — Project 3: Offline Data Security (2026-07-05)
+
+### Added
+- `cornea-idb-crypto.js` — AES-256-GCM encryption; PBKDF2 (offline) and HKDF (cloud) key derivation
+- `cornea-secure-patients.js` — encrypted IndexedDB wrapper for visit records
+- `cornea-offline-security.js` — idle session lock, device trust (90 days), local data expiry (30 days), lock screen
+- Database tab **Offline Data Security** panel with trust/revoke/lock controls
+- `docs/projects/PROJECT_03_OFFLINE_DATA_SECURITY.md`
+
+### Changed
+- Visit records and media blobs encrypted at rest when session unlocked
+- Cloud sessions auto-lock after 15 minutes idle; offline after 30 minutes
+- Sync client, visits, dashboard, patient-form use secure patient storage
+
+### Rollback
+- Revert clinic commits; existing plain records remain readable
+
+---
+
+## Project 2: Duplicate Patient Prevention (2026-07-05)
 
 ### Added
 - `duplicatePatientService.js` — MRN/national ID/name/phone/DOB/sex scoring, merge workflow

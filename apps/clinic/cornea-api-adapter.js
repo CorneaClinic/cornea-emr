@@ -209,6 +209,9 @@
     } else if (!user) {
       global.CorneaAuthEnv?.lockUi?.();
     }
+    if (user && global.CorneaOfflineSecurity?.unlockAfterCloudLogin && token) {
+      void global.CorneaOfflineSecurity.unlockAfterCloudLogin(token);
+    }
     if (global.CorneaSections) {
       global.CorneaSections.apply(user?.emrSections || null);
     }
@@ -229,6 +232,7 @@
     }
     token = null;
     localStorage.removeItem(STORAGE_TOKEN);
+    global.CorneaIdbCrypto?.clearSessionKey?.();
     global.__corneaCloudMode = false;
     applyUserContext(null);
     updateCloudHeader(false);
@@ -785,6 +789,14 @@
           const me = await api('/api/v1/auth/me');
           global.__corneaCloudMode = true;
           applyUserContext(me.user);
+          if (global.CorneaIdbCrypto?.restoreSessionKeyFromStorage) {
+            const restored = await global.CorneaIdbCrypto.restoreSessionKeyFromStorage();
+            if (!restored && token) {
+              await global.CorneaOfflineSecurity?.unlockAfterCloudLogin?.(token);
+            } else {
+              global.CorneaOfflineSecurity?.resetIdleTimer?.();
+            }
+          }
           this.patchGlobals();
           showCloudBadge(true);
           await promptPasswordChangeIfNeeded(me.user);
