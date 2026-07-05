@@ -35,6 +35,7 @@ export function mapPatient(row) {
     sex: row.sex,
     phone: row.phone,
     address: row.address,
+    nationalId: row.national_id,
     revision: row.revision,
     createdAt: row.created_at,
     updatedAt: row.updated_at
@@ -131,16 +132,17 @@ export async function createPatient(req, body) {
   const dob = parseDate(body.dob, 'dob');
   const sex = parseEnum(body.sex, 'sex', SEX_VALUES);
   const phone = optionalString(body.phone, 'phone');
+  const nationalId = optionalString(body.nationalId, 'nationalId');
   const address = optionalString(body.address, 'address');
 
   try {
     const { rows } = await query(
       `
-        INSERT INTO patients (clinic_id, mrn, full_name, dob, sex, phone, address)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO patients (clinic_id, mrn, full_name, dob, sex, phone, address, national_id)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         RETURNING *
       `,
-      [clinicId, mrn, fullName, dob, sex, phone, address]
+      [clinicId, mrn, fullName, dob, sex, phone, address, nationalId]
     );
 
     const patient = mapPatient(rows[0]);
@@ -148,6 +150,10 @@ export async function createPatient(req, body) {
     return patient;
   } catch (err) {
     if (err.code === '23505') {
+      const detail = err.detail || '';
+      if (detail.includes('national_id')) {
+        throw new ConflictError('A patient with this national ID already exists', { nationalId });
+      }
       throw new ConflictError('A patient with this MRN already exists', { mrn });
     }
     throw err;
@@ -175,6 +181,9 @@ export async function updatePatient(req, id, body) {
   const sex = body.sex !== undefined ? parseEnum(body.sex, 'sex', SEX_VALUES) : existing.sex;
   const phone = body.phone !== undefined ? optionalString(body.phone, 'phone') : existing.phone;
   const address = body.address !== undefined ? optionalString(body.address, 'address') : existing.address;
+  const nationalId = body.nationalId !== undefined
+    ? optionalString(body.nationalId, 'nationalId')
+    : existing.nationalId;
 
   try {
     const { rows } = await query(
@@ -186,13 +195,14 @@ export async function updatePatient(req, id, body) {
                sex = $6,
                phone = $7,
                address = $8,
+               national_id = $9,
                revision = revision + 1
          WHERE id = $1
            AND clinic_id = $2
-           AND revision = $9
+           AND revision = $10
         RETURNING *
       `,
-      [id, clinicId, mrn, fullName, dob, sex, phone, address, revision]
+      [id, clinicId, mrn, fullName, dob, sex, phone, address, nationalId, revision]
     );
 
     if (!rows[0]) {
@@ -215,6 +225,10 @@ export async function updatePatient(req, id, body) {
     return patient;
   } catch (err) {
     if (err.code === '23505') {
+      const detail = err.detail || '';
+      if (detail.includes('national_id')) {
+        throw new ConflictError('A patient with this national ID already exists', { nationalId });
+      }
       throw new ConflictError('A patient with this MRN already exists', { mrn });
     }
     throw err;

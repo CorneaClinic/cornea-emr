@@ -11,8 +11,33 @@ import {
   updatePatient,
   listPatientVisits
 } from '../services/patientService.js';
+import {
+  findDuplicatePatients,
+  mergePatients
+} from '../services/duplicatePatientService.js';
 
 const router = Router();
+
+router.post(
+  '/duplicates/check',
+  authenticate,
+  requirePermission(PERMISSIONS.PATIENTS_READ),
+  asyncHandler(async (req, res) => {
+    const result = await findDuplicatePatients(req.user.clinicId, req.body || {});
+    res.json({ data: result });
+  })
+);
+
+router.post(
+  '/merge',
+  authenticate,
+  requirePermission(PERMISSIONS.PATIENTS_WRITE),
+  asyncHandler(async (req, res) => {
+    const { targetPatientId, sourcePatientId } = req.body || {};
+    const patient = await mergePatients(req, targetPatientId, sourcePatientId, req.body || {});
+    res.json({ data: patient });
+  })
+);
 
 router.get(
   '/',

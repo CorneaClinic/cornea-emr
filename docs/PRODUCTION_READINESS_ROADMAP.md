@@ -13,8 +13,8 @@ This roadmap closes production gaps **without new clinical modules**, **without 
 
 | Metric | Baseline | Target | Current |
 |--------|----------|--------|---------|
-| Overall readiness | 76% | ≥90% | **~78%** (G2/G4/G6 PASS) |
-| Patient safety | 72% | ≥90% | 72% |
+| Overall readiness | 76% | ≥90% | **~82%** (P1 gates + P2 dupes) |
+| Patient safety | 72% | ≥90% | **~80%** |
 | Clinical readiness | 82% | ≥90% | 82% |
 | Technical readiness | 74% | ≥90% | **~78%** |
 | Operational readiness | 68% | ≥90% | 68% |
@@ -65,8 +65,8 @@ gantt
 | # | Project | Priority | Est. effort | Readiness lift | Status |
 |---|---------|----------|-------------|----------------|--------|
 | 1 | Stabilization gates G1–G7 | **Critical** | 1–2 weeks | +6% ops/security | **Complete** (7/7 PASS) |
-| 2 | Duplicate patient prevention | **Critical** | 1–2 weeks | +8% patient safety | **Next** |
-| 3 | Offline data security | **Critical** | 2–3 weeks | +10% security | Pending |
+| 2 | Duplicate patient prevention | **Critical** | 1–2 weeks | +8% patient safety | **Complete** |
+| 3 | Offline data security | **Critical** | 2–3 weeks | +10% security | **Next** |
 | 4 | Registry concurrency | **High** | 2 weeks | +5% clinical | Pending |
 | 5 | Backup & disaster recovery | **High** | 2 weeks | +8% ops | Pending |
 | 6 | Security hardening | **High** | 2 weeks | +6% security | Pending |
@@ -102,9 +102,9 @@ gantt
 
 **Scope:** MRN, national ID, name similarity, DOB, phone, gender; pre-registration duplicate panel; merge workflow; block accidental create.
 
-**Files (planned):** `patientService.js`, `duplicatePatientService.js`, clinic search UI, API `/patients/duplicates`.
+**Doc:** [projects/PROJECT_02_DUPLICATE_PATIENTS.md](./projects/PROJECT_02_DUPLICATE_PATIENTS.md)
 
-**Status:** Ready to start (Project 1 complete 2026-07-05)
+**Status:** Complete (2026-07-05)
 
 ---
 
@@ -112,7 +112,7 @@ gantt
 
 **Scope:** IndexedDB encryption at rest, secure key management, idle timeout, auto logout, device trust, offline data expiry.
 
-**Do not start until Project 2 complete.**
+**Status:** Ready to start (Project 2 complete 2026-07-05)
 
 ---
 

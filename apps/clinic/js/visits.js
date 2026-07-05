@@ -52,6 +52,11 @@ window.saveToDatabase = async function() {
         return;
     }
 
+    if (window.CorneaDuplicatePatients?.checkBeforeSave) {
+        const maySave = await window.CorneaDuplicatePatients.checkBeforeSave();
+        if (!maySave) return;
+    }
+
     const data = {};
     form.querySelectorAll('input, textarea, select').forEach(input => {
         if (input.type === 'radio') {

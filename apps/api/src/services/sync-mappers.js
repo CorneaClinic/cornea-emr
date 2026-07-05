@@ -2,7 +2,7 @@
  * Map legacy flat visit documents ↔ v1 PostgreSQL schema.
  */
 
-const PATIENT_KEYS = ['patientId', 'fullName', 'dob', 'sex', 'phone', 'address'];
+const PATIENT_KEYS = ['patientId', 'fullName', 'dob', 'sex', 'phone', 'address', 'nationalId'];
 const VALID_SEX = ['Male', 'Female', 'Other'];
 
 /**
@@ -33,7 +33,8 @@ export function extractPatientFromPayload(payload) {
     dob: payload.dob || null,
     sex: normalizeSex(payload.sex),
     phone: payload.phone || null,
-    address: payload.address || null
+    address: payload.address || null,
+    nationalId: payload.nationalId || null
   };
 }
 
@@ -71,6 +72,7 @@ export function visitToLegacyRecord(patient, visit) {
     sex: patient.sex || '',
     phone: patient.phone || '',
     address: patient.address || '',
+    nationalId: patient.national_id || patient.nationalId || '',
     visitDate: visit.visit_date ? String(visit.visit_date).slice(0, 10) : '',
     lastModified: visit.updated_at,
     revision: visit.revision,

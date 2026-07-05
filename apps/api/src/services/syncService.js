@@ -35,14 +35,15 @@ async function writeSyncLog({ clinicId, userId, deviceId, direction, level, mess
 async function upsertPatientRow(client, clinicId, demographics) {
   const { rows } = await client.query(
     `
-      INSERT INTO patients (clinic_id, mrn, full_name, dob, sex, phone, address)
-      VALUES ($1, $2, $3, $4, $5, $6, $7)
+      INSERT INTO patients (clinic_id, mrn, full_name, dob, sex, phone, address, national_id)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       ON CONFLICT (clinic_id, mrn) DO UPDATE SET
         full_name = EXCLUDED.full_name,
         dob = EXCLUDED.dob,
         sex = EXCLUDED.sex,
         phone = EXCLUDED.phone,
         address = EXCLUDED.address,
+        national_id = COALESCE(EXCLUDED.national_id, patients.national_id),
         revision = patients.revision + 1
       RETURNING *
     `,
@@ -53,7 +54,8 @@ async function upsertPatientRow(client, clinicId, demographics) {
       demographics.dob,
       demographics.sex,
       demographics.phone,
-      demographics.address
+      demographics.address,
+      demographics.nationalId || null
     ]
   );
   return rows[0];

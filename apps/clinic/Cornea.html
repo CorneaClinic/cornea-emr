@@ -1082,6 +1082,109 @@
         min-width: 0;
     }
 
+    .duplicate-patient-panel {
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        border-radius: var(--radius-md);
+        border: 1px solid var(--border);
+        background: var(--surface-raised);
+    }
+
+    .duplicate-panel-header {
+        display: flex;
+        gap: 10px;
+        align-items: flex-start;
+        margin-bottom: 10px;
+    }
+
+    .duplicate-panel-header.is-blocker {
+        color: var(--danger, #b42318);
+    }
+
+    .duplicate-panel-header.is-high {
+        color: var(--warning, #b54708);
+    }
+
+    .duplicate-panel-header p {
+        margin: 4px 0 0;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .duplicate-match-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .duplicate-match-item {
+        padding: 10px 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        background: var(--surface);
+    }
+
+    .duplicate-panel-header.is-info {
+        color: var(--primary-mid, #175cd3);
+    }
+
+    .duplicate-match-item.dup-severity-info {
+        border-color: #84caff;
+        background: #eff8ff;
+    }
+
+    .duplicate-match-item.dup-severity-block {
+        border-color: var(--danger, #fda29b);
+        background: #fff5f5;
+    }
+
+    .duplicate-match-item.dup-severity-high {
+        border-color: #fec84b;
+        background: #fffaeb;
+    }
+
+    .duplicate-match-head {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: baseline;
+    }
+
+    .duplicate-score {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-muted);
+    }
+
+    .duplicate-match-meta,
+    .duplicate-match-reasons {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-top: 4px;
+    }
+
+    .duplicate-match-actions {
+        margin-top: 8px;
+    }
+
+    .duplicate-confirm-label {
+        display: flex;
+        gap: 8px;
+        align-items: flex-start;
+        margin-top: 10px;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
+    .duplicate-panel-error {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--text-secondary);
+    }
+
     .form-section-nav {
         width: 172px;
         flex-shrink: 0;
@@ -4037,6 +4140,7 @@
                     <h3>Patient Information</h3>
                 </div>
                 <div class="form-card-body">
+                    <div id="duplicatePatientPanel" class="duplicate-patient-panel" hidden aria-live="polite"></div>
                     <div class="section-grid">
                         <div class="form-group">
                             <label class="required" for="patientId">Patient ID</label>
@@ -4069,6 +4173,10 @@
                         <div class="form-group">
                             <label for="phone">Phone Number</label>
                             <input type="tel" id="phone" placeholder="+91 00000 00000" />
+                        </div>
+                        <div class="form-group">
+                            <label for="nationalId">National ID</label>
+                            <input type="text" id="nationalId" placeholder="CNIC / Aadhaar / passport (optional)" autocomplete="off" />
                         </div>
                         <div class="form-group">
                             <label for="visitDate">Visit Date</label>
@@ -6797,6 +6905,7 @@
 <script src="js/form-section-nav.js"></script>
 <script src="js/clinical-fields.js"></script>
 <script src="js/patient-form.js"></script>
+<script src="cornea-duplicate-patients.js"></script>
 <script src="js/visits.js"></script>
 <script src="js/diagnosis.js"></script>
 <script src="js/dashboard.js"></script>

@@ -1,6 +1,25 @@
 # Changelog — Production Readiness
 
-## [Unreleased] — Project 1: Stabilization Gates (complete 2026-07-05)
+## [Unreleased] — Project 2: Duplicate Patient Prevention (2026-07-05)
+
+### Added
+- `duplicatePatientService.js` — MRN/national ID/name/phone/DOB/sex scoring, merge workflow
+- API `POST /api/v1/patients/duplicates/check` and `POST /api/v1/patients/merge`
+- Migration `024_patient_duplicate_prevention.sql` — optional `national_id` on patients
+- Clinic `cornea-duplicate-patients.js` — registration duplicate panel + save guard
+- Optional **National ID** field on patient registration form
+- `docs/projects/PROJECT_02_DUPLICATE_PATIENTS.md`
+
+### Changed
+- `patientService.js`, `sync-mappers.js`, `syncService.js` — national ID support
+- New visit save blocked on cross-MRN national ID duplicate; high-confidence demographic match requires confirmation
+
+### Rollback
+- Revert API + clinic commits; migration 024 is additive and safe to leave applied
+
+---
+
+## Project 1: Stabilization Gates (complete 2026-07-05)
 
 ### Added
 - `scripts/verify-stabilization-gates.mjs` — automated G1–G7 verification (`npm run verify:gates`)
