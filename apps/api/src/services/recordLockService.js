@@ -1,5 +1,5 @@
 import { query } from '../db/pool.js';
-import { ConflictError, NotFoundError, ValidationError } from '../core/errors.js';
+import { ConflictError, ForbiddenError, NotFoundError, ValidationError } from '../core/errors.js';
 import { requireUuid } from '../core/validation.js';
 
 const ENTITY_TYPES = Object.freeze(['visit', 'kp_patient', 'kp_tissue']);
@@ -86,6 +86,9 @@ export async function acquireLock(req, body) {
       throw new ConflictError('Record is being edited by another user', {
         lock: existing
       });
+    }
+    if (req.user.role !== 'admin') {
+      throw new ForbiddenError('Only administrators can force-acquire a record lock');
     }
     await query(
       `DELETE FROM record_edit_locks WHERE clinic_id = $1 AND entity_type = $2 AND entity_id = $3`,

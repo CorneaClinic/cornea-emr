@@ -56,7 +56,7 @@ router.post(
 router.post(
   '/release',
   authenticate,
-  requireAnyPermission(PERMISSIONS.VISITS_WRITE, PERMISSIONS.KP_READ),
+  requireAnyPermission(PERMISSIONS.VISITS_WRITE, PERMISSIONS.KP_WRITE),
   asyncHandler(async (req, res) => {
     const data = await releaseLock(req, req.body || {});
     res.json({ data });

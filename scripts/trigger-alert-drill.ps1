@@ -55,5 +55,5 @@ Write-Host "Watch: https://github.com/$Repo/actions/workflows/$WorkflowFile"
 if ($Mode -eq 'fail') {
     Write-Host ''
     Write-Host 'Expected: workflow FAILS intentionally — check email/GitHub notifications.'
-    Write-Host 'Then re-run with -Mode pass to confirm green.'
+    Write-Host "Then re-run with -Mode pass to confirm green."
 }
