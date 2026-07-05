@@ -22,6 +22,7 @@ import syncRouter from './sync.js';
 import migrationRouter from './migration.js';
 import adminUsersRouter from './admin-users.js';
 import adminAuditLogsRouter from './admin-audit-logs.js';
+import adminDrRouter from './admin-dr.js';
 import auditLogsRouter from './audit-logs.js';
 import mediaRouter from './media.js';
 import mediaLibraryRouter from './media-library.js';
@@ -90,6 +91,7 @@ router.use('/icd', icdRouter);
 router.use('/admin/migration', migrationRouter);
 router.use('/admin/users', adminUsersRouter);
 router.use('/admin/audit-logs', adminAuditLogsRouter);
+router.use('/admin/dr', adminDrRouter);
 router.use('/audit-logs', auditLogsRouter);
 
 export default router;

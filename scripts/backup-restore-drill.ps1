@@ -208,6 +208,7 @@ if ($db.Host -match 'ondigitalocean\.com') {
       Write-Output ''
       Write-Output 'DRILL PASSED (catalog mode): backup file, off-site decrypt, and catalog verified against live cloud counts snapshot.'
       Write-Output 'For full restore verification, create apps/api/.env.local pointing at 127.0.0.1 PostgreSQL.'
+      & node (Join-Path $RepoRoot 'scripts\log-dr-drill.mjs') --pass --note 'catalog mode (cloud CREATEDB unavailable)'
       exit 0
     }
   }
@@ -275,6 +276,7 @@ try {
     $mode = if ($useLocalRestore) { ' (cloud backup verified via local restore)' } else { '' }
     Write-Output ""
     Write-Output "DRILL PASSED: backup, decrypt, catalog, restore, and verification succeeded.$mode"
+    & node (Join-Path $RepoRoot 'scripts\log-dr-drill.mjs') --pass --note "backup-restore-drill.ps1$mode"
 } catch {
     try {
         Invoke-Pg $dropdb $restoreTarget @('-h', $restoreTarget.Host, '-p', $restoreTarget.Port, '-U', $adminUser, '--if-exists', $TestDb) $adminPass

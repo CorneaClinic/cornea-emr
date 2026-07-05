@@ -84,6 +84,26 @@ function Register-DailyTask {
     Write-Host "Scheduled task: $Name (daily $Time)"
 }
 
+function Register-MonthlyDrillTask {
+    $drillScript = Join-Path $Scripts 'backup-restore-drill.ps1'
+    $wrapper = Join-Path $Scripts 'run-monthly-dr-drill.ps1'
+    @"
+# Cornea EMR — monthly DR drill (Project 5)
+`$ErrorActionPreference = 'Stop'
+`$RepoRoot = Split-Path -Parent `$PSScriptRoot
+Set-Location `$RepoRoot
+& powershell -ExecutionPolicy Bypass -File `"$drillScript`" -EnvFile `"`$RepoRoot\apps\api\.env.production`" -SkipFreshBackup
+"@ | Set-Content -Path $wrapper -Encoding UTF8
+    $action = New-ScheduledTaskAction -Execute 'powershell.exe' `
+        -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$wrapper`""
+    $trigger = New-ScheduledTaskTrigger -Weekly -WeeksInterval 4 -DaysOfWeek Sunday -At '03:30'
+    $settings = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries `
+        -StartWhenAvailable -ExecutionTimeLimit (New-TimeSpan -Hours 3)
+    Register-ScheduledTask -TaskName 'CorneaEMR-MonthlyDRDrill' -Action $action -Trigger $trigger -Settings $settings `
+        -Description 'Cornea EMR monthly backup restore drill (Project 5)' -Force | Out-Null
+    Write-Host 'Scheduled task: CorneaEMR-MonthlyDRDrill (every 4 weeks Sunday 03:30)'
+}
+
 Write-Step 'Scheduled tasks'
 Register-DailyTask -Name 'CorneaEMR-DailyBackup' `
     -ScriptPath (Join-Path $Scripts 'backup-db.ps1') `
@@ -97,6 +117,8 @@ if (Test-Path $ProdEnv) {
 } else {
     Write-Host 'Production cloud backup: NOT configured — create apps\api\.env.production (see .env.production.example)'
 }
+
+Register-MonthlyDrillTask
 
 if ($RunBackupNow) {
     Write-Step 'Running local backup now'

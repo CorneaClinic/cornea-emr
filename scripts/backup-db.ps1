@@ -194,4 +194,10 @@ if ($offsiteDir) {
     Write-Log "NOTE: no off-site destination configured (scripts/backup-config.json) - backups exist only on this disk."
 }
 
+try {
+    & powershell -ExecutionPolicy Bypass -File (Join-Path $PSScriptRoot 'backup-post-verify.ps1') -DumpFile $outFile
+} catch {
+    Write-Log "WARN: post-backup verify failed - $($_.Exception.Message)"
+}
+
 exit 0

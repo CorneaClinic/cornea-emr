@@ -16,6 +16,10 @@ Both should be backed up. Local backup alone does **not** replace cloud backup.
 ```powershell
 cd C:\Users\Hp\Documents\trae_projects\cornea-emr
 
+# Full DR verification (Project 5)
+npm run verify:backup-dr
+npm run dr:dashboard   # opens backups/dr-reports/index.html
+
 # Latest local backup log
 Get-Content backups\backup.log -Tail 5
 
