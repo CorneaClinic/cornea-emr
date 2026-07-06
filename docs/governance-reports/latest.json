@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-07-06T14:31:17.720Z",
+  "project": "P9-medicolegal-compliance",
+  "status": "PASS",
+  "checks": [
+    {
+      "id": "M1",
+      "name": "All governance documents",
+      "ok": true,
+      "reason": "4 governance documents"
+    },
+    {
+      "id": "M-retention",
+      "name": "Governance doc: DATA_RETENTION_POLICY.md",
+      "ok": true,
+      "reason": "docs/DATA_RETENTION_POLICY.md"
+    },
+    {
+      "id": "M-consent",
+      "name": "Governance doc: CONSENT_MANAGEMENT.md",
+      "ok": true,
+      "reason": "docs/CONSENT_MANAGEMENT.md"
+    },
+    {
+      "id": "M-governance",
+      "name": "Governance doc: CLINICAL_GOVERNANCE.md",
+      "ok": true,
+      "reason": "docs/CLINICAL_GOVERNANCE.md"
+    },
+    {
+      "id": "M-audit-review",
+      "name": "Governance doc: AUDIT_REVIEW_PROCESS.md",
+      "ok": true,
+      "reason": "docs/AUDIT_REVIEW_PROCESS.md"
+    },
+    {
+      "id": "M5",
+      "name": "Verification script",
+      "ok": true,
+      "reason": "npm run verify:medicolegal"
+    },
+    {
+      "id": "M6",
+      "name": "Consent modules in clinic",
+      "ok": true,
+      "reason": "laser consent panel + teaching library"
+    },
+    {
+      "id": "M7",
+      "name": "Audit logging API + UI",
+      "ok": true,
+      "reason": "audit-logs API + clinic audit trail UI"
+    },
+    {
+      "id": "M8",
+      "name": "Audit review script",
+      "ok": true,
+      "reason": "npm run medicolegal:audit-review"
+    },
+    {
+      "id": "M9",
+      "name": "Incident response linkage",
+      "ok": true,
+      "reason": "governance links to incident response"
+    },
+    {
+      "id": "M10",
+      "name": "Project 9 documentation",
+      "ok": true,
+      "reason": "docs/projects/PROJECT_09_MEDICOLEGAL_COMPLIANCE.md"
+    },
+    {
+      "id": "M11",
+      "name": "Live audit log sample",
+      "ok": true,
+      "skipped": true,
+      "reason": "credentials unset — skipped audit log probe"
+    }
+  ],
+  "governanceDocs": [
+    "docs/DATA_RETENTION_POLICY.md",
+    "docs/CONSENT_MANAGEMENT.md",
+    "docs/CLINICAL_GOVERNANCE.md",
+    "docs/AUDIT_REVIEW_PROCESS.md"
+  ],
+  "api": "https://corneaclinic-2zfpt.ondigitalocean.app"
+}

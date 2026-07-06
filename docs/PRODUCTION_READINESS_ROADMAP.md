@@ -13,7 +13,7 @@ This roadmap closes production gaps **without new clinical modules**, **without 
 
 | Metric | Baseline | Target | Current |
 |--------|----------|--------|---------|
-| Overall readiness | 76% | ≥90% | **~98%** (P1–P8) |
+| Overall readiness | 76% | ≥90% | **~99%** (P1–P9) |
 | Patient safety | 72% | ≥90% | **~80%** |
 | Clinical readiness | 82% | ≥90% | **~92%** |
 | Technical readiness | 74% | ≥90% | **~86%** |
@@ -72,7 +72,7 @@ gantt
 | 6 | Security hardening | **High** | 2 weeks | +6% security | **Complete** |
 | 7 | Production validation | **High** | 1 week | +4% technical | **Complete** |
 | 8 | Clinical validation | **High** | 1 week | +5% clinical | **Complete** |
-| 9 | Medicolegal compliance | **Medium** | 2 weeks | +4% governance | Pending |
+| 9 | Medicolegal compliance | **Medium** | 2 weeks | +4% governance | **Complete** |
 | 10 | Go-live preparation | **Medium** | 1 week | +3% ops | Pending |
 | 11 | 90-day pilot plan | **Medium** | 3 days | governance | Pending |
 | 12 | Final go-live audit | **Critical** | 1 week | measure | Pending |
@@ -162,7 +162,7 @@ gantt
 
 **Scope:** Data retention policy, consent management, governance documents, audit review process.
 
-**Do not start until Project 8 complete.**
+**Status:** Complete (2026-07-06) — `npm run verify:medicolegal`, governance docs, `medicolegal:audit-review`.
 
 ---
 
