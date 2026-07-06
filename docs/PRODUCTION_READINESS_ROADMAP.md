@@ -13,7 +13,7 @@ This roadmap closes production gaps **without new clinical modules**, **without 
 
 | Metric | Baseline | Target | Current |
 |--------|----------|--------|---------|
-| Overall readiness | 76% | ≥90% | **~100%** (P1–P10) |
+| Overall readiness | 76% | ≥90% | **~100%** (P1–P11) |
 | Patient safety | 72% | ≥90% | **~80%** |
 | Clinical readiness | 82% | ≥90% | **~92%** |
 | Technical readiness | 74% | ≥90% | **~86%** |
@@ -74,7 +74,7 @@ gantt
 | 8 | Clinical validation | **High** | 1 week | +5% clinical | **Complete** |
 | 9 | Medicolegal compliance | **Medium** | 2 weeks | +4% governance | **Complete** |
 | 10 | Go-live preparation | **Medium** | 1 week | +3% ops | **Complete** |
-| 11 | 90-day pilot plan | **Medium** | 3 days | governance | Pending |
+| 11 | 90-day pilot plan | **Medium** | 3 days | governance | **Complete** |
 | 12 | Final go-live audit | **Critical** | 1 week | measure | Pending |
 
 ---
@@ -178,7 +178,7 @@ gantt
 
 **Scope:** Pilot protocol, weekly checklist, safety monitoring, success metrics, expansion criteria.
 
-**Do not start until Project 10 complete.**
+**Status:** Complete (2026-07-06) — `npm run verify:pilot`, `pilot:weekly-review`, pilot protocol and expansion criteria docs.
 
 ---
 
@@ -221,10 +221,10 @@ gantt
 ## Progress indicator
 
 ```
-[█████████████████░░░] ~83% program complete (Projects 1-10 complete)
+[██████████████████░░] ~92% program complete (Projects 1-11 complete)
 ```
 
-| Projects complete | 10 / 12 |
+| Projects complete | 11 / 12 |
 | Gates PASS | 7 / 7 |
 
 ---

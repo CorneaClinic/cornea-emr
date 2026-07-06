@@ -1,0 +1,88 @@
+{
+  "generatedAt": "2026-07-06T16:03:26.246Z",
+  "project": "P11-90-day-pilot-plan",
+  "status": "PASS",
+  "checks": [
+    {
+      "id": "P11-1",
+      "name": "All pilot documents",
+      "ok": true,
+      "reason": "5 pilot documents"
+    },
+    {
+      "id": "P11-protocol",
+      "name": "Pilot doc: PILOT_90_DAY_PROTOCOL.md",
+      "ok": true,
+      "reason": "docs/PILOT_90_DAY_PROTOCOL.md"
+    },
+    {
+      "id": "P11-weekly-checklist",
+      "name": "Pilot doc: PILOT_WEEKLY_CHECKLIST.md",
+      "ok": true,
+      "reason": "docs/PILOT_WEEKLY_CHECKLIST.md"
+    },
+    {
+      "id": "P11-safety-monitoring",
+      "name": "Pilot doc: PILOT_SAFETY_MONITORING.md",
+      "ok": true,
+      "reason": "docs/PILOT_SAFETY_MONITORING.md"
+    },
+    {
+      "id": "P11-success-metrics",
+      "name": "Pilot doc: PILOT_SUCCESS_METRICS.md",
+      "ok": true,
+      "reason": "docs/PILOT_SUCCESS_METRICS.md"
+    },
+    {
+      "id": "P11-expansion-criteria",
+      "name": "Pilot doc: PILOT_EXPANSION_CRITERIA.md",
+      "ok": true,
+      "reason": "docs/PILOT_EXPANSION_CRITERIA.md"
+    },
+    {
+      "id": "P11-2",
+      "name": "Verification script",
+      "ok": true,
+      "reason": "npm run verify:pilot"
+    },
+    {
+      "id": "P11-3",
+      "name": "Weekly review script",
+      "ok": true,
+      "reason": "npm run pilot:weekly-review"
+    },
+    {
+      "id": "P11-4",
+      "name": "Safety monitoring linkage",
+      "ok": true,
+      "reason": "protocol + checklist link safety monitoring"
+    },
+    {
+      "id": "P11-5",
+      "name": "Metrics/expansion linkage",
+      "ok": true,
+      "reason": "success metrics linked to expansion criteria"
+    },
+    {
+      "id": "P11-6",
+      "name": "Project 11 documentation",
+      "ok": true,
+      "reason": "docs/projects/PROJECT_11_90_DAY_PILOT_PLAN.md"
+    },
+    {
+      "id": "P11-7",
+      "name": "Live pilot health probe",
+      "ok": true,
+      "reason": "GREEN: within pilot safety thresholds"
+    }
+  ],
+  "pilotDocs": [
+    "docs/PILOT_90_DAY_PROTOCOL.md",
+    "docs/PILOT_WEEKLY_CHECKLIST.md",
+    "docs/PILOT_SAFETY_MONITORING.md",
+    "docs/PILOT_SUCCESS_METRICS.md",
+    "docs/PILOT_EXPANSION_CRITERIA.md"
+  ],
+  "api": "https://corneaclinic-2zfpt.ondigitalocean.app",
+  "clinic": "https://corneaclinic.visionemr.net/Cornea"
+}
