@@ -13,9 +13,9 @@ This roadmap closes production gaps **without new clinical modules**, **without 
 
 | Metric | Baseline | Target | Current |
 |--------|----------|--------|---------|
-| Overall readiness | 76% | ≥90% | **~97%** (P1–P7) |
+| Overall readiness | 76% | ≥90% | **~98%** (P1–P8) |
 | Patient safety | 72% | ≥90% | **~80%** |
-| Clinical readiness | 82% | ≥90% | **~87%** |
+| Clinical readiness | 82% | ≥90% | **~92%** |
 | Technical readiness | 74% | ≥90% | **~86%** |
 | Operational readiness | 68% | ≥90% | **~76%** |
 | Security readiness | 74% | ≥90% | **~90%** (P3 encryption) |
@@ -71,7 +71,7 @@ gantt
 | 5 | Backup & disaster recovery | **High** | 2 weeks | +8% ops | **Complete** |
 | 6 | Security hardening | **High** | 2 weeks | +6% security | **Complete** |
 | 7 | Production validation | **High** | 1 week | +4% technical | **Complete** |
-| 8 | Clinical validation | **High** | 1 week | +5% clinical | Pending |
+| 8 | Clinical validation | **High** | 1 week | +5% clinical | **Complete** |
 | 9 | Medicolegal compliance | **Medium** | 2 weeks | +4% governance | Pending |
 | 10 | Go-live preparation | **Medium** | 1 week | +3% ops | Pending |
 | 11 | 90-day pilot plan | **Medium** | 3 days | governance | Pending |
@@ -154,7 +154,7 @@ gantt
 
 **Scope:** End-to-end simulation of all 11 cornea workflows + printing + media.
 
-**Do not start until Project 7 complete.**
+**Status:** Complete (2026-07-06) — `npm run verify:clinical`, `clinical:simulate`, `test:e2e:clinical`.
 
 ---
 

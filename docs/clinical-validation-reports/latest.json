@@ -1,0 +1,118 @@
+{
+  "generatedAt": "2026-07-06T14:10:46.814Z",
+  "project": "P8-clinical-validation",
+  "status": "PASS",
+  "checks": [
+    {
+      "id": "C1",
+      "name": "11 workflow definitions",
+      "ok": true,
+      "reason": "11 cornea subspecialty workflows defined"
+    },
+    {
+      "id": "C2",
+      "name": "Workflow static modules",
+      "ok": true,
+      "reason": "all workflow static modules present"
+    },
+    {
+      "id": "C3",
+      "name": "Workflow UI markers",
+      "ok": true,
+      "reason": "workflow UI tabs/markers in Cornea.html"
+    },
+    {
+      "id": "C4",
+      "name": "Printing support",
+      "ok": true,
+      "reason": "printSummary + print CSS"
+    },
+    {
+      "id": "C5",
+      "name": "Clinical media platform",
+      "ok": true,
+      "reason": "clinical media tab + library/DICOM API"
+    },
+    {
+      "id": "C6",
+      "name": "Workflow simulation script",
+      "ok": true,
+      "reason": "npm run clinical:simulate"
+    },
+    {
+      "id": "C7",
+      "name": "Clinical validation e2e",
+      "ok": true,
+      "reason": "clinical-validation.spec.js + test:e2e:clinical"
+    },
+    {
+      "id": "C8",
+      "name": "Project 8 documentation",
+      "ok": true,
+      "reason": "docs/projects/PROJECT_08_CLINICAL_VALIDATION.md"
+    },
+    {
+      "id": "C9",
+      "name": "Live API workflow probes",
+      "ok": true,
+      "skipped": true,
+      "reason": "credentials unset — skipped live API probes",
+      "results": []
+    },
+    {
+      "id": "C10",
+      "name": "Live media library probe",
+      "ok": true,
+      "skipped": true,
+      "reason": "credentials unset — skipped media probe"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "W01",
+      "name": "Cornea clinic (core)"
+    },
+    {
+      "id": "W02",
+      "name": "Contact lens"
+    },
+    {
+      "id": "W03",
+      "name": "Scleral lens"
+    },
+    {
+      "id": "W04",
+      "name": "Laser refractive"
+    },
+    {
+      "id": "W05",
+      "name": "Corneal ulcer (keratitis)"
+    },
+    {
+      "id": "W06",
+      "name": "Dry eye / OSD"
+    },
+    {
+      "id": "W07",
+      "name": "Keratoconus"
+    },
+    {
+      "id": "W08",
+      "name": "Cross-linking (CXL)"
+    },
+    {
+      "id": "W09",
+      "name": "Keratoplasty"
+    },
+    {
+      "id": "W10",
+      "name": "Eye bank traceability"
+    },
+    {
+      "id": "W11",
+      "name": "Opinion & referral"
+    }
+  ],
+  "liveProbeDetails": [],
+  "api": "https://corneaclinic-2zfpt.ondigitalocean.app"
+}
