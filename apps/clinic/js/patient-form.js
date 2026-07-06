@@ -573,10 +573,13 @@ window.openPatientFormModal = function(mode) {
             || null;
         const priorPatientId = document.getElementById('patientId')?.value?.trim() || '';
 
-        window.clearForm(false);
         if (title) title.innerHTML = '<i class="fa-solid fa-user-plus"></i> New Patient Visit';
-
         openEmrModal('emrPatientModal');
+        try {
+            window.clearForm(false);
+        } catch (err) {
+            console.error('[PatientForm] clearForm failed while opening new visit:', err);
+        }
 
         const afterOpen = () => {
             repositionOpenLidAutocompleteLists();

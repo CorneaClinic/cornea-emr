@@ -300,24 +300,29 @@
     const origOpen = global.openPatientFormModal;
     if (origOpen && !origOpen._recordLockWrapped) {
       global.openPatientFormModal = async function (mode) {
-        if (mode === 'edit' && apiOn()) {
-          const uuid = document.getElementById('currentRecordUuid')?.value;
-          const localId = document.getElementById('currentRecordId')?.value;
-          let record = { uuid, id: localId ? Number(localId) : undefined };
-          if (localId && global.db) {
-            try {
-              record = await new Promise((resolve) => {
-                const req = global.db.transaction(['patients'], 'readonly').objectStore('patients').get(Number(localId));
-                req.onsuccess = () => resolve(req.result || record);
-                req.onerror = () => resolve(record);
-              });
-            } catch (_) { /* ignore */ }
+        try {
+          if (mode === 'edit' && apiOn()) {
+            const uuid = document.getElementById('currentRecordUuid')?.value;
+            const localId = document.getElementById('currentRecordId')?.value;
+            let record = { uuid, id: localId ? Number(localId) : undefined };
+            if (localId && global.db) {
+              try {
+                record = await new Promise((resolve) => {
+                  const req = global.db.transaction(['patients'], 'readonly').objectStore('patients').get(Number(localId));
+                  req.onsuccess = () => resolve(req.result || record);
+                  req.onerror = () => resolve(record);
+                });
+              } catch (_) { /* ignore */ }
+            }
+            const editResult = await beforeEditVisit(record);
+            if (!editResult.ok) return;
           }
-          const editResult = await beforeEditVisit(record);
-          if (!editResult.ok) return;
+          if (mode === 'new') void releaseActive();
+          return origOpen.call(this, mode);
+        } catch (err) {
+          console.error('[RecordLock] openPatientFormModal failed:', err);
+          throw err;
         }
-        if (mode === 'new') await releaseActive();
-        return origOpen.call(this, mode);
       };
       global.openPatientFormModal._recordLockWrapped = true;
     }

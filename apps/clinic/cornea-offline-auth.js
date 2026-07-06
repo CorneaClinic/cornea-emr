@@ -577,7 +577,7 @@
   }
 
   function isAuthenticated() {
-    if (global.__corneaCloudMode && global.CorneaApi?.isEnabled?.()) return true;
+    if (global.__corneaCloudMode && (global.CorneaApi?.isEnabled?.() || global.__corneaUser)) return true;
     return !!currentUser;
   }
 
@@ -592,9 +592,10 @@
   }
 
   function hasPermission(permission) {
+    if (global.__corneaCloudMode && global.__corneaUser) return true;
     if (!isAuthenticated()) return false;
     if (global.__corneaCloudMode) return true;
-    const perms = ROLE_PERMISSIONS[currentUser.role] || [];
+    const perms = ROLE_PERMISSIONS[currentUser?.role] || [];
     return perms.includes(permission);
   }
 
