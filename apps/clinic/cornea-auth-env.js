@@ -35,11 +35,11 @@
   }
 
   function lockUi() {
-    document.body.classList.add('cornea-auth-pending');
+    document.body?.classList.add('cornea-auth-pending');
   }
 
   function unlockUi() {
-    document.body.classList.remove('cornea-auth-pending');
+    document.body?.classList.remove('cornea-auth-pending');
   }
 
   function enableOfflineFallback() {
@@ -81,5 +81,9 @@
     AUTH_MODAL_IDS
   };
 
-  lockUi();
+  if (document.body) {
+    lockUi();
+  } else {
+    document.addEventListener('DOMContentLoaded', lockUi, { once: true });
+  }
 })(typeof window !== 'undefined' ? window : globalThis);
