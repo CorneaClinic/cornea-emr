@@ -137,6 +137,19 @@ window.saveToDatabase = async function() {
                 await window.CorneaAudit.logDirectSave(existingForAudit, view, savedId);
             }
         } else {
+            savedId = await new Promise((resolve, reject) => {
+                const req = window.db.transaction([STORE_NAME], 'readwrite')
+                    .objectStore(STORE_NAME).put(data);
+                req.onsuccess = (event) => resolve(event.target.result);
+                req.onerror = () => reject(req.error);
+            });
+            savedRecord = { ...data, id: savedId };
+            if (window.CorneaAudit) {
+                const view = collectFormDataObject();
+                view.id = savedId;
+                await window.CorneaAudit.logDirectSave(existingForAudit, view, savedId);
+            }
+        }
 
         document.getElementById('currentRecordId').value = savedId;
         window._currentViewRecordId = savedId;
@@ -263,6 +276,26 @@ window.deleteRecord = async function(id) {
                 });
             }
         } else {
+            const existing = await new Promise((resolve) => {
+                const req = window.db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).get(id);
+                req.onsuccess = () => resolve(req.result);
+                req.onerror = () => resolve(null);
+            });
+            await new Promise((resolve, reject) => {
+                const req = window.db.transaction([STORE_NAME], 'readwrite')
+                    .objectStore(STORE_NAME).delete(id);
+                req.onsuccess = resolve;
+                req.onerror = () => reject(req.error);
+            });
+            if (window.CorneaAudit && existing) {
+                await window.CorneaAudit.logVisit({
+                    action: 'delete',
+                    oldRecord: existing,
+                    newRecord: null,
+                    recordId: id
+                });
+            }
+        }
         loadRecords();
         updateDashboardStats();
         window.refreshPatientVisitHistory();
