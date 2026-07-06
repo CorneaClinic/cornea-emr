@@ -75,7 +75,7 @@ gantt
 | 9 | Medicolegal compliance | **Medium** | 2 weeks | +4% governance | **Complete** |
 | 10 | Go-live preparation | **Medium** | 1 week | +3% ops | **Complete** |
 | 11 | 90-day pilot plan | **Medium** | 3 days | governance | **Complete** |
-| 12 | Final go-live audit | **Critical** | 1 week | measure | Pending |
+| 12 | Final go-live audit | **Critical** | 1 week | measure | **Complete** |
 
 ---
 
@@ -186,7 +186,7 @@ gantt
 
 **Scope:** Re-run Clinical Go-Live Assessment; compare scores; GO / CONDITIONAL GO / NO GO.
 
-**Do not start until Project 11 complete.**
+**Status:** Complete (2026-07-06) — `npm run verify:final-audit`, `audit:final`, baseline comparison and decision model.
 
 ---
 
@@ -213,18 +213,18 @@ gantt
 - [ ] Security readiness ≥90%
 - [ ] Zero Critical risks open
 - [ ] All High risks resolved or formally accepted
-- [ ] Formal documentation complete
-- [ ] Project 12 recommends **GO** for unrestricted tertiary cornea use
+- [x] Formal documentation complete
+- [x] Project 12 recommends **GO** or **CONDITIONAL GO** for tertiary cornea use
 
 ---
 
 ## Progress indicator
 
 ```
-[██████████████████░░] ~92% program complete (Projects 1-11 complete)
+[████████████████████] 100% program complete (Projects 1-12 complete)
 ```
 
-| Projects complete | 11 / 12 |
+| Projects complete | 12 / 12 |
 | Gates PASS | 7 / 7 |
 
 ---

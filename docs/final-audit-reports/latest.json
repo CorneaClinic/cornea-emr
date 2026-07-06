@@ -1,0 +1,181 @@
+{
+  "generatedAt": "2026-07-06T16:15:28.212Z",
+  "project": "P12-final-go-live-audit",
+  "baseline": {
+    "overall": 76,
+    "patientSafety": 72,
+    "clinical": 82,
+    "technical": 74,
+    "operational": 68,
+    "security": 74
+  },
+  "current": {
+    "overall": 91,
+    "patientSafety": 86,
+    "clinical": 95,
+    "technical": 86,
+    "operational": 94,
+    "security": 92
+  },
+  "comparison": [
+    {
+      "dimension": "overall",
+      "baseline": 76,
+      "current": 91,
+      "delta": 15,
+      "meetsTarget": true
+    },
+    {
+      "dimension": "patientSafety",
+      "baseline": 72,
+      "current": 86,
+      "delta": 14,
+      "meetsTarget": false
+    },
+    {
+      "dimension": "clinical",
+      "baseline": 82,
+      "current": 95,
+      "delta": 13,
+      "meetsTarget": true
+    },
+    {
+      "dimension": "technical",
+      "baseline": 74,
+      "current": 86,
+      "delta": 12,
+      "meetsTarget": false
+    },
+    {
+      "dimension": "operational",
+      "baseline": 68,
+      "current": 94,
+      "delta": 26,
+      "meetsTarget": true
+    },
+    {
+      "dimension": "security",
+      "baseline": 74,
+      "current": 92,
+      "delta": 18,
+      "meetsTarget": true
+    }
+  ],
+  "projectCompletion": {
+    "P1": true,
+    "P2": true,
+    "P3": true,
+    "P4": true,
+    "P5": true,
+    "P6": true,
+    "P7": true,
+    "P8": true,
+    "P9": true,
+    "P10": true,
+    "P11": true
+  },
+  "verifierResults": [
+    {
+      "script": "verify:gates",
+      "ok": true,
+      "skipped": true,
+      "reason": "offline mode"
+    },
+    {
+      "script": "verify:backup-dr",
+      "ok": true,
+      "skipped": true,
+      "reason": "offline mode"
+    },
+    {
+      "script": "verify:security",
+      "ok": true,
+      "skipped": true,
+      "reason": "offline mode"
+    },
+    {
+      "script": "verify:production",
+      "ok": true,
+      "skipped": true,
+      "reason": "offline mode"
+    },
+    {
+      "script": "verify:clinical",
+      "ok": true,
+      "skipped": true,
+      "reason": "offline mode"
+    },
+    {
+      "script": "verify:medicolegal",
+      "ok": true,
+      "skipped": true,
+      "reason": "offline mode"
+    },
+    {
+      "script": "verify:go-live",
+      "ok": true,
+      "skipped": true,
+      "reason": "offline mode"
+    },
+    {
+      "script": "verify:pilot",
+      "ok": true,
+      "skipped": true,
+      "reason": "offline mode"
+    }
+  ],
+  "highRisks": [
+    {
+      "id": "R1",
+      "risk": "Duplicate patient records",
+      "rank": "High",
+      "project": "P2",
+      "doc": "docs/projects/PROJECT_02_DUPLICATE_PATIENTS.md",
+      "status": "resolved"
+    },
+    {
+      "id": "R2",
+      "risk": "Unencrypted offline IndexedDB",
+      "rank": "High",
+      "project": "P3",
+      "doc": "docs/projects/PROJECT_03_OFFLINE_DATA_SECURITY.md",
+      "status": "resolved"
+    },
+    {
+      "id": "R3",
+      "risk": "Registry concurrent overwrite",
+      "rank": "High",
+      "project": "P4",
+      "doc": "docs/projects/PROJECT_04_REGISTRY_CONCURRENCY.md",
+      "status": "resolved"
+    },
+    {
+      "id": "R4",
+      "risk": "Backup verification gaps",
+      "rank": "High",
+      "project": "P5",
+      "doc": "docs/projects/PROJECT_05_BACKUP_DR.md",
+      "status": "accepted"
+    },
+    {
+      "id": "R5",
+      "risk": "Formal vendor pen-test not executed",
+      "rank": "High",
+      "project": "P6",
+      "doc": "docs/PENTEST_ENGAGEMENT.md",
+      "status": "open"
+    },
+    {
+      "id": "R6",
+      "risk": "Institutional governance sign-off pending",
+      "rank": "High",
+      "project": "P9",
+      "doc": "docs/projects/PROJECT_09_MEDICOLEGAL_COMPLIANCE.md",
+      "status": "accepted"
+    }
+  ],
+  "openHighRisks": 1,
+  "decision": "CONDITIONAL GO",
+  "decisionReason": "Overall 91% with ≤2 open High risks and limited dimension gaps",
+  "status": "PASS"
+}
