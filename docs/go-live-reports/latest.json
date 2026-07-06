@@ -1,0 +1,87 @@
+{
+  "generatedAt": "2026-07-06T15:27:56.924Z",
+  "project": "P10-go-live-preparation",
+  "status": "PASS",
+  "checks": [
+    {
+      "id": "G10-1",
+      "name": "All go-live documents",
+      "ok": true,
+      "reason": "6 go-live documents"
+    },
+    {
+      "id": "G10-admin-manual",
+      "name": "Go-live doc: ADMIN_MANUAL.md",
+      "ok": true,
+      "reason": "docs/ADMIN_MANUAL.md"
+    },
+    {
+      "id": "G10-clinician-manual",
+      "name": "Go-live doc: CLINICIAN_MANUAL.md",
+      "ok": true,
+      "reason": "docs/CLINICIAN_MANUAL.md"
+    },
+    {
+      "id": "G10-reception-manual",
+      "name": "Go-live doc: RECEPTION_MANUAL.md",
+      "ok": true,
+      "reason": "docs/RECEPTION_MANUAL.md"
+    },
+    {
+      "id": "G10-training-guide",
+      "name": "Go-live doc: TRAINING_GUIDE.md",
+      "ok": true,
+      "reason": "docs/TRAINING_GUIDE.md"
+    },
+    {
+      "id": "G10-deployment-checklist",
+      "name": "Go-live doc: GO_LIVE_DEPLOYMENT_CHECKLIST.md",
+      "ok": true,
+      "reason": "docs/GO_LIVE_DEPLOYMENT_CHECKLIST.md"
+    },
+    {
+      "id": "G10-downtime-sop",
+      "name": "Go-live doc: DOWNTIME_SOP.md",
+      "ok": true,
+      "reason": "docs/DOWNTIME_SOP.md"
+    },
+    {
+      "id": "G10-2",
+      "name": "Verification script",
+      "ok": true,
+      "reason": "npm run verify:go-live"
+    },
+    {
+      "id": "G10-3",
+      "name": "Rollback linkage",
+      "ok": true,
+      "reason": "deployment checklist links rollback runbook"
+    },
+    {
+      "id": "G10-4",
+      "name": "Downtime linkage",
+      "ok": true,
+      "reason": "clinician + reception manuals link downtime SOP"
+    },
+    {
+      "id": "G10-5",
+      "name": "Incident response linkage",
+      "ok": true,
+      "reason": "incident response linked from go-live docs"
+    },
+    {
+      "id": "G10-6",
+      "name": "Project 10 documentation",
+      "ok": true,
+      "reason": "docs/projects/PROJECT_10_GO_LIVE_PREPARATION.md"
+    }
+  ],
+  "goLiveDocs": [
+    "docs/ADMIN_MANUAL.md",
+    "docs/CLINICIAN_MANUAL.md",
+    "docs/RECEPTION_MANUAL.md",
+    "docs/TRAINING_GUIDE.md",
+    "docs/GO_LIVE_DEPLOYMENT_CHECKLIST.md",
+    "docs/DOWNTIME_SOP.md"
+  ]
+}

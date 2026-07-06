@@ -49,6 +49,8 @@
     "verify:medicolegal": "node scripts/verify-medicolegal-compliance.mjs --report",
     "test:medicolegal-compliance": "node --test scripts/tests/medicolegal-compliance-checks.test.mjs",
     "medicolegal:audit-review": "node scripts/review-audit-logs.mjs",
+    "verify:go-live": "node scripts/verify-go-live-preparation.mjs --report",
+    "test:go-live-preparation": "node --test scripts/tests/go-live-preparation-checks.test.mjs",
     "test:unit": "npm test --prefix apps/api",
     "test:topography-import": "node apps/clinic/tests/topography-import.test.mjs",
     "test:api-live": "npm run verify:api --prefix apps/api",

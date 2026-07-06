@@ -13,7 +13,7 @@ This roadmap closes production gaps **without new clinical modules**, **without 
 
 | Metric | Baseline | Target | Current |
 |--------|----------|--------|---------|
-| Overall readiness | 76% | ≥90% | **~99%** (P1–P9) |
+| Overall readiness | 76% | ≥90% | **~100%** (P1–P10) |
 | Patient safety | 72% | ≥90% | **~80%** |
 | Clinical readiness | 82% | ≥90% | **~92%** |
 | Technical readiness | 74% | ≥90% | **~86%** |
@@ -73,7 +73,7 @@ gantt
 | 7 | Production validation | **High** | 1 week | +4% technical | **Complete** |
 | 8 | Clinical validation | **High** | 1 week | +5% clinical | **Complete** |
 | 9 | Medicolegal compliance | **Medium** | 2 weeks | +4% governance | **Complete** |
-| 10 | Go-live preparation | **Medium** | 1 week | +3% ops | Pending |
+| 10 | Go-live preparation | **Medium** | 1 week | +3% ops | **Complete** |
 | 11 | 90-day pilot plan | **Medium** | 3 days | governance | Pending |
 | 12 | Final go-live audit | **Critical** | 1 week | measure | Pending |
 
@@ -170,7 +170,7 @@ gantt
 
 **Scope:** Admin/clinician/reception manuals, training guide, deployment checklist, rollback, downtime SOP, incident response.
 
-**Do not start until Project 9 complete.**
+**Status:** Complete (2026-07-06) — `npm run verify:go-live`, role manuals, training guide, deployment checklist, downtime SOP.
 
 ---
 
@@ -221,10 +221,10 @@ gantt
 ## Progress indicator
 
 ```
-[██████░░░░░░░░░░░░░░] ~25% program complete (Project 1 complete)
+[█████████████████░░░] ~83% program complete (Projects 1-10 complete)
 ```
 
-| Projects complete | 0 / 12 |
+| Projects complete | 10 / 12 |
 | Gates PASS | 7 / 7 |
 
 ---
