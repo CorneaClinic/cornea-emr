@@ -176,7 +176,7 @@ npm run migrate:media --prefix apps/api -- --scan-visits --dry-run
 | Audit trail | Existing `auditMutation` on upload/delete/metadata |
 | Role-based EMR sections | `clinical_media` section per role |
 | File validation | MIME allowlist, size limits, SHA-256 checksum dedup |
-| Virus scanning | Hook placeholder: `MEDIA_VIRUS_SCAN_HOOK_URL` (wire external scanner) |
+| Virus scanning | `virusScanService` POST hook (`MEDIA_VIRUS_SCAN_HOOK_URL`); blocks on `{ clean: false }`; optional `MEDIA_VIRUS_SCAN_REQUIRED` |
 | Deletion | Soft delete + audit; archive before hard delete recommended |
 
 ## Performance review

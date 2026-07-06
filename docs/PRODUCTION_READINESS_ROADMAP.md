@@ -138,7 +138,7 @@ gantt
 
 **Scope:** Auth/session review, upload virus scan hook, WAF/API domain, OWASP Top 10 report, formal pen-test reactivation.
 
-**Do not start until Project 5 complete.**
+**Status:** Complete (2026-07-06) — `npm run verify:security`, virus scan hook, `GET /api/v1/admin/security/status`, OWASP report.
 
 ---
 

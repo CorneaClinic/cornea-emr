@@ -1,0 +1,147 @@
+{
+  "generatedAt": "2026-07-06T13:35:46.086Z",
+  "framework": "OWASP Top 10 (2021)",
+  "project": "Cornea EMR — Project 6",
+  "summary": {
+    "mitigated": 6,
+    "partial": 4,
+    "open": 0
+  },
+  "overallStatus": "PARTIAL",
+  "controls": [
+    {
+      "id": "A01",
+      "name": "Broken Access Control",
+      "status": "mitigated",
+      "evidence": [
+        "RBAC via requirePermission middleware",
+        "Clinic-scoped queries (tenant isolation)",
+        "tests/security-pentest.test.js tenant tests"
+      ],
+      "gaps": [
+        "Formal vendor pen-test on sync/push paths pending"
+      ]
+    },
+    {
+      "id": "A02",
+      "name": "Cryptographic Failures",
+      "status": "mitigated",
+      "evidence": [
+        "HTTPS/TLS on clinic + API (Cloudflare)",
+        "bcrypt password hashing",
+        "JWT_SECRET strength validation in production",
+        "SECRETS_ENCRYPTION_KEY for sensitive fields"
+      ],
+      "gaps": [
+        "Rotate secrets on schedule (ops)"
+      ]
+    },
+    {
+      "id": "A03",
+      "name": "Injection",
+      "status": "mitigated",
+      "evidence": [
+        "Parameterized PostgreSQL queries",
+        "Input validation via ValidationError helpers",
+        "Helmet CSP on API"
+      ],
+      "gaps": []
+    },
+    {
+      "id": "A04",
+      "name": "Insecure Design",
+      "status": "partial",
+      "evidence": [
+        "Offline-first sync with conflict resolution",
+        "Record lock service (P4)",
+        "Rate limits on auth + API"
+      ],
+      "gaps": [
+        "Staging mirror for safe pre-release testing"
+      ]
+    },
+    {
+      "id": "A05",
+      "name": "Security Misconfiguration",
+      "status": "partial",
+      "evidence": [
+        "Production CORS allowlist enforced at startup",
+        "env.js production guards",
+        "npm run pentest:self-check"
+      ],
+      "gaps": [
+        "Quarterly role review (ops)",
+        "MEDIA_VIRUS_SCAN_HOOK_URL optional until scanner deployed"
+      ]
+    },
+    {
+      "id": "A06",
+      "name": "Vulnerable and Outdated Components",
+      "status": "partial",
+      "evidence": [
+        "npm audit in CI",
+        "Dependabot recommended"
+      ],
+      "gaps": [
+        "Track CVE response SLA"
+      ]
+    },
+    {
+      "id": "A07",
+      "name": "Identification and Authentication Failures",
+      "status": "mitigated",
+      "evidence": [
+        "Session families + refresh rotation",
+        "Login rate limits (IP + email)",
+        "Password policy validation",
+        "GET /api/v1/admin/security/status session counts"
+      ],
+      "gaps": [
+        "Optional jti binding on logout (Wave 3)"
+      ]
+    },
+    {
+      "id": "A08",
+      "name": "Software and Data Integrity Failures",
+      "status": "partial",
+      "evidence": [
+        "SHA-256 checksum dedup on media uploads",
+        "MIME allowlist + size limits",
+        "Virus scan hook (MEDIA_VIRUS_SCAN_HOOK_URL)"
+      ],
+      "gaps": [
+        "Wire external scanner in production when available"
+      ]
+    },
+    {
+      "id": "A09",
+      "name": "Security Logging and Monitoring Failures",
+      "status": "mitigated",
+      "evidence": [
+        "audit_logs table + auditMutation",
+        "Failed login tracking (security status API)",
+        "Pino structured logging",
+        "backup/DR verification (P5)"
+      ],
+      "gaps": [
+        "Centralized log aggregation (ops)"
+      ]
+    },
+    {
+      "id": "A10",
+      "name": "Server-Side Request Forgery (SSRF)",
+      "status": "mitigated",
+      "evidence": [
+        "No user-controlled outbound fetch in API",
+        "Virus scan hook URL is operator-configured only"
+      ],
+      "gaps": []
+    }
+  ],
+  "references": [
+    "docs/PENTEST_ASVS_CHECKLIST.md",
+    "docs/PENTEST_REMEDIATION.md",
+    "docs/SECURITY_BASELINE.md",
+    "npm run verify:security"
+  ]
+}

@@ -185,6 +185,10 @@ export const env = Object.freeze({
     maxVideoBytes: parseIntEnv('MEDIA_MAX_VIDEO_BYTES', 100 * 1024 * 1024),
     signedUrlTtlSeconds: parseIntEnv('MEDIA_SIGNED_URL_TTL_SECONDS', 900),
     virusScanHookUrl: optional('MEDIA_VIRUS_SCAN_HOOK_URL', ''),
+    virusScanHookSecret: optional('MEDIA_VIRUS_SCAN_HOOK_SECRET', ''),
+    virusScanRequired: optional('MEDIA_VIRUS_SCAN_REQUIRED', 'false') === 'true',
+    virusScanMaxPayloadBytes: parseIntEnv('MEDIA_VIRUS_SCAN_MAX_PAYLOAD_BYTES', 25 * 1024 * 1024),
+    virusScanTimeoutMs: parseIntEnv('MEDIA_VIRUS_SCAN_TIMEOUT_MS', 30_000),
     categories: Object.freeze(
       optional(
         'MEDIA_CATEGORIES',

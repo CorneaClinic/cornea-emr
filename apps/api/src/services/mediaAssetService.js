@@ -25,6 +25,7 @@ import {
   writeStorageFile
 } from './fileStorageService.js';
 import { env } from '../config/env.js';
+import { scanUploadBuffer } from './virusScanService.js';
 
 const ENTITY_TYPES = ['visit', 'patient', 'keratoplasty_patient', 'corneal_tissue'];
 const EYE_VALUES = ['OD', 'OS', 'OU', 'right', 'left', 'both'];
@@ -276,6 +277,15 @@ export async function uploadMediaForEntity(req, options) {
   }
 
   const assetId = randomUUID();
+  await scanUploadBuffer({
+    buffer,
+    mimeType,
+    originalFilename,
+    clinicId,
+    assetId,
+    checksum
+  });
+
   const storageKey = buildStorageKey(clinicId, category, assetId, originalFilename);
 
   const asset = await withTransaction(async (client) => {

@@ -1,0 +1,69 @@
+{
+  "generatedAt": "2026-07-06T13:36:37.420Z",
+  "project": "P6-security-hardening",
+  "status": "PASS",
+  "checks": [
+    {
+      "id": "S1",
+      "name": "Virus scan hook integration",
+      "ok": true,
+      "reason": "virusScanService + mediaAssetService + env vars"
+    },
+    {
+      "id": "S2",
+      "name": "Admin security status API",
+      "ok": true,
+      "reason": "GET /api/v1/admin/security/status mounted"
+    },
+    {
+      "id": "S3",
+      "name": "Pentest self-check script",
+      "ok": true,
+      "reason": "npm run pentest:self-check"
+    },
+    {
+      "id": "S4",
+      "name": "Cloudflare WAF probe + runbook",
+      "ok": true,
+      "reason": "cloudflare-waf-check + runbook"
+    },
+    {
+      "id": "S5",
+      "name": "OWASP Top 10 report generator",
+      "ok": true,
+      "reason": "npm run security:owasp-report"
+    },
+    {
+      "id": "S6",
+      "name": "Auth session review script",
+      "ok": true,
+      "reason": "npm run security:auth-sessions"
+    },
+    {
+      "id": "S7",
+      "name": "Project 6 documentation",
+      "ok": true,
+      "reason": "docs/projects/PROJECT_06_SECURITY_HARDENING.md"
+    },
+    {
+      "id": "S8",
+      "name": "Virus scan unit tests",
+      "ok": true,
+      "reason": "apps/api/tests/virus-scan.test.js"
+    },
+    {
+      "id": "S9",
+      "name": "Live security status API",
+      "ok": true,
+      "skipped": true,
+      "reason": "SEED_ADMIN_PASSWORD unset — skipped live API check"
+    },
+    {
+      "id": "S10",
+      "name": "API behind Cloudflare edge",
+      "ok": true,
+      "reason": "HTTP 200; cf-ray=a16ed2ac4fc00cfa-CGP"
+    }
+  ],
+  "api": "https://corneaclinic-2zfpt.ondigitalocean.app"
+}

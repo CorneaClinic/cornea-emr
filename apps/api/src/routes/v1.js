@@ -23,6 +23,7 @@ import migrationRouter from './migration.js';
 import adminUsersRouter from './admin-users.js';
 import adminAuditLogsRouter from './admin-audit-logs.js';
 import adminDrRouter from './admin-dr.js';
+import adminSecurityRouter from './admin-security.js';
 import auditLogsRouter from './audit-logs.js';
 import mediaRouter from './media.js';
 import mediaLibraryRouter from './media-library.js';
@@ -92,6 +93,7 @@ router.use('/admin/migration', migrationRouter);
 router.use('/admin/users', adminUsersRouter);
 router.use('/admin/audit-logs', adminAuditLogsRouter);
 router.use('/admin/dr', adminDrRouter);
+router.use('/admin/security', adminSecurityRouter);
 router.use('/audit-logs', auditLogsRouter);
 
 export default router;
