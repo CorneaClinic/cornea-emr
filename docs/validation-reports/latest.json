@@ -1,0 +1,97 @@
+{
+  "generatedAt": "2026-07-06T13:57:09.761Z",
+  "project": "P7-production-validation",
+  "status": "PASS",
+  "checks": [
+    {
+      "id": "V1",
+      "name": "Playwright regression suite",
+      "ok": true,
+      "reason": "16 e2e specs + 3 playwright configs"
+    },
+    {
+      "id": "V2",
+      "name": "API unit test suite",
+      "ok": true,
+      "reason": "18 vitest files"
+    },
+    {
+      "id": "V3",
+      "name": "Staging smoke spec",
+      "ok": true,
+      "reason": "e2e/staging-smoke.spec.js + test:e2e:staging"
+    },
+    {
+      "id": "V4",
+      "name": "Production validation e2e",
+      "ok": true,
+      "reason": "production-validation.spec.js + test:e2e:production"
+    },
+    {
+      "id": "V5",
+      "name": "Load check script",
+      "ok": true,
+      "reason": "npm run production:load-check"
+    },
+    {
+      "id": "V6",
+      "name": "Accessibility check script",
+      "ok": true,
+      "reason": "npm run production:a11y-check"
+    },
+    {
+      "id": "V7",
+      "name": "Operator regression script",
+      "ok": true,
+      "reason": "npm run check:production-operator"
+    },
+    {
+      "id": "V8",
+      "name": "Project 7 documentation",
+      "ok": true,
+      "reason": "docs/projects/PROJECT_07_PRODUCTION_VALIDATION.md"
+    },
+    {
+      "id": "V9",
+      "name": "Live API health",
+      "ok": true,
+      "reason": "HTTP 200; db=true"
+    },
+    {
+      "id": "V10",
+      "name": "Live clinic HTML loads",
+      "ok": true,
+      "reason": "HTTP 200; EMR shell + scripts referenced"
+    },
+    {
+      "id": "V11",
+      "name": "API latency baseline (health/live)",
+      "ok": true,
+      "reason": "p95=328ms avg=237ms failures=0",
+      "metrics": {
+        "p95": 328,
+        "avg": 237,
+        "min": 197,
+        "max": 333,
+        "failures": 0,
+        "requests": 20
+      }
+    },
+    {
+      "id": "V12",
+      "name": "Clinic accessibility baseline",
+      "ok": true,
+      "reason": "static: lang, viewport, login labels in adapter; live: live HTML shell OK (login labels verified in repo)"
+    }
+  ],
+  "api": "https://corneaclinic-2zfpt.ondigitalocean.app",
+  "clinic": "https://corneaclinic.visionemr.net/Cornea",
+  "loadMetrics": {
+    "p95": 328,
+    "avg": 237,
+    "min": 197,
+    "max": 333,
+    "failures": 0,
+    "requests": 20
+  }
+}

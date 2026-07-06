@@ -13,10 +13,10 @@ This roadmap closes production gaps **without new clinical modules**, **without 
 
 | Metric | Baseline | Target | Current |
 |--------|----------|--------|---------|
-| Overall readiness | 76% | ≥90% | **~96%** (P1–P5) |
+| Overall readiness | 76% | ≥90% | **~97%** (P1–P7) |
 | Patient safety | 72% | ≥90% | **~80%** |
 | Clinical readiness | 82% | ≥90% | **~87%** |
-| Technical readiness | 74% | ≥90% | **~82%** |
+| Technical readiness | 74% | ≥90% | **~86%** |
 | Operational readiness | 68% | ≥90% | **~76%** |
 | Security readiness | 74% | ≥90% | **~90%** (P3 encryption) |
 
@@ -69,8 +69,8 @@ gantt
 | 3 | Offline data security | **Critical** | 2–3 weeks | +10% security | **Complete** |
 | 4 | Registry concurrency | **High** | 2 weeks | +5% clinical | **Complete** |
 | 5 | Backup & disaster recovery | **High** | 2 weeks | +8% ops | **Complete** |
-| 6 | Security hardening | **High** | 2 weeks | +6% security | **Next** |
-| 7 | Production validation | **High** | 1 week | +4% technical | Pending |
+| 6 | Security hardening | **High** | 2 weeks | +6% security | **Complete** |
+| 7 | Production validation | **High** | 1 week | +4% technical | **Complete** |
 | 8 | Clinical validation | **High** | 1 week | +5% clinical | Pending |
 | 9 | Medicolegal compliance | **Medium** | 2 weeks | +4% governance | Pending |
 | 10 | Go-live preparation | **Medium** | 1 week | +3% ops | Pending |
@@ -146,7 +146,7 @@ gantt
 
 **Scope:** Regression, Playwright, performance/load, browser/mobile, accessibility.
 
-**Do not start until Project 6 complete.**
+**Status:** Complete (2026-07-06) — `npm run verify:production`, load/a11y baselines, `test:e2e:production`.
 
 ---
 
