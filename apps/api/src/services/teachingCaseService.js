@@ -89,7 +89,7 @@ export async function listTeachingCases(clinicId, queryParams = {}) {
              l.procedure_label AS link_procedure_label,
              l.capture_location AS link_capture_location,
              l.captured_at AS link_captured_at,
-             u.display_name AS provider_name,
+             u.full_name AS provider_name,
              p.full_name AS patient_name,
              p.mrn AS patient_mrn,
              v.visit_date,

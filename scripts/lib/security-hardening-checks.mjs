@@ -98,3 +98,16 @@ export function checkVirusScanTests(repoRoot) {
   }
   return { ok: false, reason: 'virus-scan.test.js missing' };
 }
+
+/** S9 — OWASP ZAP DAST workflow (local/staging only) */
+export function checkDastWorkflow(repoRoot) {
+  const runner = fileExists(repoRoot, 'scripts/dast/run-dast.mjs');
+  const safe = fileExists(repoRoot, 'scripts/dast/lib/safe-target.mjs');
+  const doc = fileExists(repoRoot, 'docs/DAST_ZAP_WORKFLOW.md');
+  const pkg = readRepoFile(repoRoot, 'package.json');
+  const npm = pkg.includes('"dast:scan"') && pkg.includes('"dast:setup-users"');
+  if (runner && safe && doc && npm) {
+    return { ok: true, reason: 'npm run dast:scan (see docs/DAST_ZAP_WORKFLOW.md)' };
+  }
+  return { ok: false, reason: 'DAST workflow scripts or documentation missing' };
+}

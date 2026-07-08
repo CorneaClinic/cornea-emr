@@ -39,3 +39,6 @@ infra/cloudflared-config.yml
 /blob-report/
 /playwright/.cache/
 e2e/.auth/credentials.json
+e2e/.auth/dast-credentials.json
+docs/dast-reports/
+docs/dast-reports/.zap-home/

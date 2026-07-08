@@ -10,7 +10,8 @@ import {
   checkOwaspReportGenerator,
   checkAuthSessionReview,
   checkProjectDoc,
-  checkVirusScanTests
+  checkVirusScanTests,
+  checkDastWorkflow
 } from '../lib/security-hardening-checks.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -46,5 +47,9 @@ describe('security-hardening-checks (P6)', () => {
 
   it('detects virus scan tests', () => {
     assert.equal(checkVirusScanTests(ROOT).ok, true);
+  });
+
+  it('detects DAST workflow', () => {
+    assert.equal(checkDastWorkflow(ROOT).ok, true);
   });
 });

@@ -214,6 +214,11 @@ async function nextKcRegistryId(clinicId) {
 }
 
 async function assertKcPatient(clinicId, id) {
+  try {
+    requireUuid(id, 'id');
+  } catch {
+    throw new NotFoundError('KC registry patient not found');
+  }
   const { rows } = await query(
     `SELECT * FROM kc_registry_patients WHERE id = $1 AND clinic_id = $2`,
     [id, clinicId]

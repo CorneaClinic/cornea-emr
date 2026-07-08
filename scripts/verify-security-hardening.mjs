@@ -16,7 +16,8 @@ import {
   checkOwaspReportGenerator,
   checkAuthSessionReview,
   checkProjectDoc,
-  checkVirusScanTests
+  checkVirusScanTests,
+  checkDastWorkflow
 } from './lib/security-hardening-checks.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -97,8 +98,9 @@ async function main() {
     { id: 'S6', name: 'Auth session review script', ...checkAuthSessionReview(ROOT) },
     { id: 'S7', name: 'Project 6 documentation', ...checkProjectDoc(ROOT) },
     { id: 'S8', name: 'Virus scan unit tests', ...checkVirusScanTests(ROOT) },
-    { id: 'S9', name: 'Live security status API', ...(await checkLiveSecurityStatus()) },
-    { id: 'S10', name: 'API behind Cloudflare edge', ...(await checkWafLive()) }
+    { id: 'S9', name: 'OWASP ZAP DAST workflow', ...checkDastWorkflow(ROOT) },
+    { id: 'S10', name: 'Live security status API', ...(await checkLiveSecurityStatus()) },
+    { id: 'S11', name: 'API behind Cloudflare edge', ...(await checkWafLive()) }
   ];
 
   const pass = checks.every((c) => c.ok || c.skipped);

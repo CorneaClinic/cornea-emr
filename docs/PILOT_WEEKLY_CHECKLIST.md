@@ -21,6 +21,7 @@ Complete once per week during the 90-day pilot.
 - [ ] `npm run verify:production` PASS.
 - [ ] `npm run verify:clinical` PASS.
 - [ ] `npm run verify:security` PASS.
+- [ ] (Quarterly / pre-pen-test) `npm run dast:scan` against **local stack** — see `docs/DAST_ZAP_WORKFLOW.md`.
 - [ ] `npm run verify:medicolegal` PASS.
 - [ ] `npm run verify:go-live` PASS.
 - [ ] `npm run verify:pilot` PASS.
@@ -37,6 +38,8 @@ Complete once per week during the 90-day pilot.
 
 ---
 
+
+
 ## Clinical operations
 
 - [ ] Reception workflow issues logged and assigned.
@@ -46,6 +49,8 @@ Complete once per week during the 90-day pilot.
 
 ---
 
+
+
 ## Governance evidence
 
 - [ ] Audit review completed (`npm run medicolegal:audit-review` when credentials available).
@@ -53,6 +58,8 @@ Complete once per week during the 90-day pilot.
 - [ ] Deployment changes recorded with rollback reference.
 
 ---
+
+
 
 ## Weekly decision
 

@@ -1,6 +1,5 @@
 import { AppError } from '../errors.js';
 import { logger } from '../logger.js';
-import { env } from '../../config/env.js';
 
 export function errorHandler(err, req, res, _next) {
   const requestId = req.id;
@@ -31,7 +30,7 @@ export function errorHandler(err, req, res, _next) {
   return res.status(500).json({
     error: {
       code: 'INTERNAL_ERROR',
-      message: env.isProduction ? 'Internal server error' : err.message,
+      message: 'Internal server error',
       requestId
     }
   });

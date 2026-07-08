@@ -20,7 +20,10 @@ export function createApp() {
   app.set('trust proxy', 1);
 
   app.use(requestIdMiddleware);
-  app.use(helmet());
+  app.use(helmet({
+    contentSecurityPolicy: false,
+    crossOriginEmbedderPolicy: false
+  }));
   const corsOrigins = env.corsOrigin === '*'
     ? true
     : env.corsOrigin.split(',').map((o) => o.trim()).filter(Boolean);

@@ -1,0 +1,1 @@
+DAST passive scan fixture — safe text upload probe.

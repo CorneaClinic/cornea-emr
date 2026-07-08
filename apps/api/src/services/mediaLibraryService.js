@@ -1,6 +1,7 @@
 import { query } from '../db/pool.js';
-import { optionalString, parseEnum } from '../core/validation.js';
-import { normalizeCategory } from '../core/mediaCategories.js';
+import { optionalString, parseEnum, requireUuid } from '../core/validation.js';
+import { ValidationError } from '../core/errors.js';
+import { MEDIA_CATEGORIES, normalizeCategory } from '../core/mediaCategories.js';
 import { mapMediaAsset } from './mediaAssetService.js';
 
 const SORT_FIELDS = ['created_at', 'updated_at', 'byte_size', 'category', 'original_filename'];
@@ -14,8 +15,12 @@ export async function listMediaLibrary(clinicId, queryParams = {}) {
   const params = [clinicId];
   const filters = ['m.clinic_id = $1', 'm.deleted_at IS NULL'];
 
-  const category = queryParams.category ? normalizeCategory(String(queryParams.category)) : null;
-  if (category) {
+  const categoryRaw = optionalString(queryParams.category, 'category');
+  if (categoryRaw) {
+    const category = normalizeCategory(categoryRaw);
+    if (!MEDIA_CATEGORIES.includes(category)) {
+      throw new ValidationError(`category must be one of: ${MEDIA_CATEGORIES.join(', ')}`);
+    }
     params.push(category);
     filters.push(`m.category = $${params.length}`);
   }
@@ -39,6 +44,7 @@ export async function listMediaLibrary(clinicId, queryParams = {}) {
 
   const patientId = optionalString(queryParams.patientId, 'patientId');
   if (patientId) {
+    requireUuid(patientId, 'patientId');
     params.push(patientId);
     filters.push(`(
       (l.entity_type = 'patient' AND l.entity_id = $${params.length}::uuid)
@@ -78,7 +84,7 @@ export async function listMediaLibrary(clinicId, queryParams = {}) {
              l.procedure_label AS link_procedure_label,
              l.capture_location AS link_capture_location,
              l.captured_at AS link_captured_at,
-             u.display_name AS provider_name,
+             u.full_name AS provider_name,
              p.full_name AS patient_name,
              p.mrn AS patient_mrn
         FROM media_assets m
@@ -138,7 +144,7 @@ export async function getPatientMediaTimeline(clinicId, patientId) {
              l.procedure_label AS link_procedure_label,
              l.capture_location AS link_capture_location,
              l.captured_at AS link_captured_at,
-             u.display_name AS provider_name,
+             u.full_name AS provider_name,
              v.visit_date,
              v.payload->>'diagnosis' AS visit_diagnosis
         FROM media_assets m

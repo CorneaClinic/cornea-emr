@@ -4,122 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cornea Clinic — IndexedDB Migration</title>
-  <style>
-    :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --border: #334155;
-      --text: #e2e8f0;
-      --muted: #94a3b8;
-      --primary: #38bdf8;
-      --success: #4ade80;
-      --warn: #fbbf24;
-      --danger: #f87171;
-    }
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      font-family: system-ui, -apple-system, Segoe UI, sans-serif;
-      background: var(--bg);
-      color: var(--text);
-      line-height: 1.5;
-    }
-    .wrap { max-width: 960px; margin: 0 auto; padding: 24px; }
-    h1 { font-size: 1.5rem; margin: 0 0 8px; }
-    .subtitle { color: var(--muted); margin-bottom: 24px; }
-    .card {
-      background: var(--panel);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
-    }
-    .card h2 { font-size: 1rem; margin: 0 0 12px; }
-    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 4px; }
-    input[type="text"], input[type="password"], input[type="email"] {
-      width: 100%;
-      padding: 10px 12px;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      background: #0b1220;
-      color: var(--text);
-      margin-bottom: 12px;
-    }
-    .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    @media (max-width: 640px) { .row { grid-template-columns: 1fr; } }
-    button {
-      background: var(--primary);
-      color: #0f172a;
-      border: none;
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-weight: 600;
-      cursor: pointer;
-      margin-right: 8px;
-      margin-bottom: 8px;
-    }
-    button.secondary { background: #475569; color: var(--text); }
-    button.danger { background: var(--danger); color: #111; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      margin: 12px 0;
-    }
-    .stat {
-      background: #0b1220;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      text-align: center;
-    }
-    .stat .num { font-size: 1.5rem; font-weight: 700; color: var(--primary); }
-    .stat .lbl { font-size: 0.75rem; color: var(--muted); }
-    pre {
-      background: #0b1220;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 12px;
-      overflow: auto;
-      max-height: 320px;
-      font-size: 0.8rem;
-      white-space: pre-wrap;
-    }
-    .badge {
-      display: inline-block;
-      padding: 2px 8px;
-      border-radius: 999px;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-    .badge.ok { background: rgba(74, 222, 128, 0.2); color: var(--success); }
-    .badge.fail { background: rgba(248, 113, 113, 0.2); color: var(--danger); }
-    .badge.warn { background: rgba(251, 191, 36, 0.2); color: var(--warn); }
-    .note { font-size: 0.85rem; color: var(--muted); }
-    .steps { counter-reset: step; list-style: none; padding: 0; margin: 0 0 16px; }
-    .steps li {
-      counter-increment: step;
-      padding-left: 28px;
-      position: relative;
-      margin-bottom: 6px;
-      color: var(--muted);
-    }
-    .steps li::before {
-      content: counter(step);
-      position: absolute;
-      left: 0;
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      background: var(--border);
-      font-size: 0.7rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--text);
-    }
-  </style>
+  <link rel="stylesheet" href="assets/pages/migrate.css">
 </head>
 <body>
   <div class="wrap">
@@ -141,7 +26,7 @@
       <p class="note">Reads stores: patients, kpPatients, kpTissues</p>
       <button type="button" id="btnExport">Read &amp; Export IndexedDB</button>
       <button type="button" class="secondary" id="btnDownload" disabled>Download .json</button>
-      <label for="fileInput" style="margin-top:12px;">Or load existing export file</label>
+      <label for="fileInput" class="migrate-file-label">Or load existing export file</label>
       <input type="file" id="fileInput" accept=".json,application/json">
       <div class="stats" id="exportStats" hidden>
         <div class="stat"><div class="num" id="statVisits">0</div><div class="lbl">Visits</div></div>
@@ -173,7 +58,7 @@
       <h2>3. Analyze &amp; import</h2>
       <button type="button" class="secondary" id="btnAnalyze" disabled>Dry-run analyze</button>
       <button type="button" id="btnImport" disabled>Import to PostgreSQL</button>
-      <label style="margin-top:12px;display:flex;align-items:center;gap:8px;">
+      <label class="migrate-force-update-label">
         <input type="checkbox" id="forceUpdate"> Force update existing records
       </label>
       <p id="actionStatus" class="note"></p>
@@ -187,151 +72,6 @@
   </div>
 
   <script src="cornea-migration-tool.js"></script>
-  <script>
-    let accessToken = null;
-    let currentBundle = null;
-
-    const els = {
-      btnExport: document.getElementById('btnExport'),
-      btnDownload: document.getElementById('btnDownload'),
-      fileInput: document.getElementById('fileInput'),
-      exportStats: document.getElementById('exportStats'),
-      statVisits: document.getElementById('statVisits'),
-      statKpP: document.getElementById('statKpP'),
-      statKpT: document.getElementById('statKpT'),
-      localDupMsg: document.getElementById('localDupMsg'),
-      apiUrl: document.getElementById('apiUrl'),
-      apiEmail: document.getElementById('apiEmail'),
-      apiPassword: document.getElementById('apiPassword'),
-      btnLogin: document.getElementById('btnLogin'),
-      loginStatus: document.getElementById('loginStatus'),
-      btnAnalyze: document.getElementById('btnAnalyze'),
-      btnImport: document.getElementById('btnImport'),
-      forceUpdate: document.getElementById('forceUpdate'),
-      actionStatus: document.getElementById('actionStatus'),
-      verifyBadge: document.getElementById('verifyBadge'),
-      reportOut: document.getElementById('reportOut')
-    };
-
-    function showBundle(bundle) {
-      currentBundle = bundle;
-      els.exportStats.hidden = false;
-      els.statVisits.textContent = bundle.counts.visits;
-      els.statKpP.textContent = bundle.counts.kpPatients;
-      els.statKpT.textContent = bundle.counts.kpTissues;
-      els.btnDownload.disabled = false;
-      els.btnAnalyze.disabled = !accessToken;
-      els.btnImport.disabled = !accessToken;
-
-      const dupCount = (bundle.localDuplicates || []).length;
-      els.localDupMsg.textContent = dupCount
-        ? `⚠ ${dupCount} potential duplicate(s) detected in export (review before import).`
-        : '✓ No duplicate keys detected within export.';
-    }
-
-    function showReport(result) {
-      const report = result.data || result;
-      const md = result.markdown || '';
-      const passed = report.verification?.passed;
-      els.verifyBadge.innerHTML = passed
-        ? '<span class="badge ok">Verification PASSED</span>'
-        : '<span class="badge fail">Verification FAILED</span>';
-      els.reportOut.textContent = md || JSON.stringify(report, null, 2);
-    }
-
-    els.btnExport.addEventListener('click', async () => {
-      els.btnExport.disabled = true;
-      try {
-        const bundle = await CorneaMigration.exportAll();
-        showBundle(bundle);
-      } catch (err) {
-        alert('Export failed: ' + err.message);
-      } finally {
-        els.btnExport.disabled = false;
-      }
-    });
-
-    els.btnDownload.addEventListener('click', () => {
-      try {
-        CorneaMigration.downloadExport(currentBundle);
-      } catch (err) {
-        alert(err.message);
-      }
-    });
-
-    els.fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      try {
-        const bundle = await CorneaMigration.loadExportFile(file);
-        showBundle(bundle);
-      } catch (err) {
-        alert('Invalid export file: ' + err.message);
-      }
-    });
-
-    els.btnLogin.addEventListener('click', async () => {
-      els.btnLogin.disabled = true;
-      els.loginStatus.textContent = 'Connecting…';
-      try {
-        const session = await CorneaMigration.login({
-          baseUrl: els.apiUrl.value.trim(),
-          email: els.apiEmail.value.trim(),
-          password: els.apiPassword.value
-        });
-        accessToken = session.accessToken;
-        els.loginStatus.textContent = '✓ Connected as admin';
-        els.btnAnalyze.disabled = !currentBundle;
-        els.btnImport.disabled = !currentBundle;
-      } catch (err) {
-        accessToken = null;
-        els.loginStatus.textContent = '✗ ' + err.message;
-      } finally {
-        els.btnLogin.disabled = false;
-      }
-    });
-
-    els.btnAnalyze.addEventListener('click', async () => {
-      els.actionStatus.textContent = 'Running dry-run analysis…';
-      try {
-        const result = await CorneaMigration.analyzeOnServer({
-          baseUrl: els.apiUrl.value.trim(),
-          accessToken,
-          bundle: currentBundle
-        });
-        showReport(result);
-        els.actionStatus.textContent = 'Dry-run complete — no database writes.';
-      } catch (err) {
-        els.actionStatus.textContent = '✗ ' + err.message;
-      }
-    });
-
-    els.btnImport.addEventListener('click', async () => {
-      if (!confirm('Import all records to PostgreSQL? Existing records will be skipped unless force-update is checked.')) {
-        return;
-      }
-      els.btnImport.disabled = true;
-      els.actionStatus.textContent = 'Importing…';
-      try {
-        const result = await CorneaMigration.importToServer({
-          baseUrl: els.apiUrl.value.trim(),
-          accessToken,
-          bundle: currentBundle,
-          dryRun: false,
-          forceUpdate: els.forceUpdate.checked,
-          skipExisting: true
-        });
-        showReport(result);
-        const v = result.data?.verification;
-        els.actionStatus.textContent = v?.passed
-          ? 'Import complete — verification passed.'
-          : 'Import finished with issues — review report.';
-      } catch (err) {
-        els.actionStatus.textContent = '✗ ' + err.message;
-      } finally {
-        els.btnImport.disabled = false;
-      }
-    });
-  </script>
+  <script src="js/pages/migrate.js"></script>
 </body>
 </html>
