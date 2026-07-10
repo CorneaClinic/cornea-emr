@@ -3,8 +3,28 @@
   X-Frame-Options: SAMEORIGIN
   Referrer-Policy: strict-origin-when-cross-origin
 
-/assets/*
+# App CSS/JS change without content hashes — must revalidate after deploy.
+# Immutable long-cache only for third-party / font assets with stable URLs.
+/assets/cornea-app.css
+  Cache-Control: no-cache
+
+/assets/csp-inline-utilities.css
+  Cache-Control: no-cache
+
+/assets/vendor/*
   Cache-Control: public, max-age=31536000, immutable
+
+/assets/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/js/*
+  Cache-Control: no-cache
+
+/*.js
+  Cache-Control: no-cache
+
+/Cornea.html
+  Cache-Control: no-cache
 
 /robots.txt
   Content-Type: text/plain; charset=utf-8

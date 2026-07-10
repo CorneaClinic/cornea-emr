@@ -7,5 +7,7 @@ main = "./apps/clinic/clinic-worker.js"
 [assets]
 directory = "./apps/clinic"
 binding = "ASSETS"
-not_found_handling = "single-page-application"
+# Do NOT use SPA fallback — missing .js files must 404, not return index.html
+# (SPA mode silently broke sidebar-nav.js / role-dashboard.js and disabled sections).
+not_found_handling = "none"
 run_worker_first = true

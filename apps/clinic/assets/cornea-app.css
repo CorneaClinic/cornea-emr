@@ -1,3 +1,8 @@
+/* Section RBAC / admin panel visibility (must stay near top — do not rely on late rules alone). */
+.emr-section-hidden {
+    display: none !important;
+}
+
 /* Offline security lock overlay (kept in static CSS for strict CSP). */
 .cornea-session-lock {
     position: fixed;

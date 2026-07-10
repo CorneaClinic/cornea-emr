@@ -1,6 +1,9 @@
 /**
  * EMR section visibility — applied after cloud sign-in from user.emrSections.
  * Offline/local mode (no cloud user) shows all sections.
+ *
+ * IMPORTANT: use CSS class only — do not toggle the HTML `hidden` attribute.
+ * Sidebar accordion/search owns `hidden` for expand/collapse and filtering.
  */
 (function (global) {
   'use strict';
@@ -26,15 +29,8 @@
 
   function setElementVisible(el, show) {
     if (!el) return;
-    if (show) {
-      el.style.display = '';
-      el.classList.remove('emr-section-hidden');
-      el.setAttribute('aria-hidden', 'false');
-    } else {
-      el.style.display = 'none';
-      el.classList.add('emr-section-hidden');
-      el.setAttribute('aria-hidden', 'true');
-    }
+    el.classList.toggle('emr-section-hidden', !show);
+    el.setAttribute('aria-hidden', show ? 'false' : 'true');
   }
 
   function applySections(sections) {
@@ -43,6 +39,8 @@
     if (!sections) {
       document.querySelectorAll('[data-emr-section]').forEach((el) => setElementVisible(el, true));
       document.querySelectorAll('.nav-item[data-tab]').forEach((el) => setElementVisible(el, true));
+      // Keep cloud/offline admin panels mutually exclusive
+      syncAdminPanels();
       return;
     }
 
@@ -52,10 +50,12 @@
     });
 
     for (const [tabId, sectionKey] of Object.entries(TAB_TO_SECTION)) {
-      const nav = document.getElementById('nav-' + tabId)
-        || document.querySelector(`.nav-item[data-tab="${tabId}"]`);
-      setElementVisible(nav, sections[sectionKey] !== false);
+      document.querySelectorAll(`.nav-item[data-tab="${tabId}"]`).forEach((nav) => {
+        setElementVisible(nav, sections[sectionKey] !== false);
+      });
     }
+
+    syncAdminPanels();
 
     const activeTab = document.querySelector('.tab-content.active');
     if (activeTab?.id && TAB_TO_SECTION[activeTab.id]) {
@@ -69,6 +69,21 @@
     }
   }
 
+  /** Cloud vs offline user admin cards must not both show. */
+  function syncAdminPanels() {
+    const cloudOn = !!global.__corneaCloudMode;
+    const cloudPanel = document.getElementById('adminUsersPanel');
+    const offlinePanel = document.getElementById('offlineUsersPanel');
+    if (cloudPanel) {
+      const allowed = !currentSections || currentSections.user_admin !== false;
+      setElementVisible(cloudPanel, cloudOn && allowed);
+    }
+    if (offlinePanel) {
+      const allowed = !currentSections || currentSections.user_admin !== false;
+      setElementVisible(offlinePanel, !cloudOn && allowed);
+    }
+  }
+
   function isTabAllowed(tabId) {
     if (!currentSections) return true;
     const sectionKey = TAB_TO_SECTION[tabId];
@@ -79,6 +94,7 @@
   global.CorneaSections = {
     apply: applySections,
     isTabAllowed,
+    syncAdminPanels,
     tabToSection: TAB_TO_SECTION
   };
 })(typeof window !== 'undefined' ? window : globalThis);
