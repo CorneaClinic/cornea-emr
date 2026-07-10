@@ -38,6 +38,14 @@ const loginEmailLimiter = createRateLimiter({
   namespace: 'login-email'
 });
 
+/** Refresh must not share the login-ip bucket — session restore was burning sign-in quota. */
+const refreshIpLimiter = createRateLimiter({
+  windowMs: env.rateLimit.loginWindowMs,
+  max: Math.max(env.rateLimit.loginMaxPerIp * 6, 120),
+  keyGenerator: clientIpKey,
+  namespace: 'refresh-ip'
+});
+
 const resetIpLimiter = createRateLimiter({
   windowMs: env.rateLimit.resetWindowMs,
   max: env.rateLimit.resetMaxPerIp,
@@ -109,7 +117,7 @@ router.post('/login', loginIpLimiter, loginEmailLimiter, async (req, res, next) 
 });
 
 /** POST /api/v1/auth/refresh */
-router.post('/refresh', loginIpLimiter, async (req, res, next) => {
+router.post('/refresh', refreshIpLimiter, async (req, res, next) => {
   try {
     const refreshToken = readRefreshToken(req);
     const result = await refreshSession({ req, refreshToken });

@@ -175,8 +175,27 @@
         if (refreshed) return api(path, options, true);
       }
       const body = await res.json().catch(() => ({}));
-      const message = body.error?.message || body.error || res.statusText;
-      const err = new Error(typeof message === 'string' ? message : 'Request failed');
+      let message = body.error?.message || body.error || res.statusText;
+      if (typeof message !== 'string') message = 'Request failed';
+      if (res.status === 429) {
+        const retryAfter = Number(res.headers.get('Retry-After') || body.error?.retryAfter || 0);
+        const wait = Number.isFinite(retryAfter) && retryAfter > 0
+          ? ` Wait about ${retryAfter} seconds, then try again.`
+          : ' Wait a few minutes, then try again.';
+        if (path === '/api/v1/auth/login' || path === '/api/v1/auth/refresh') {
+          message = `Too many sign-in attempts from this network.${wait}`;
+        } else if (!/too many/i.test(message)) {
+          message = `Too many requests.${wait}`;
+        } else if (retryAfter > 0 && !/wait/i.test(message)) {
+          message = `${message}${wait}`;
+        }
+        // On public clinic, offer offline when cloud login is rate-limited.
+        if (path === '/api/v1/auth/login' && isPublicHost()) {
+          const offlineBtn = document.getElementById('corneaLoginOfflineBtn');
+          if (offlineBtn) offlineBtn.style.display = '';
+        }
+      }
+      const err = new Error(message);
       err.status = res.status;
       err.details = body.error?.details || body.data;
       throw err;
