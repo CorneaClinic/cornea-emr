@@ -359,7 +359,10 @@
         : `Deleted ${label}.`;
       if (status) status.textContent = note;
     } catch (err) {
-      const msg = err.message || 'Delete failed';
+      let msg = err.message || 'Delete failed';
+      if (/internal server error/i.test(msg)) {
+        msg = 'Server could not delete this user (linked records). Try again after the API update, or deactivate the user instead.';
+      }
       if (status) status.textContent = msg;
       alert(msg);
       setError(errEl, msg);

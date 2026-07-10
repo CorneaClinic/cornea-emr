@@ -189,8 +189,56 @@ export async function updateClinicUser({ clinicId, userId, actorUserId, patch })
 }
 
 /**
+ * Best-effort cleanup before hard-deleting a user. Ignores missing tables / FK noise.
+ * @param {string} sql
+ * @param {unknown[]} params
+ */
+async function tryQuery(sql, params) {
+  try {
+    await query(sql, params);
+  } catch (_) {
+    /* table/column may not exist on older DBs */
+  }
+}
+
+/**
+ * Disable sign-in when a hard delete is blocked by linked clinical/history rows.
+ * @param {object} params
+ * @param {string} params.clinicId
+ * @param {string} params.userId
+ * @param {object} params.existing
+ * @param {string} [params.reason]
+ */
+async function deactivateClinicUser({ clinicId, userId, existing, reason }) {
+  const { rowCount } = await query(
+    `
+      UPDATE users
+         SET is_active = false
+       WHERE clinic_id = $1 AND id = $2
+    `,
+    [clinicId, userId]
+  );
+  if (!rowCount) throw new NotFoundError('User not found');
+
+  await tryQuery(`DELETE FROM user_sessions WHERE user_id = $1`, [userId]);
+  await tryQuery(`DELETE FROM password_reset_tokens WHERE user_id = $1`, [userId]);
+
+  return {
+    success: true,
+    deleted: false,
+    deactivated: true,
+    deletedUserId: userId,
+    email: existing.email,
+    fullName: existing.fullName,
+    message:
+      reason ||
+      'User could not be removed from history tables, so the account was deactivated instead.'
+  };
+}
+
+/**
  * Permanently remove a clinic user. Sessions and related rows cascade or null out via FK rules.
- * If a foreign-key block prevents hard delete, the account is deactivated instead.
+ * If any database constraint blocks hard delete, the account is deactivated instead (never 500).
  * @param {object} params
  * @param {string} params.clinicId
  * @param {string} params.userId
@@ -213,13 +261,24 @@ export async function deleteClinicUser({ clinicId, userId, actorUserId }) {
     }
   }
 
-  // Clear auth sessions first so delete is not blocked by session FKs in odd states.
-  await query(`DELETE FROM user_sessions WHERE user_id = $1`, [userId]);
-  try {
-    await query(`DELETE FROM password_reset_tokens WHERE user_id = $1`, [userId]);
-  } catch (_) {
-    /* older DBs may not have this table yet */
-  }
+  // Clear dependent auth / device rows that may block delete on older schemas.
+  await tryQuery(`DELETE FROM user_sessions WHERE user_id = $1`, [userId]);
+  await tryQuery(`DELETE FROM password_reset_tokens WHERE user_id = $1`, [userId]);
+  await tryQuery(`DELETE FROM sync_cursors WHERE user_id = $1`, [userId]);
+  await tryQuery(`DELETE FROM record_edit_locks WHERE locked_by_user_id = $1`, [userId]);
+
+  // Null optional audit pointers in case production FKs lack ON DELETE SET NULL.
+  await tryQuery(`UPDATE visits SET created_by = NULL WHERE created_by = $1`, [userId]);
+  await tryQuery(`UPDATE visits SET updated_by = NULL WHERE updated_by = $1`, [userId]);
+  await tryQuery(`UPDATE media_assets SET created_by = NULL WHERE created_by = $1`, [userId]);
+  await tryQuery(`UPDATE media_assets SET updated_by = NULL WHERE updated_by = $1`, [userId]);
+  await tryQuery(`UPDATE appointments SET created_by = NULL WHERE created_by = $1`, [userId]);
+  await tryQuery(`UPDATE appointments SET updated_by = NULL WHERE updated_by = $1`, [userId]);
+  await tryQuery(`UPDATE audit_logs SET user_id = NULL WHERE user_id = $1`, [userId]);
+  await tryQuery(
+    `UPDATE media_asset_links SET provider_user_id = NULL WHERE provider_user_id = $1`,
+    [userId]
+  );
 
   try {
     const { rowCount } = await query(
@@ -236,29 +295,15 @@ export async function deleteClinicUser({ clinicId, userId, actorUserId }) {
       fullName: existing.fullName
     };
   } catch (err) {
-    // 23503 = foreign_key_violation — keep clinic history, disable sign-in instead.
-    if (err && (err.code === '23503' || /foreign key/i.test(String(err.message || '')))) {
-      const { rowCount } = await query(
-        `
-          UPDATE users
-             SET is_active = false,
-                 failed_login_count = 0,
-                 locked_until = NULL
-           WHERE clinic_id = $1 AND id = $2
-        `,
-        [clinicId, userId]
-      );
-      if (!rowCount) throw new NotFoundError('User not found');
-      return {
-        success: true,
-        deleted: false,
-        deactivated: true,
-        deletedUserId: userId,
-        email: existing.email,
-        fullName: existing.fullName,
-        message: 'User could not be removed from history tables, so the account was deactivated instead.'
-      };
+    if (err instanceof NotFoundError || err instanceof ForbiddenError || err instanceof ValidationError) {
+      throw err;
     }
-    throw err;
+    // Any remaining DB constraint (FK, NOT NULL on SET NULL, triggers) → deactivate.
+    return deactivateClinicUser({
+      clinicId,
+      userId,
+      existing,
+      reason: 'User could not be removed from linked records, so the account was deactivated instead.'
+    });
   }
 }
