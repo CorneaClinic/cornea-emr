@@ -14,7 +14,7 @@ import {
   formatDate
 } from '../core/validation.js';
 import { auditMutation } from './auditService.js';
-import { getPatientById } from './patientService.js';
+import { deletePatientIfOrphaned, getPatientById } from './patientService.js';
 
 const STATUS_VALUES = ['draft', 'finalized', 'cancelled'];
 const SORT_FIELDS = {
@@ -451,30 +451,44 @@ export async function cancelVisit(req, id) {
   const clinicId = req.user.clinicId;
   const userId = req.user.sub;
 
-  const { rowCount } = await query(
-    `
-      UPDATE visits
-         SET status = 'cancelled',
-             updated_by = $3,
-             revision = revision + 1
-       WHERE id = $1
-         AND clinic_id = $2
-         AND status != 'cancelled'
-    `,
-    [id, clinicId, userId]
-  );
+  const result = await withTransaction(async (client) => {
+    const { rows } = await client.query(
+      `SELECT patient_id, status FROM visits WHERE id = $1 AND clinic_id = $2`,
+      [id, clinicId]
+    );
 
-  if (!rowCount) {
-    const current = await getVisitById(clinicId, id).catch(() => null);
-    if (!current) throw new NotFoundError('Visit not found');
-    if (current.status === 'cancelled') {
+    if (!rows[0]) {
+      throw new NotFoundError('Visit not found');
+    }
+    if (rows[0].status === 'cancelled') {
       return { success: true, alreadyCancelled: true };
     }
-    throw new ConflictError('Visit could not be cancelled');
-  }
 
-  await auditMutation(req, 'visit', id, 'cancel', { status: 'cancelled' });
-  return { success: true };
+    const { rowCount } = await client.query(
+      `
+        UPDATE visits
+           SET status = 'cancelled',
+               updated_by = $3,
+               revision = revision + 1
+         WHERE id = $1
+           AND clinic_id = $2
+           AND status != 'cancelled'
+      `,
+      [id, clinicId, userId]
+    );
+
+    if (!rowCount) {
+      throw new ConflictError('Visit could not be cancelled');
+    }
+
+    await deletePatientIfOrphaned(client, clinicId, rows[0].patient_id);
+    return { success: true };
+  });
+
+  if (!result.alreadyCancelled) {
+    await auditMutation(req, 'visit', id, 'cancel', { status: 'cancelled' });
+  }
+  return result;
 }
 
 /**

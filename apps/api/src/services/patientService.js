@@ -288,3 +288,54 @@ export async function listPatientVisits(clinicId, patientId, queryParams) {
     pagination: buildPaginationMeta(countResult.rows[0].total, page, limit)
   };
 }
+
+/**
+ * Remove a patient row when they have no active (non-cancelled) visits.
+ * @param {import('pg').PoolClient} client
+ * @param {string} clinicId
+ * @param {string} patientId
+ * @returns {Promise<boolean>} true when the patient row was deleted
+ */
+export async function deletePatientIfOrphaned(client, clinicId, patientId) {
+  if (!patientId) return false;
+
+  const { rows } = await client.query(
+    `
+      SELECT COUNT(*)::int AS active_visits
+        FROM visits
+       WHERE clinic_id = $1
+         AND patient_id = $2
+         AND status != 'cancelled'
+    `,
+    [clinicId, patientId]
+  );
+
+  if (rows[0].active_visits > 0) return false;
+
+  const { rowCount } = await client.query(
+    `DELETE FROM patients WHERE id = $1 AND clinic_id = $2`,
+    [patientId, clinicId]
+  );
+  return rowCount > 0;
+}
+
+/**
+ * Remove patient rows that only have cancelled visits (or no visits).
+ * @param {string} clinicId
+ */
+export async function purgeOrphanPatients(clinicId) {
+  await query(
+    `
+      DELETE FROM patients p
+       WHERE p.clinic_id = $1
+         AND NOT EXISTS (
+           SELECT 1
+             FROM visits v
+            WHERE v.clinic_id = p.clinic_id
+              AND v.patient_id = p.id
+              AND v.status != 'cancelled'
+         )
+    `,
+    [clinicId]
+  );
+}

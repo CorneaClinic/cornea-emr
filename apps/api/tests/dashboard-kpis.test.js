@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest';
 
 vi.mock('../src/db/pool.js', () => ({
   query: vi.fn(async (sql) => {
-    if (sql.includes('FROM patients')) {
+    if (sql.includes('COUNT(DISTINCT v.patient_id)')) {
       return { rows: [{ total: 42 }] };
     }
     if (sql.includes('FROM visits')) {
@@ -41,6 +41,10 @@ vi.mock('../src/services/keratoplastyPatientService.js', () => ({
     patients: { waiting: 7, emergency: 2, completed: 10 },
     tissues: { available: 4 }
   }))
+}));
+
+vi.mock('../src/services/patientService.js', () => ({
+  purgeOrphanPatients: vi.fn(async () => {})
 }));
 
 import { getInstituteKpis } from '../src/services/dashboardService.js';

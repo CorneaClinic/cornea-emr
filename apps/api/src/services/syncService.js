@@ -11,6 +11,7 @@ import {
   legacyKpTissueToRow
 } from './sync-mappers.js';
 import { auditMutation } from './auditService.js';
+import { deletePatientIfOrphaned, purgeOrphanPatients } from './patientService.js';
 
 const PULL_LIMIT_MAX = 500;
 
@@ -72,12 +73,21 @@ async function applyVisitMutation(client, clinicId, userId, mutation) {
 
   if (operation === 'delete') {
     let visitId = entityId;
+    let patientId = null;
     if (!visitId && localId != null) {
       const found = await client.query(
-        `SELECT id FROM visits WHERE clinic_id = $1 AND legacy_local_id = $2`,
+        `SELECT id, patient_id FROM visits WHERE clinic_id = $1 AND legacy_local_id = $2`,
         [clinicId, localId]
       );
       visitId = found.rows[0]?.id;
+      patientId = found.rows[0]?.patient_id ?? null;
+    }
+    if (visitId && patientId == null) {
+      const found = await client.query(
+        `SELECT patient_id FROM visits WHERE id = $1 AND clinic_id = $2`,
+        [visitId, clinicId]
+      );
+      patientId = found.rows[0]?.patient_id ?? null;
     }
     if (!visitId) {
       return { entityId: String(localId || ''), revision: null, skipped: true };
@@ -91,6 +101,10 @@ async function applyVisitMutation(client, clinicId, userId, mutation) {
       `,
       [visitId, clinicId, userId]
     );
+
+    if (patientId) {
+      await deletePatientIfOrphaned(client, clinicId, patientId);
+    }
 
     return { entityId: visitId, revision: null, localId };
   }
@@ -512,6 +526,7 @@ export async function pushMutations(req, body) {
   }
 
   const results = [];
+  let hadVisitDelete = false;
 
   for (const raw of mutations) {
     const mutationId = raw.mutationId || raw.mutation_id;
@@ -582,6 +597,10 @@ export async function pushMutations(req, body) {
       );
 
       results.push(resultPayload);
+
+      if (raw.entityType === 'visit' && raw.operation === 'delete' && outcome.entityId && !outcome.skipped) {
+        hadVisitDelete = true;
+      }
 
       if (raw.entityType === 'visit' && outcome.entityId && raw.operation !== 'delete') {
         const payload = raw.payload && typeof raw.payload === 'object' ? raw.payload : {};
@@ -661,6 +680,10 @@ export async function pushMutations(req, body) {
         error: err.message || 'Push failed'
       });
     }
+  }
+
+  if (hadVisitDelete) {
+    await purgeOrphanPatients(clinicId);
   }
 
   await query(

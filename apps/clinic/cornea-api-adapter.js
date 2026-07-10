@@ -202,6 +202,8 @@
     if (user) {
       global.CorneaAuthEnv?.clearOfflineFallback?.();
       global.CorneaAuthEnv?.unlockUi?.();
+      global.CorneaOfflineSecurity?.hideLockScreen?.();
+      global.CorneaOfflineSecurity?.touchUnlockTime?.();
     }
     if (user && global.CorneaOfflineAuth) {
       global.__corneaCloudMode = true;
@@ -313,6 +315,7 @@
   function openLoginModal(opts = {}) {
     ensureLoginModal();
     configureCloudLoginModal();
+    global.CorneaOfflineSecurity?.hideLockScreen?.();
     hideOfflineLoginOverlay();
     global.CorneaAuthEnv?.clearOfflineFallback?.();
     const overlay = document.getElementById('corneaCloudLoginModal');
@@ -546,6 +549,20 @@
       req.onsuccess = () => resolve(req.result || []);
       req.onerror = () => reject(req.error);
     });
+  }
+
+  async function getAllPatientRecords() {
+    if (global.CorneaSecurePatients?.getAll) {
+      return global.CorneaSecurePatients.getAll();
+    }
+    return idbGetAll(STORE_PATIENTS);
+  }
+
+  async function getPatientRecord(id) {
+    if (global.CorneaSecurePatients?.get) {
+      return global.CorneaSecurePatients.get(id);
+    }
+    return idbGet(STORE_PATIENTS, id);
   }
 
   function idbGet(storeName, id) {
@@ -838,6 +855,7 @@
       if (!baseUrl) throw new Error('baseUrl required');
       localStorage.setItem(STORAGE_BASE, baseUrl);
       global.__corneaCloudMode = true;
+      let authEstablished = false;
 
       try {
         let profileUser = null;
@@ -857,6 +875,7 @@
           profileUser = me.user;
           applyUserContext(profileUser);
         }
+        authEstablished = true;
 
         this.patchGlobals();
         showCloudBadge(true);
@@ -872,6 +891,13 @@
         console.info('[CorneaApi] Sync mode enabled:', baseUrl);
         return true;
       } catch (err) {
+        if (authEstablished && token) {
+          // Authentication succeeded; treat late UI/bootstrap errors as non-fatal
+          // so users are not trapped in the sign-in modal.
+          console.warn('[CorneaApi] Cloud auth established; continuing despite post-login init error.', err);
+          updateCloudHeader(true);
+          return true;
+        }
         global.__corneaCloudMode = false;
         updateCloudHeader(false);
         throw err;
@@ -1014,7 +1040,7 @@
 
       global.loadAndEditRecord = async function (id) {
         try {
-          const data = await idbGet(STORE_PATIENTS, id);
+          const data = await getPatientRecord(id);
           if (!data) throw new Error('Record not found locally');
           global._currentViewRecordId = data.id;
           document.getElementById('currentRecordId').value = data.id;
@@ -1030,7 +1056,7 @@
 
       global.viewRecordReadOnly = async function (id, target) {
         try {
-          let data = await idbGet(STORE_PATIENTS, id);
+          let data = await getPatientRecord(id);
           if (!data) throw new Error('Record not found locally');
           if (global.CorneaSync?.prepareVisitForViewOnly) {
             try {
@@ -1073,6 +1099,9 @@
         if (!confirm('Are you sure you want to permanently delete this record?')) return;
         try {
           await sync().deleteVisitLocal(id);
+          if (global.navigator.onLine !== false) {
+            await sync().syncNow({ pushFirst: true }).catch((e) => console.warn('[CorneaSync] push delete', e));
+          }
           await self.refreshRecordsList();
           global.updateDashboardStats();
           global.refreshPatientVisitHistory();
@@ -1083,7 +1112,11 @@
       };
 
       global.updateDashboardStats = async function () {
-        const records = await idbGetAll(STORE_PATIENTS);
+        const records = await getAllPatientRecords();
+        const uniquePatientIds = new Set(
+          records.map((r) => String(r.patientId || '').trim()).filter(Boolean)
+        );
+        const totalPatients = uniquePatientIds.size > 0 ? uniquePatientIds.size : records.length;
         const today = new Date().toISOString().split('T')[0];
         let todayCount = 0;
         let maleCount = 0;
@@ -1101,16 +1134,14 @@
           const el = document.getElementById(id);
           if (el) el.textContent = v;
         };
-        set('statTotalPatients', records.length);
+        set('statTotalPatients', totalPatients);
         set('statTodayVisits', todayCount);
         set('statSexRatio', `${maleCount} / ${femaleCount}`);
         const lastEl = document.getElementById('statLastUpdated');
-        if (lastEl && latestDate) {
-          lastEl.textContent = new Date(latestDate).toLocaleDateString();
-        }
-
-        if (global.navigator.onLine !== false && sync()) {
-          sync().syncNow().catch(() => {});
+        if (lastEl) {
+          lastEl.textContent = latestDate
+            ? new Date(latestDate).toLocaleDateString()
+            : '—';
         }
 
         if (typeof global.fetchInstituteKpis === 'function') {
@@ -1128,7 +1159,7 @@
           return;
         }
 
-        const records = await idbGetAll(STORE_PATIENTS);
+        const records = await getAllPatientRecords();
         const visits = records
           .filter((r) => r.patientId === patientId)
           .sort((a, b) => String(a.visitDate).localeCompare(String(b.visitDate)))
@@ -1234,7 +1265,7 @@
       const body = document.getElementById('recordsBody');
       if (!body) return;
 
-      const records = await idbGetAll(STORE_PATIENTS);
+      const records = await getAllPatientRecords();
       const sorted = records.sort((a, b) => (b.lastModified || '').localeCompare(a.lastModified || ''));
       const lockMap = global.CorneaRecordLock
         ? await global.CorneaRecordLock.fetchVisitLockMap()
@@ -1257,9 +1288,9 @@
           <td>${escapeHtml(r.visitDate || '')}</td>
           <td>${escapeHtml(r.phone || '—')}</td>
           <td class="no-print records-actions">
-            <button type="button" class="btn-info" onclick="viewRecordReadOnly(${r.id}, 'records')"><i class="fa-solid fa-eye"></i> View</button>
-            <button type="button" class="btn-secondary btn-sm" onclick="loadAndEditRecord(${r.id})"><i class="fa-solid fa-pen"></i> Edit</button>
-            <button type="button" class="btn-danger btn-sm" onclick="deleteRecord(${r.id})"><i class="fa-solid fa-trash"></i></button>
+            <button type="button" class="btn-info" data-csp-action="viewRecordReadOnly" data-csp-args='[${r.id},"records"]'><i class="fa-solid fa-eye"></i> View</button>
+            <button type="button" class="btn-secondary btn-sm" data-csp-action="loadAndEditRecord" data-csp-args='[${r.id}]'><i class="fa-solid fa-pen"></i> Edit</button>
+            <button type="button" class="btn-danger btn-sm" data-csp-action="deleteRecord" data-csp-args='[${r.id}]'><i class="fa-solid fa-trash"></i></button>
           </td>
         </tr>`;
       }).join('') : '<tr><td colspan="5"><div class="empty-state">No records found.</div></td></tr>';
@@ -1326,9 +1357,8 @@
       sessionStorage.removeItem('corneaEmr_offlineFallback');
     } catch (_) { /* ignore */ }
     hideOfflineLoginOverlay();
-    document.body.classList.remove('cornea-auth-pending');
     global.CorneaAuthEnv?.clearOfflineFallback?.();
-    global.CorneaAuthEnv?.unlockUi?.();
+    global.CorneaOfflineSecurity?.hideLockScreen?.();
     return CorneaApi.signIn();
   };
 })(typeof window !== 'undefined' ? window : globalThis);

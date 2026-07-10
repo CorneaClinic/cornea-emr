@@ -46,22 +46,9 @@ window.renderInstituteKpis = function (data) {
 };
 
 window.applyCloudVisitStats = function (data) {
-    if (!data?.visits) return;
-    const v = data.visits;
-    const set = (id, text) => {
-        const el = document.getElementById(id);
-        if (el) el.textContent = text;
-    };
-    if (v.uniquePatients != null) set('statTotalPatients', v.uniquePatients);
-    if (v.today != null) set('statTodayVisits', v.today);
-    if (v.sexRatio) {
-        set('statSexRatio', `${v.sexRatio.male || 0} / ${v.sexRatio.female || 0}`);
-    }
-    if (v.lastUpdated) {
-        set('statLastUpdated', new Date(v.lastUpdated).toLocaleDateString([], {
-            month: 'short', day: 'numeric', year: 'numeric'
-        }));
-    }
+    // Top summary cards (statTotalPatients, etc.) reflect local IndexedDB cache.
+    // Institute-wide cloud KPIs are shown in #instituteKpisSection via renderInstituteKpis.
+    void data;
 };
 
 window.fetchInstituteKpis = async function () {
@@ -98,7 +85,11 @@ window.updateDashboardStats = async function() {
             request.onerror = () => resolve([]);
         });
 
-    const total = records.length;
+    const totalVisits = records.length;
+    const uniquePatientIds = new Set(
+        records.map((r) => String(r.patientId || '').trim()).filter(Boolean)
+    );
+    const totalPatients = uniquePatientIds.size > 0 ? uniquePatientIds.size : totalVisits;
         const today = new Date().toISOString().split('T')[0];
 
         let todayCount = 0, maleCount = 0, femaleCount = 0;
@@ -111,7 +102,7 @@ window.updateDashboardStats = async function() {
             if (r.lastModified && (!latestDate || r.lastModified > latestDate)) latestDate = r.lastModified;
         });
 
-        document.getElementById('statTotalPatients').textContent = total;
+        document.getElementById('statTotalPatients').textContent = totalPatients;
         document.getElementById('statTodayVisits').textContent = todayCount;
         document.getElementById('statSexRatio').textContent = `${maleCount} / ${femaleCount}`;
 

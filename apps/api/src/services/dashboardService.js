@@ -3,16 +3,24 @@ import { getVisitStats } from './visitService.js';
 import { getKcRegistryOverview } from './kcRegistryService.js';
 import { getKeratitisOverview } from './keratitisRegistryService.js';
 import { getKeratoplastyOverview } from './keratoplastyPatientService.js';
+import { purgeOrphanPatients } from './patientService.js';
 
 /**
  * Institute-wide operational KPIs for the dashboard (tenant-scoped).
  * @param {string} clinicId
  */
 export async function getInstituteKpis(clinicId) {
+  await purgeOrphanPatients(clinicId);
+
   const [visitStats, patientRows, weekRows, kc, keratitis, kp] = await Promise.all([
     getVisitStats(clinicId),
     query(
-      `SELECT COUNT(*)::int AS total FROM patients WHERE clinic_id = $1`,
+      `
+        SELECT COUNT(DISTINCT v.patient_id)::int AS total
+          FROM visits v
+         WHERE v.clinic_id = $1
+           AND v.status != 'cancelled'
+      `,
       [clinicId]
     ),
     query(
