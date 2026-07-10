@@ -112,8 +112,12 @@
         overlay?.classList.remove('is-open');
         overlay?.setAttribute('aria-hidden', 'true');
         if (overlay?._corneaLoginResolve) {
-          overlay._corneaLoginResolve(true);
+          const resolve = overlay._corneaLoginResolve;
           overlay._corneaLoginResolve = null;
+          resolve(true);
+        }
+        if (!document.querySelector('.emr-modal-overlay.is-open')) {
+          document.body.classList.remove('emr-modal-open');
         }
         global.CorneaAuthEnv?.unlockUi?.();
       } catch (e) {

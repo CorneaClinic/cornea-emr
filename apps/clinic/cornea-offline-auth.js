@@ -321,46 +321,7 @@
   function ensureLoginUi() {
     if (document.getElementById('corneaOfflineLogin')) return;
 
-    const style = document.createElement('style');
-    const nonceSource = document.querySelector('script[nonce], style[nonce]');
-    const nonce = nonceSource?.getAttribute('nonce');
-    if (nonce) style.setAttribute('nonce', nonce);
-    style.textContent = `
-      body.cornea-auth-pending .main-wrapper,
-      body.cornea-auth-pending #sidebar,
-      body.cornea-auth-pending .sidebar-overlay,
-      body.cornea-auth-pending .topbar { visibility: hidden !important; pointer-events: none !important; }
-      body.cornea-auth-pending #corneaCloudLoginModal.is-open,
-      body.cornea-auth-pending #corneaPwChangeModal.is-open,
-      body.cornea-auth-pending #corneaOfflineLogin.is-open {
-        visibility: visible !important; pointer-events: auto !important;
-      }
-      #corneaOfflineLogin {
-        position: fixed; inset: 0; z-index: 10000;
-        display: none; align-items: center; justify-content: center;
-        background: linear-gradient(145deg, #0d2137 0%, #1a3a5c 50%, #0f2840 100%);
-        padding: 24px;
-      }
-      #corneaOfflineLogin.is-open { display: flex; }
-      .cornea-offline-login-card {
-        width: 100%; max-width: 420px;
-        background: #fff; border-radius: 12px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.35);
-        overflow: hidden;
-      }
-      .cornea-offline-login-header {
-        background: var(--primary-mid, #1565c0);
-        color: #fff; padding: 24px; text-align: center;
-      }
-      .cornea-offline-login-header h1 { margin: 0 0 6px; font-size: 1.35rem; }
-      .cornea-offline-login-body { padding: 24px; }
-      .cornea-topbar-user {
-        display: flex; align-items: center; gap: 10px;
-        font-size: 0.85rem; color: var(--text-secondary, #5a6b7d);
-      }
-    `;
-    document.head.appendChild(style);
-
+    // Layout styles live in assets/cornea-app.css (strict CSP). Do not inject <style>.
     const overlay = document.createElement('div');
     overlay.id = 'corneaOfflineLogin';
     overlay.setAttribute('aria-hidden', 'true');
@@ -405,12 +366,16 @@
       const offline = document.getElementById('corneaOfflineLogin');
       if (offline) {
         offline.classList.remove('is-open');
-        offline.style.display = 'none';
+        offline.setAttribute('aria-hidden', 'true');
+        offline.style.removeProperty('display');
       }
       const openCloud = global.CorneaApiForceCloudSignIn || global.CorneaApi?.signIn;
       if (!openCloud) {
         showLoginError('Cloud sign-in is not available. Reload the page and try again.');
-        if (offline) { offline.style.display = ''; offline.classList.add('is-open'); }
+        if (offline) {
+          offline.classList.add('is-open');
+          offline.setAttribute('aria-hidden', 'false');
+        }
         return;
       }
       try {
@@ -418,12 +383,15 @@
         if (ok) {
           showApp(true);
         } else if (offline) {
-          offline.style.display = '';
           offline.classList.add('is-open');
+          offline.setAttribute('aria-hidden', 'false');
         }
       } catch (err) {
         showLoginError(err.message || 'Cloud sign-in failed');
-        if (offline) { offline.style.display = ''; offline.classList.add('is-open'); }
+        if (offline) {
+          offline.classList.add('is-open');
+          offline.setAttribute('aria-hidden', 'false');
+        }
       }
     });
     document.getElementById('corneaLogoutBtn')?.addEventListener('click', async () => {
@@ -844,7 +812,11 @@
               if (health?.healthy) {
                 global.CorneaAuthEnv?.clearOfflineFallback?.();
                 const offline = document.getElementById('corneaOfflineLogin');
-                if (offline) offline.style.display = 'none';
+                if (offline) {
+                  offline.classList.remove('is-open');
+                  offline.setAttribute('aria-hidden', 'true');
+                  offline.style.removeProperty('display');
+                }
                 if (global.CorneaApi.signIn) await global.CorneaApi.signIn();
               }
             } catch (_) { /* keep offline UI */ }

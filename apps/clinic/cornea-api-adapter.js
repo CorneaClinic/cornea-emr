@@ -19,6 +19,8 @@
 
   let token = null;
   let baseUrl = '';
+  /** Single in-flight Cloud Sign In promise — prevents flash/reset from concurrent openers. */
+  let loginModalPromise = null;
 
   function apiNetworkHelp() {
     if (location.protocol === 'file:') {
@@ -116,9 +118,7 @@
     const overlay = document.getElementById('corneaCloudLoginModal');
     if (!overlay) return;
     dismissAuthModalOverlay(overlay);
-    const resolve = overlay._corneaLoginResolve;
-    overlay._corneaLoginResolve = null;
-    if (resolve) resolve('offline');
+    settleLoginModal('offline');
   }
 
   async function tryRefreshToken() {
@@ -308,7 +308,7 @@
     if (offline) {
       offline.classList.remove('is-open');
       offline.setAttribute('aria-hidden', 'true');
-      offline.style.display = 'none';
+      offline.style.removeProperty('display');
     }
   }
 
@@ -319,17 +319,24 @@
     hideOfflineLoginOverlay();
     global.CorneaAuthEnv?.clearOfflineFallback?.();
     const overlay = document.getElementById('corneaCloudLoginModal');
-    // Avoid flash/reset when boot + lock paths both request sign-in.
-    if (overlay?.classList.contains('is-open') && overlay._corneaLoginResolve) {
-      global.CorneaAuthEnv?.lockUi?.();
-      return new Promise((resolve) => {
-        const prev = overlay._corneaLoginResolve;
-        overlay._corneaLoginResolve = (result) => {
-          try { prev?.(result); } catch (_) { /* ignore */ }
-          resolve(result);
-        };
-      });
+    global.CorneaAuthEnv?.lockUi?.();
+
+    // Reuse the same open modal — never tear down / re-check server mid-flight.
+    if (loginModalPromise && overlay) {
+      if (opts.baseUrl) syncLoginModalApiUrl(opts.baseUrl);
+      if (!overlay.classList.contains('is-open')) {
+        if (typeof global.openEmrModal === 'function') {
+          global.openEmrModal('corneaCloudLoginModal');
+        } else {
+          overlay.classList.add('is-open');
+          overlay.setAttribute('aria-hidden', 'false');
+          document.body.classList.add('emr-modal-open');
+        }
+        overlay.style.zIndex = '10001';
+      }
+      return loginModalPromise;
     }
+
     const errEl = document.getElementById('corneaLoginError');
     const urlEl = document.getElementById('corneaLoginApiUrl');
     const emailEl = document.getElementById('corneaLoginEmail');
@@ -343,7 +350,7 @@
     if (emailEl) emailEl.value = opts.email || localStorage.getItem(STORAGE_EMAIL) || '';
     if (passEl) passEl.value = '';
     if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
-    refreshLoginApiStatus();
+    void refreshLoginApiStatus();
     if (typeof global.openEmrModal === 'function') {
       global.openEmrModal('corneaCloudLoginModal');
     } else {
@@ -352,10 +359,14 @@
       document.body.classList.add('emr-modal-open');
     }
     overlay.style.zIndex = '10001';
-    global.CorneaAuthEnv?.lockUi?.();
-    return new Promise((resolve) => {
-      overlay._corneaLoginResolve = resolve;
+    loginModalPromise = new Promise((resolve) => {
+      overlay._corneaLoginResolve = (result) => {
+        loginModalPromise = null;
+        overlay._corneaLoginResolve = null;
+        resolve(result);
+      };
     });
+    return loginModalPromise;
   }
 
   function dismissAuthModalOverlay(overlay) {
@@ -368,14 +379,20 @@
     }
   }
 
+  function settleLoginModal(result) {
+    const overlay = document.getElementById('corneaCloudLoginModal');
+    const resolve = overlay?._corneaLoginResolve;
+    if (overlay) overlay._corneaLoginResolve = null;
+    loginModalPromise = null;
+    if (resolve) resolve(result);
+  }
+
   function closeLoginModal(result) {
     if (!result) return;
     const overlay = document.getElementById('corneaCloudLoginModal');
     if (!overlay) return;
     dismissAuthModalOverlay(overlay);
-    const resolve = overlay._corneaLoginResolve;
-    overlay._corneaLoginResolve = null;
-    if (resolve) resolve(result);
+    settleLoginModal(result);
   }
 
   function bindLoginModalOnce() {

@@ -79,11 +79,13 @@
     return Number(localStorage.getItem(LAST_UNLOCK_KEY) || '0') > 0;
   }
 
-  /** Public cloud site uses the cloud sign-in modal — not the offline lock overlay. */
+  /**
+   * Public cloud site never uses the offline session-lock overlay.
+   * That overlay was appearing unstyled on the right under strict CSP and
+   * racing with Cloud Sign In. Public idle/expiry flows reopen cloud/offline login instead.
+   */
   function usesSessionLockOverlay() {
-    if (global.CorneaAuthEnv?.isPublicDeployment?.()) {
-      return global.CorneaAuthEnv?.isOfflineFallbackActive?.() === true;
-    }
+    if (global.CorneaAuthEnv?.isPublicDeployment?.()) return false;
     return true;
   }
 
@@ -338,10 +340,12 @@
 
   async function onAppReady() {
     // Styles are provided by static CSS (assets/cornea-app.css) for strict CSP.
+    // Public cloud: strip any leftover lock DOM so it cannot sit beside Cloud Sign In.
     if (usesSessionLockOverlay()) {
       ensureLockScreen();
     } else {
-      hideLockScreen();
+      const stray = document.getElementById('corneaSessionLock');
+      if (stray) stray.remove();
     }
     bindActivity();
     hideLockScreen();

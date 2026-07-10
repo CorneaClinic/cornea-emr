@@ -59,7 +59,7 @@
     if (offline) {
       offline.classList.remove('is-open');
       offline.setAttribute('aria-hidden', 'true');
-      offline.style.display = 'none';
+      offline.style.removeProperty('display');
     }
     if (!document.querySelector('.emr-modal-overlay.is-open')) {
       document.body?.classList.remove('emr-modal-open');

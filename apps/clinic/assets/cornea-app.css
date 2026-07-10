@@ -17,8 +17,11 @@
 /* Never show lock overlay while cloud login modal is active */
 body.emr-modal-open #corneaSessionLock,
 body.cornea-auth-pending #corneaSessionLock,
+body.cornea-auth-pending .cornea-session-lock,
 #corneaCloudLoginModal.is-open ~ #corneaSessionLock {
     display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
 }
 
 #corneaSessionLock[hidden] {
@@ -69,6 +72,55 @@ body.cornea-auth-pending #corneaOfflineLogin.is-open {
 
 #corneaCloudLoginModal.emr-modal-overlay {
     z-index: 10001;
+}
+
+/* Offline login overlay — static CSS so strict CSP cannot leave it unstyled on the right. */
+#corneaOfflineLogin {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(145deg, #0d2137 0%, #1a3a5c 50%, #0f2840 100%);
+    padding: 24px;
+}
+
+#corneaOfflineLogin.is-open {
+    display: flex;
+}
+
+.cornea-offline-login-card {
+    width: 100%;
+    max-width: 420px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    overflow: hidden;
+}
+
+.cornea-offline-login-header {
+    background: var(--primary-mid, #1565c0);
+    color: #fff;
+    padding: 24px;
+    text-align: center;
+}
+
+.cornea-offline-login-header h1 {
+    margin: 0 0 6px;
+    font-size: 1.35rem;
+}
+
+.cornea-offline-login-body {
+    padding: 24px;
+}
+
+.cornea-topbar-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: var(--text-secondary, #5a6b7d);
 }
 
 /* =============================================
