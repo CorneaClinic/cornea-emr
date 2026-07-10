@@ -27,55 +27,194 @@
         </div>
     </div>
 
-    <nav class="sidebar-nav" aria-label="Main">
-        <span class="nav-label">Navigation</span>
-        <button type="button" class="nav-item active" data-csp-action="switchTab" data-csp-args='["dashboardTab"]' data-tab="dashboardTab" data-emr-section="dashboard" id="nav-dashboardTab" aria-controls="dashboardTab" aria-current="page">
-            <i class="fa-solid fa-gauge-high" aria-hidden="true"></i> Dashboard
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["formTab"]' data-tab="formTab" data-emr-section="patient_form" id="nav-formTab" aria-controls="formTab">
-            <i class="fa-solid fa-file-medical" aria-hidden="true"></i> Patient Form
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["recordsTab"]' data-tab="recordsTab" data-emr-section="records" id="nav-recordsTab" aria-controls="recordsTab">
-            <i class="fa-solid fa-folder-open" aria-hidden="true"></i> Patient Records
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["auditTrailTab"]' data-tab="auditTrailTab" data-emr-section="audit_trail" id="nav-auditTrailTab" aria-controls="auditTrailTab">
-            <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i> Audit Trail
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["flowTab"]' data-tab="flowTab" data-emr-section="patient_flow" id="nav-flowTab" aria-controls="flowTab">
-            <i class="fa-solid fa-route" aria-hidden="true"></i> Patient Flow
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["appointmentsTab"]' data-tab="appointmentsTab" data-emr-section="appointments_recall" id="nav-appointmentsTab" aria-controls="appointmentsTab">
-            <i class="fa-solid fa-calendar-days" aria-hidden="true"></i> Appointments
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["keratoplastyTab"]' data-tab="keratoplastyTab" data-emr-section="keratoplasty" id="nav-keratoplastyTab" aria-controls="keratoplastyTab">
-            <i class="fa-solid fa-hand-holding-medical" aria-hidden="true"></i> Keratoplasty
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["keratitisTab"]' data-tab="keratitisTab" data-emr-section="keratitis_ulcer" id="nav-keratitisTab" aria-controls="keratitisTab">
-            <i class="fa-solid fa-virus" aria-hidden="true"></i> Keratitis &amp; Ulcer
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["dryEyeTab"]' data-tab="dryEyeTab" data-emr-section="dry_eye_osd" id="nav-dryEyeTab" aria-controls="dryEyeTab">
-            <i class="fa-solid fa-droplet" aria-hidden="true"></i> Dry Eye
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["researchTab"]' data-tab="researchTab" data-emr-section="research_analytics" id="nav-researchTab" aria-controls="researchTab">
-            <i class="fa-solid fa-chart-line" aria-hidden="true"></i> Research
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["kcRegistryTab"]' data-tab="kcRegistryTab" data-emr-section="kc_registry" id="nav-kcRegistryTab" aria-controls="kcRegistryTab">
-            <i class="fa-solid fa-chart-line" aria-hidden="true"></i> KC &amp; CXL
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["clinicalMediaTab"]' data-tab="clinicalMediaTab" data-emr-section="clinical_media" id="nav-clinicalMediaTab" aria-controls="clinicalMediaTab">
-            <i class="fa-solid fa-images" aria-hidden="true"></i> Clinical Media
-        </button>
-        <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["databaseTab"]' data-tab="databaseTab" data-emr-section="database" id="nav-databaseTab" aria-controls="databaseTab">
-            <i class="fa-solid fa-database" aria-hidden="true"></i> Database
+    <div class="sidebar-tools no-print">
+        <label class="sidebar-search-label" for="sidebarSearchInput">
+            <span class="sr-only">Search navigation</span>
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <input type="search" id="sidebarSearchInput" placeholder="Search modules…" autocomplete="off" enterkeyhint="search" />
+        </label>
+    </div>
+
+    <nav class="sidebar-nav" id="sidebarNav" aria-label="Main">
+        <div class="nav-meta-block" id="navFavoritesBlock" hidden>
+            <div class="nav-label nav-label-static"><i class="fa-solid fa-star" aria-hidden="true"></i> Favorites</div>
+            <div class="nav-group" id="navFavoritesList" role="list"></div>
+        </div>
+
+        <div class="nav-meta-block" id="navRecentBlock" hidden>
+            <div class="nav-label nav-label-static"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Recently Visited</div>
+            <div class="nav-group" id="navRecentList" role="list"></div>
+        </div>
+
+        <button type="button" class="nav-item nav-item-top active" data-csp-action="switchTab" data-csp-args='["dashboardTab"]' data-tab="dashboardTab" data-emr-section="dashboard" data-nav-key="dashboard" data-nav-label="Dashboard" id="nav-dashboardTab" aria-controls="dashboardTab" aria-current="page">
+            <i class="fa-solid fa-gauge-high" aria-hidden="true"></i>
+            <span class="nav-item-label">Dashboard</span>
         </button>
 
-        <span class="nav-label" class="u-csp-1">Quick Actions</span>
-        <button type="button" class="nav-item" data-csp-action="newPatient" data-csp-args='[]' data-emr-section="patient_form">
-            <i class="fa-solid fa-user-plus" aria-hidden="true"></i> New Patient
-        </button>
-        <button type="button" class="nav-item" data-csp-action="printSummary" data-csp-args='[]' data-emr-section="patient_form">
-            <i class="fa-solid fa-print" aria-hidden="true"></i> Print Report
-        </button>
+        <div class="nav-accordion is-open" data-nav-section="patient">
+            <button type="button" class="nav-accordion-toggle" id="navTogglePatient" data-csp-action="toggleNavSection" data-csp-args='["patient"]' aria-expanded="true" aria-controls="navPanelPatient">
+                <i class="fa-solid fa-users" aria-hidden="true"></i>
+                <span>Patient Management</span>
+                <i class="fa-solid fa-chevron-down nav-accordion-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="nav-accordion-panel" id="navPanelPatient" role="region" aria-labelledby="navTogglePatient">
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["formTab"]' data-tab="formTab" data-emr-section="patient_form" data-nav-key="patient-registration" data-nav-label="Patient Registration" data-nav-parent="patient" id="nav-formTab" aria-controls="formTab">
+                    <i class="fa-solid fa-file-medical" aria-hidden="true"></i>
+                    <span class="nav-item-label">Patient Registration</span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["recordsTab"]' data-tab="recordsTab" data-emr-section="records" data-nav-key="patient-records" data-nav-label="Patient Records" data-nav-parent="patient" id="nav-recordsTab" aria-controls="recordsTab">
+                    <i class="fa-solid fa-folder-open" aria-hidden="true"></i>
+                    <span class="nav-item-label">Patient Records</span>
+                    <span class="nav-badge" data-nav-badge="records" hidden></span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["appointmentsTab"]' data-tab="appointmentsTab" data-emr-section="appointments_recall" data-nav-key="appointments" data-nav-label="Appointments" data-nav-parent="patient" id="nav-appointmentsTab" aria-controls="appointmentsTab">
+                    <i class="fa-solid fa-calendar-days" aria-hidden="true"></i>
+                    <span class="nav-item-label">Appointments</span>
+                    <span class="nav-badge" data-nav-badge="appointments" hidden></span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["flowTab"]' data-tab="flowTab" data-emr-section="patient_flow" data-nav-key="patient-flow" data-nav-label="Patient Flow" data-nav-parent="patient" id="nav-flowTab" aria-controls="flowTab">
+                    <i class="fa-solid fa-route" aria-hidden="true"></i>
+                    <span class="nav-item-label">Patient Flow</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="nav-accordion" data-nav-section="clinical">
+            <button type="button" class="nav-accordion-toggle" id="navToggleClinical" data-csp-action="toggleNavSection" data-csp-args='["clinical"]' aria-expanded="false" aria-controls="navPanelClinical">
+                <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+                <span>Clinical Services</span>
+                <i class="fa-solid fa-chevron-down nav-accordion-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="nav-accordion-panel" id="navPanelClinical" role="region" aria-labelledby="navToggleClinical" hidden>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["formTab"]' data-tab="formTab" data-emr-section="patient_form" data-nav-key="general-cornea" data-nav-label="General Cornea Clinic" data-nav-parent="clinical" id="nav-formTab-clinic" aria-controls="formTab">
+                    <i class="fa-solid fa-stethoscope" aria-hidden="true"></i>
+                    <span class="nav-item-label">General Cornea Clinic</span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["keratitisTab"]' data-tab="keratitisTab" data-emr-section="keratitis_ulcer" data-nav-key="keratitis" data-nav-label="Keratitis & Ulcer Centre" data-nav-parent="clinical" id="nav-keratitisTab" aria-controls="keratitisTab">
+                    <i class="fa-solid fa-virus" aria-hidden="true"></i>
+                    <span class="nav-item-label">Keratitis &amp; Ulcer Centre</span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["dryEyeTab"]' data-tab="dryEyeTab" data-emr-section="dry_eye_osd" data-nav-key="dry-eye" data-nav-label="Dry Eye & Ocular Surface" data-nav-parent="clinical" id="nav-dryEyeTab" aria-controls="dryEyeTab">
+                    <i class="fa-solid fa-droplet" aria-hidden="true"></i>
+                    <span class="nav-item-label">Dry Eye &amp; Ocular Surface</span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["kcRegistryTab"]' data-tab="kcRegistryTab" data-emr-section="kc_registry" data-nav-key="kc-cxl" data-nav-label="KC & Cross-Linking" data-nav-parent="clinical" id="nav-kcRegistryTab" aria-controls="kcRegistryTab">
+                    <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                    <span class="nav-item-label">KC &amp; Cross-Linking</span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["keratoplastyTab"]' data-tab="keratoplastyTab" data-emr-section="keratoplasty" data-nav-key="keratoplasty" data-nav-label="Keratoplasty" data-nav-parent="clinical" id="nav-keratoplastyTab" aria-controls="keratoplastyTab">
+                    <i class="fa-solid fa-hand-holding-medical" aria-hidden="true"></i>
+                    <span class="nav-item-label">Keratoplasty</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="nav-accordion" data-nav-section="surgical">
+            <button type="button" class="nav-accordion-toggle" id="navToggleSurgical" data-csp-action="toggleNavSection" data-csp-args='["surgical"]' aria-expanded="false" aria-controls="navPanelSurgical">
+                <i class="fa-solid fa-hospital" aria-hidden="true"></i>
+                <span>Surgical Services</span>
+                <span class="nav-soon-badge">Soon</span>
+                <i class="fa-solid fa-chevron-down nav-accordion-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="nav-accordion-panel" id="navPanelSurgical" role="region" aria-labelledby="navToggleSurgical" hidden>
+                <p class="nav-placeholder-note">Coming Soon — architecture reserved</p>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Surgical Dashboard"]' data-nav-label="Surgical Dashboard" aria-disabled="true"><i class="fa-solid fa-gauge" aria-hidden="true"></i><span class="nav-item-label">Surgical Dashboard</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["AI Surgical Advisor"]' data-nav-label="AI Surgical Advisor" aria-disabled="true"><i class="fa-solid fa-robot" aria-hidden="true"></i><span class="nav-item-label">AI Surgical Advisor</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Pre-operative Clinic"]' data-nav-label="Pre-operative Clinic" aria-disabled="true"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i><span class="nav-item-label">Pre-operative Clinic</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["OT Scheduling"]' data-nav-label="OT Scheduling" aria-disabled="true"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span class="nav-item-label">OT Scheduling</span><span class="nav-badge" data-nav-badge="pending-surgery" hidden></span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Block Room"]' data-nav-label="Block Room" aria-disabled="true"><i class="fa-solid fa-syringe" aria-hidden="true"></i><span class="nav-item-label">Block Room</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Operating Theatre"]' data-nav-label="Operating Theatre" aria-disabled="true"><i class="fa-solid fa-bed-pulse" aria-hidden="true"></i><span class="nav-item-label">Operating Theatre</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Recovery"]' data-nav-label="Recovery" aria-disabled="true"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i><span class="nav-item-label">Recovery</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Post-op"]' data-nav-label="Post-op" aria-disabled="true"><i class="fa-solid fa-user-doctor" aria-hidden="true"></i><span class="nav-item-label">Post-op</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Quality Dashboard"]' data-nav-label="Quality Dashboard" aria-disabled="true"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span class="nav-item-label">Quality Dashboard</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Eye Bank"]' data-nav-label="Eye Bank" aria-disabled="true"><i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i><span class="nav-item-label">Eye Bank</span></button>
+            </div>
+        </div>
+
+        <div class="nav-accordion" data-nav-section="refractive">
+            <button type="button" class="nav-accordion-toggle" id="navToggleRefractive" data-csp-action="toggleNavSection" data-csp-args='["refractive"]' aria-expanded="false" aria-controls="navPanelRefractive">
+                <i class="fa-solid fa-eye" aria-hidden="true"></i>
+                <span>Contact Lens &amp; Refractive</span>
+                <span class="nav-soon-badge">Soon</span>
+                <i class="fa-solid fa-chevron-down nav-accordion-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="nav-accordion-panel" id="navPanelRefractive" role="region" aria-labelledby="navToggleRefractive" hidden>
+                <p class="nav-placeholder-note">Coming Soon — architecture reserved</p>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Contact Lens Centre"]' data-nav-label="Contact Lens Centre" aria-disabled="true"><i class="fa-solid fa-circle" aria-hidden="true"></i><span class="nav-item-label">Contact Lens Centre</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Scleral Lens Centre"]' data-nav-label="Scleral Lens Centre" aria-disabled="true"><i class="fa-solid fa-circle-notch" aria-hidden="true"></i><span class="nav-item-label">Scleral Lens Centre</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Laser Refractive Surgery"]' data-nav-label="Laser Refractive Surgery" aria-disabled="true"><i class="fa-solid fa-bolt" aria-hidden="true"></i><span class="nav-item-label">Laser Refractive Surgery</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["AI Refractive Planner"]' data-nav-label="AI Refractive Planner" aria-disabled="true"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i><span class="nav-item-label">AI Refractive Planner</span></button>
+            </div>
+        </div>
+
+        <div class="nav-accordion" data-nav-section="research">
+            <button type="button" class="nav-accordion-toggle" id="navToggleResearch" data-csp-action="toggleNavSection" data-csp-args='["research"]' aria-expanded="false" aria-controls="navPanelResearch">
+                <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                <span>Research &amp; Education</span>
+                <span class="nav-badge" data-nav-badge="research" hidden></span>
+                <i class="fa-solid fa-chevron-down nav-accordion-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="nav-accordion-panel" id="navPanelResearch" role="region" aria-labelledby="navToggleResearch" hidden>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["researchTab"]' data-tab="researchTab" data-emr-section="research_analytics" data-nav-key="research-dashboard" data-nav-label="Research Dashboard" data-nav-parent="research" id="nav-researchTab" aria-controls="researchTab">
+                    <i class="fa-solid fa-chart-line" aria-hidden="true"></i>
+                    <span class="nav-item-label">Research Dashboard</span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["clinicalMediaTab"]' data-tab="clinicalMediaTab" data-emr-section="clinical_media" data-nav-key="clinical-media" data-nav-label="Clinical Media" data-nav-parent="research" id="nav-clinicalMediaTab" aria-controls="clinicalMediaTab">
+                    <i class="fa-solid fa-images" aria-hidden="true"></i>
+                    <span class="nav-item-label">Clinical Media</span>
+                    <span class="nav-badge" data-nav-badge="clinical-media" hidden></span>
+                </button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Teaching Files"]' data-nav-label="Teaching Files" aria-disabled="true"><i class="fa-solid fa-chalkboard-user" aria-hidden="true"></i><span class="nav-item-label">Teaching Files</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Clinical Registries"]' data-nav-label="Clinical Registries" aria-disabled="true"><i class="fa-solid fa-book-medical" aria-hidden="true"></i><span class="nav-item-label">Clinical Registries</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Analytics"]' data-nav-label="Analytics" aria-disabled="true"><i class="fa-solid fa-chart-pie" aria-hidden="true"></i><span class="nav-item-label">Analytics</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Publications"]' data-nav-label="Publications" aria-disabled="true"><i class="fa-solid fa-file-lines" aria-hidden="true"></i><span class="nav-item-label">Publications</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Tele-Cornea Network"]' data-nav-label="Tele-Cornea Network" aria-disabled="true"><i class="fa-solid fa-network-wired" aria-hidden="true"></i><span class="nav-item-label">Tele-Cornea Network</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["National Registry"]' data-nav-label="National Registry" aria-disabled="true"><i class="fa-solid fa-globe" aria-hidden="true"></i><span class="nav-item-label">National Registry</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["AI Centre"]' data-nav-label="AI Centre" aria-disabled="true"><i class="fa-solid fa-brain" aria-hidden="true"></i><span class="nav-item-label">AI Centre</span></button>
+            </div>
+        </div>
+
+        <div class="nav-accordion" data-nav-section="admin">
+            <button type="button" class="nav-accordion-toggle" id="navToggleAdmin" data-csp-action="toggleNavSection" data-csp-args='["admin"]' aria-expanded="false" aria-controls="navPanelAdmin">
+                <i class="fa-solid fa-gear" aria-hidden="true"></i>
+                <span>Administration</span>
+                <i class="fa-solid fa-chevron-down nav-accordion-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="nav-accordion-panel" id="navPanelAdmin" role="region" aria-labelledby="navToggleAdmin" hidden>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["auditTrailTab"]' data-tab="auditTrailTab" data-emr-section="audit_trail" data-nav-key="audit-trail" data-nav-label="Audit Trail" data-nav-parent="admin" id="nav-auditTrailTab" aria-controls="auditTrailTab">
+                    <i class="fa-solid fa-clipboard-list" aria-hidden="true"></i>
+                    <span class="nav-item-label">Audit Trail</span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["databaseTab"]' data-tab="databaseTab" data-emr-section="database" data-nav-key="database" data-nav-label="Database" data-nav-parent="admin" id="nav-databaseTab" aria-controls="databaseTab">
+                    <i class="fa-solid fa-database" aria-hidden="true"></i>
+                    <span class="nav-item-label">Database</span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["databaseTab"]' data-tab="databaseTab" data-emr-section="database" data-nav-key="settings" data-nav-label="Settings" data-nav-parent="admin" id="nav-systemSettings" aria-controls="databaseTab">
+                    <i class="fa-solid fa-sliders" aria-hidden="true"></i>
+                    <span class="nav-item-label">Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="nav-accordion" data-nav-section="quick">
+            <button type="button" class="nav-accordion-toggle" id="navToggleQuick" data-csp-action="toggleNavSection" data-csp-args='["quick"]' aria-expanded="false" aria-controls="navPanelQuick">
+                <i class="fa-solid fa-bolt" aria-hidden="true"></i>
+                <span>Quick Actions</span>
+                <i class="fa-solid fa-chevron-down nav-accordion-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="nav-accordion-panel" id="navPanelQuick" role="region" aria-labelledby="navToggleQuick" hidden>
+                <button type="button" class="nav-item" data-csp-action="newPatient" data-csp-args='[]' data-emr-section="patient_form" data-nav-label="New Patient">
+                    <i class="fa-solid fa-user-plus" aria-hidden="true"></i>
+                    <span class="nav-item-label">New Patient</span>
+                </button>
+                <button type="button" class="nav-item" data-csp-action="printSummary" data-csp-args='[]' data-emr-section="patient_form" data-nav-label="Print Report">
+                    <i class="fa-solid fa-print" aria-hidden="true"></i>
+                    <span class="nav-item-label">Print Report</span>
+                </button>
+            </div>
+        </div>
+
+        <p class="sidebar-search-empty" id="sidebarSearchEmpty" hidden>No matching modules.</p>
     </nav>
 
     <div class="sidebar-footer">
@@ -88,6 +227,19 @@
         <div class="u-csp-2">Cornea Clinic · Local IndexedDB · Offline Ready</div>
     </div>
 </aside>
+
+<!-- Quick Create FAB -->
+<div class="nav-fab no-print" id="navFab">
+    <button type="button" class="nav-fab-main" id="navFabToggle" data-csp-action="toggleNavFab" data-csp-args='[]' aria-expanded="false" aria-controls="navFabMenu" aria-label="Quick create">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i>
+    </button>
+    <div class="nav-fab-menu" id="navFabMenu" hidden>
+        <button type="button" class="nav-fab-item" data-csp-action="newPatient" data-csp-args='[]' data-emr-section="patient_form"><i class="fa-solid fa-user-plus" aria-hidden="true"></i> New Patient</button>
+        <button type="button" class="nav-fab-item" data-csp-action="switchTab" data-csp-args='["formTab"]' data-emr-section="patient_form"><i class="fa-solid fa-stethoscope" aria-hidden="true"></i> New Visit</button>
+        <button type="button" class="nav-fab-item" data-csp-action="switchTab" data-csp-args='["appointmentsTab"]' data-emr-section="appointments_recall"><i class="fa-solid fa-calendar-plus" aria-hidden="true"></i> New Appointment</button>
+        <button type="button" class="nav-fab-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["New Surgery"]'><i class="fa-solid fa-hospital" aria-hidden="true"></i> New Surgery</button>
+    </div>
+</div>
 
 <!-- SIDEBAR OVERLAY (mobile) -->
 <div class="sidebar-overlay" id="sidebarOverlay" data-csp-action="closeSidebar" data-csp-args='[]' aria-hidden="true"></div>
@@ -107,17 +259,27 @@
             </div>
         </div>
         <div class="topbar-right">
-            <div class="cornea-topbar-user no-print" id="corneaTopbarUser" class="u-csp-3">
-                <span id="corneaTopbarUserName"></span>
-                <button type="button" class="btn-secondary btn-sm" id="corneaLogoutBtn" title="Sign out">
-                    <i class="fa-solid fa-right-from-bracket"></i> Logout
-                </button>
+            <div class="topbar-cluster topbar-cluster-auth" aria-label="Authentication and sync">
+                <div class="cornea-topbar-user no-print" id="corneaTopbarUser" class="u-csp-3">
+                    <span id="corneaTopbarUserName"></span>
+                    <button type="button" class="btn-secondary btn-sm" id="corneaLogoutBtn" title="Sign out">
+                        <i class="fa-solid fa-right-from-bracket"></i> Logout
+                    </button>
+                </div>
             </div>
-            <div class="topbar-badge">
-                <span class="dot"></span>
-                <span>Database Active</span>
+            <div class="topbar-cluster topbar-cluster-status" aria-label="System status">
+                <div class="topbar-badge" id="topbarDbStatus" title="Local database status">
+                    <span class="dot"></span>
+                    <span>Database Active</span>
+                </div>
+                <div class="topbar-badge topbar-badge-muted" id="topbarNotifyPlaceholder" title="Notifications — coming soon" hidden>
+                    <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                    <span>Alerts</span>
+                </div>
             </div>
-            <div class="topbar-clock" id="liveClock">--:--</div>
+            <div class="topbar-cluster topbar-cluster-time" aria-label="Current time">
+                <div class="topbar-clock" id="liveClock">--:--</div>
+            </div>
         </div>
     </header>
 
@@ -126,83 +288,284 @@
 
         <!-- ===== DASHBOARD TAB ===== -->
         <div id="dashboardTab" class="tab-content active" role="tabpanel" aria-labelledby="nav-dashboardTab" aria-hidden="false">
-            <div class="stats-grid">
-                <div class="stat-card blue">
-                    <div class="stat-label"><i class="fa-solid fa-users" class="u-csp-4"></i>Total Patients</div>
-                    <div class="stat-value" id="statTotalPatients">0</div>
-                    <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+            <section class="role-dash-header card no-print" id="roleDashboardShell" aria-label="Role dashboard header">
+                <div class="card-body role-dash-header-grid">
+                    <div>
+                        <div class="form-hint">Current user</div>
+                        <div class="role-dash-strong" id="roleDashUserName">—</div>
+                        <div class="form-hint" id="roleDashUserRole">—</div>
+                    </div>
+                    <div>
+                        <div class="form-hint">Hospital</div>
+                        <div class="role-dash-strong" id="roleDashHospital">—</div>
+                        <div class="form-hint" id="roleDashDate">—</div>
+                    </div>
+                    <div>
+                        <div class="form-hint">Cloud sync</div>
+                        <div class="role-dash-strong" id="roleDashCloud">—</div>
+                        <div class="form-hint" id="roleDashDb">—</div>
+                    </div>
+                    <div class="role-dash-header-tools">
+                        <label class="role-dash-search" for="roleDashSearch">
+                            <span class="sr-only">Quick search patients</span>
+                            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                            <input type="search" id="roleDashSearch" placeholder="Quick search patients…" autocomplete="off" />
+                        </label>
+                        <button type="button" class="btn-secondary btn-sm" data-csp-action="runRoleDashSearch" data-csp-args='[]' data-emr-section="records">Search</button>
+                        <button type="button" class="btn-secondary btn-sm" id="roleDashNotifyBtn" data-csp-action="navComingSoon" data-csp-args='["Notifications"]' title="Notifications">
+                            <i class="fa-solid fa-bell" aria-hidden="true"></i>
+                        </button>
+                        <button type="button" class="btn-secondary btn-sm" data-csp-action="resetRoleLayout" data-csp-args='[]' title="Reset dashboard layout">Reset layout</button>
+                    </div>
                 </div>
-                <div class="stat-card green">
-                    <div class="stat-label"><i class="fa-solid fa-calendar-check" class="u-csp-4"></i>Visits Today</div>
-                    <div class="stat-value" id="statTodayVisits">0</div>
-                    <div class="stat-icon"><i class="fa-solid fa-calendar-day"></i></div>
-                </div>
-                <div class="stat-card orange">
-                    <div class="stat-label"><i class="fa-solid fa-venus-mars" class="u-csp-4"></i>Male / Female</div>
-                    <div class="stat-value" id="statSexRatio">0 / 0</div>
-                    <div class="stat-icon"><i class="fa-solid fa-person"></i></div>
-                </div>
-                <div class="stat-card teal">
-                    <div class="stat-label"><i class="fa-solid fa-clock-rotate-left" class="u-csp-4"></i>Last Updated</div>
-                    <div class="stat-value" class="u-csp-5" id="statLastUpdated">—</div>
-                    <div class="stat-icon"><i class="fa-solid fa-database"></i></div>
-                </div>
-            </div>
-
-            <div id="instituteKpisSection" class="card section-theme-institute" class="u-csp-6" hidden>
-                <div class="card-header">
+                <div class="card-header role-dash-subheader">
                     <div class="card-header-left">
-                        <div class="card-icon green"><i class="fa-solid fa-building" aria-hidden="true"></i></div>
-                        <span class="card-title">Institute Overview</span>
-                    </div>
-                    <span id="instituteKpisAsOf" class="form-hint" class="u-csp-7"></span>
-                </div>
-                <div class="card-body" class="u-csp-8">
-                    <p id="instituteKpisHint" class="form-hint" hidden>Sign in to cloud for institute-wide KPIs from the server.</p>
-                    <div class="kp-stats-grid" id="instituteKpisGrid">
-                        <div class="kp-stat"><div class="val" id="kpiUniquePatients">—</div><div class="lbl">Unique patients</div></div>
-                        <div class="kp-stat"><div class="val" id="kpiVisitsWeek">—</div><div class="lbl">Visits (7 days)</div></div>
-                        <div class="kp-stat"><div class="val" id="kpiKcEnrolled">—</div><div class="lbl">KC enrolled</div></div>
-                        <div class="kp-stat"><div class="val" id="kpiKcActive">—</div><div class="lbl">KC active</div></div>
-                        <div class="kp-stat"><div class="val" id="kpiCxlTotal">—</div><div class="lbl">CXL procedures</div></div>
-                        <div class="kp-stat"><div class="val" id="kpiUkActive">—</div><div class="lbl">Ulcers active</div></div>
-                        <div class="kp-stat"><div class="val" id="kpiKpWaiting">—</div><div class="lbl">KP waiting</div></div>
-                        <div class="kp-stat"><div class="val" id="kpiKpEmergency">—</div><div class="lbl">KP emergency</div></div>
-                        <div class="kp-stat"><div class="val" id="kpiTissueAvailable">—</div><div class="lbl">Tissue available</div></div>
+                        <div class="card-icon teal"><i class="fa-solid fa-id-badge" aria-hidden="true"></i></div>
+                        <span class="card-title" id="roleDashProfileTitle">Role dashboard</span>
                     </div>
                 </div>
-            </div>
+            </section>
 
-            <div class="card no-print section-theme-actions">
+            <section class="dashboard-section" id="roleWidgetsSection" aria-labelledby="roleWidgetsHeading">
+                <h3 class="dashboard-section-title" id="roleWidgetsHeading">My workspace</h3>
+                <div class="role-widget-grid dashboard-section-grid" id="roleDashboardWidgets"></div>
+            </section>
+
+            <section class="dashboard-section no-print" aria-labelledby="roleActionsHeading">
+                <h3 class="dashboard-section-title" id="roleActionsHeading">Role quick actions</h3>
+                <div class="card section-theme-actions">
+                    <div class="card-body">
+                        <div class="quick-actions" id="roleQuickActions"></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dashboard-section" id="dashTodaySection" aria-labelledby="dashTodayHeading">
+                <h3 class="dashboard-section-title" id="dashTodayHeading">Today&rsquo;s Activity</h3>
+                <div class="stats-grid">
+                    <div class="stat-card blue">
+                        <div class="stat-label"><i class="fa-solid fa-users" class="u-csp-4"></i>Total Patients</div>
+                        <div class="stat-value" id="statTotalPatients">0</div>
+                        <div class="stat-icon"><i class="fa-solid fa-users"></i></div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-label"><i class="fa-solid fa-calendar-check" class="u-csp-4"></i>Visits Today</div>
+                        <div class="stat-value" id="statTodayVisits">0</div>
+                        <div class="stat-icon"><i class="fa-solid fa-calendar-day"></i></div>
+                    </div>
+                    <div class="stat-card orange">
+                        <div class="stat-label"><i class="fa-solid fa-venus-mars" class="u-csp-4"></i>Male / Female</div>
+                        <div class="stat-value" id="statSexRatio">0 / 0</div>
+                        <div class="stat-icon"><i class="fa-solid fa-person"></i></div>
+                    </div>
+                    <div class="stat-card teal">
+                        <div class="stat-label"><i class="fa-solid fa-clock-rotate-left" class="u-csp-4"></i>Last Updated</div>
+                        <div class="stat-value" class="u-csp-5" id="statLastUpdated">—</div>
+                        <div class="stat-icon"><i class="fa-solid fa-database"></i></div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dashboard-section" id="dashInstituteSection" aria-labelledby="dashInstituteHeading">
+                <h3 class="dashboard-section-title" id="dashInstituteHeading">Institute Metrics</h3>
+                <div id="instituteKpisSection" class="card section-theme-institute" class="u-csp-6" hidden>
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon green"><i class="fa-solid fa-building" aria-hidden="true"></i></div>
+                            <span class="card-title">Institute Overview</span>
+                        </div>
+                        <span id="instituteKpisAsOf" class="form-hint" class="u-csp-7"></span>
+                    </div>
+                    <div class="card-body" class="u-csp-8">
+                        <p id="instituteKpisHint" class="form-hint" hidden>Sign in to cloud for institute-wide KPIs from the server.</p>
+                        <div class="kp-stats-grid" id="instituteKpisGrid">
+                            <div class="kp-stat"><div class="val" id="kpiUniquePatients">—</div><div class="lbl">Unique patients</div></div>
+                            <div class="kp-stat"><div class="val" id="kpiVisitsWeek">—</div><div class="lbl">Visits (7 days)</div></div>
+                            <div class="kp-stat"><div class="val" id="kpiKcEnrolled">—</div><div class="lbl">KC enrolled</div></div>
+                            <div class="kp-stat"><div class="val" id="kpiKcActive">—</div><div class="lbl">KC active</div></div>
+                            <div class="kp-stat"><div class="val" id="kpiCxlTotal">—</div><div class="lbl">CXL procedures</div></div>
+                            <div class="kp-stat"><div class="val" id="kpiUkActive">—</div><div class="lbl">Ulcers active</div></div>
+                            <div class="kp-stat"><div class="val" id="kpiKpWaiting">—</div><div class="lbl">KP waiting</div></div>
+                            <div class="kp-stat"><div class="val" id="kpiKpEmergency">—</div><div class="lbl">KP emergency</div></div>
+                            <div class="kp-stat"><div class="val" id="kpiTissueAvailable">—</div><div class="lbl">Tissue available</div></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="dashboard-section no-print" id="dashLegacyActionsSection" aria-labelledby="dashActionsHeading" hidden>
+                <h3 class="dashboard-section-title" id="dashActionsHeading">Quick Actions</h3>
+                <div class="card section-theme-actions">
                     <div class="card-header">
                         <div class="card-header-left">
                             <div class="card-icon teal"><i class="fa-solid fa-bolt"></i></div>
-                            <span class="card-title">Quick Actions</span>
+                            <span class="card-title">Grouped shortcuts</span>
                         </div>
                     </div>
                     <div class="card-body">
-                        <div class="quick-actions">
-                            <button type="button" class="quick-action-btn" data-csp-action="newPatient" data-csp-args='[]' data-emr-section="patient_form">
-                                <i class="fa-solid fa-user-plus" class="u-csp-9" aria-hidden="true"></i>New Patient
-                            </button>
-                            <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["recordsTab"]' data-emr-section="records">
-                                <i class="fa-solid fa-folder-open" class="u-csp-10" aria-hidden="true"></i>All Records
-                            </button>
-                            <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["flowTab"]' data-emr-section="patient_flow">
-                                <i class="fa-solid fa-route" class="u-csp-9" aria-hidden="true"></i>Patient Flow
-                            </button>
-                            <button type="button" class="quick-action-btn" data-csp-action="exportDatabase" data-csp-args='[]' data-emr-section="database">
-                                <i class="fa-solid fa-file-export" class="u-csp-11" aria-hidden="true"></i>Export DB
-                            </button>
-                            <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["keratoplastyTab"]' data-emr-section="keratoplasty">
-                                <i class="fa-solid fa-hand-holding-medical" class="u-csp-12" aria-hidden="true"></i>Keratoplasty
-                            </button>
-                            <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["databaseTab"]' data-emr-section="database">
-                                <i class="fa-solid fa-database" class="u-csp-13" aria-hidden="true"></i>DB Settings
-                            </button>
+                        <div class="quick-action-groups">
+                            <div class="quick-action-group">
+                                <div class="quick-action-group-label">Patient</div>
+                                <div class="quick-actions">
+                                    <button type="button" class="quick-action-btn" data-csp-action="newPatient" data-csp-args='[]' data-emr-section="patient_form">
+                                        <i class="fa-solid fa-user-plus" class="u-csp-9" aria-hidden="true"></i>New Patient
+                                    </button>
+                                    <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["recordsTab"]' data-emr-section="records">
+                                        <i class="fa-solid fa-magnifying-glass" class="u-csp-10" aria-hidden="true"></i>Search Patient
+                                    </button>
+                                    <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["appointmentsTab"]' data-emr-section="appointments_recall">
+                                        <i class="fa-solid fa-calendar-days" class="u-csp-9" aria-hidden="true"></i>Appointments
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="quick-action-group">
+                                <div class="quick-action-group-label">Clinical</div>
+                                <div class="quick-actions">
+                                    <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["formTab"]' data-emr-section="patient_form">
+                                        <i class="fa-solid fa-stethoscope" class="u-csp-9" aria-hidden="true"></i>New Visit
+                                    </button>
+                                    <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["flowTab"]' data-emr-section="patient_flow">
+                                        <i class="fa-solid fa-route" class="u-csp-9" aria-hidden="true"></i>Patient Flow
+                                    </button>
+                                    <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["clinicalMediaTab"]' data-emr-section="clinical_media">
+                                        <i class="fa-solid fa-images" class="u-csp-12" aria-hidden="true"></i>Clinical Media
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="quick-action-group">
+                                <div class="quick-action-group-label">Surgery</div>
+                                <div class="quick-actions">
+                                    <button type="button" class="quick-action-btn quick-action-soon" data-csp-action="navComingSoon" data-csp-args='["Surgical Centre"]'>
+                                        <i class="fa-solid fa-hospital" class="u-csp-12" aria-hidden="true"></i>Coming Soon
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="quick-action-group">
+                                <div class="quick-action-group-label">Research</div>
+                                <div class="quick-actions">
+                                    <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["researchTab"]' data-emr-section="research_analytics">
+                                        <i class="fa-solid fa-chart-line" class="u-csp-11" aria-hidden="true"></i>Reports
+                                    </button>
+                                    <button type="button" class="quick-action-btn" data-csp-action="exportDatabase" data-csp-args='[]' data-emr-section="database">
+                                        <i class="fa-solid fa-file-export" class="u-csp-11" aria-hidden="true"></i>Export
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="quick-action-group">
+                                <div class="quick-action-group-label">Administration</div>
+                                <div class="quick-actions">
+                                    <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["databaseTab"]' data-emr-section="database">
+                                        <i class="fa-solid fa-database" class="u-csp-13" aria-hidden="true"></i>Database
+                                    </button>
+                                    <button type="button" class="quick-action-btn" data-csp-action="switchTab" data-csp-args='["auditTrailTab"]' data-emr-section="audit_trail">
+                                        <i class="fa-solid fa-clipboard-list" class="u-csp-13" aria-hidden="true"></i>Audit Trail
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
+            </section>
+
+            <section class="dashboard-section dashboard-section-grid" aria-label="Operational summaries">
+                <div class="card" data-dash-panel="recent">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon blue"><i class="fa-solid fa-users" aria-hidden="true"></i></div>
+                            <span class="card-title">Recent Patients</span>
+                        </div>
+                        <button type="button" class="btn-secondary btn-sm" data-csp-action="switchTab" data-csp-args='["recordsTab"]' data-emr-section="records">View all</button>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint" id="dashRecentPatientsHint">Open Patient Records to search and continue visits.</p>
+                        <ul class="dashboard-list" id="dashRecentPatientsList" aria-live="polite"></ul>
+                    </div>
+                </div>
+                <div class="card" data-dash-panel="appointments">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon green"><i class="fa-solid fa-calendar-days" aria-hidden="true"></i></div>
+                            <span class="card-title">Upcoming Appointments</span>
+                        </div>
+                        <button type="button" class="btn-secondary btn-sm" data-csp-action="switchTab" data-csp-args='["appointmentsTab"]' data-emr-section="appointments_recall">Schedule</button>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint" id="dashApptHint">Sign in to cloud for institute-wide scheduling, or open Appointments.</p>
+                    </div>
+                </div>
+                <div class="card" data-dash-panel="surgical">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon orange"><i class="fa-solid fa-hospital" aria-hidden="true"></i></div>
+                            <span class="card-title">Surgical Alerts</span>
+                        </div>
+                        <span class="nav-soon-badge nav-soon-badge-inline">Soon</span>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint">Today&rsquo;s surgery, emergency cases, cancellations, eye-bank tissue, and OT delays will appear when Surgical Services is enabled.</p>
+                    </div>
+                </div>
+                <div class="card" data-dash-panel="research">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon teal"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></div>
+                            <span class="card-title">Research Alerts</span>
+                        </div>
+                        <button type="button" class="btn-secondary btn-sm" data-csp-action="switchTab" data-csp-args='["researchTab"]' data-emr-section="research_analytics">Open</button>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint">Missing registry fields, pending follow-up, and publication deadlines surface in Research Dashboard.</p>
+                    </div>
+                </div>
+                <div class="card" data-dash-panel="announcements">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon blue"><i class="fa-solid fa-bullhorn" aria-hidden="true"></i></div>
+                            <span class="card-title">Announcements</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint">Hospital notices, teaching sessions, equipment maintenance, and emergency alerts will appear here.</p>
+                    </div>
+                </div>
+                <div class="card" data-dash-panel="productivity">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon green"><i class="fa-solid fa-list-check" aria-hidden="true"></i></div>
+                            <span class="card-title">Personal Productivity</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint">Tasks due, follow-ups, pending documentation, signatures, and incomplete records.</p>
+                    </div>
+                </div>
+                <div class="card" data-dash-panel="safety">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon orange"><i class="fa-solid fa-shield-heart" aria-hidden="true"></i></div>
+                            <span class="card-title">Patient Safety</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint">Allergy alerts, wrong-eye verification, duplicate patients, pending consent, and incomplete documentation.</p>
+                    </div>
+                </div>
+                <div class="card" data-dash-panel="system">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon blue"><i class="fa-solid fa-server" aria-hidden="true"></i></div>
+                            <span class="card-title">System Status</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <ul class="dashboard-list" id="dashSystemStatusList">
+                            <li><strong>Local DB:</strong> <span id="dashSysDb">Active</span></li>
+                            <li><strong>Cloud sync:</strong> <span id="dashSysCloud">—</span></li>
+                            <li><strong>Session:</strong> <span id="dashSysSession">—</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </section>
         </div>
 
         <!-- ===== PATIENT FORM TAB ===== -->
@@ -292,11 +655,11 @@
                         </div>
                         <div class="form-group">
                             <label for="phone">Phone Number</label>
-                            <input type="tel" id="phone" placeholder="+91 00000 00000" />
+                            <input type="tel" id="phone" placeholder="+252 61 0000000" />
                         </div>
                         <div class="form-group">
                             <label for="nationalId">National ID</label>
-                            <input type="text" id="nationalId" placeholder="CNIC / Aadhaar / passport (optional)" autocomplete="off" />
+                            <input type="text" id="nationalId" placeholder="Somali National ID / passport (optional)" autocomplete="off" />
                         </div>
                         <div class="form-group">
                             <label for="visitDate">Visit Date</label>
@@ -438,24 +801,6 @@
                         </table>
                     </div>
 
-                    <h4 class="refraction-block-title">2. Presenting Vision</h4>
-                    <div class="table-wrapper">
-                        <table class="clinic-table refraction-table va-table">
-                            <thead><tr><th>Eye</th><th>Presenting distance VA</th><th>Presenting near VA</th></tr></thead>
-                            <tbody>
-                                <tr>
-                                    <td class="eye-label">RE (OD)</td>
-                                    <td><select id="vaRePresentDist"></select></td>
-                                    <td><select id="vaRePresentNear"></select></td>
-                                </tr>
-                                <tr>
-                                    <td class="eye-label">LE (OS)</td>
-                                    <td><select id="vaLePresentDist"></select></td>
-                                    <td><select id="vaLePresentNear"></select></td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
                     <div class="section-grid mt-4">
                         <div class="form-group">
                             <label for="vaPresentGlasses">Current glasses</label>
@@ -481,7 +826,7 @@
                         </div>
                     </div>
 
-                    <h4 class="refraction-block-title">3. Best Corrected Visual Acuity</h4>
+                    <h4 class="refraction-block-title">2. Best Corrected Visual Acuity</h4>
                     <div class="table-wrapper">
                         <table class="clinic-table refraction-table va-table">
                             <thead><tr><th>Eye</th><th>Distance BCVA</th><th>Near BCVA</th></tr></thead>
@@ -506,7 +851,7 @@
                         </table>
                     </div>
 
-                    <h4 class="refraction-block-title">4. Refraction (Extended)</h4>
+                    <h4 class="refraction-block-title">3. Refraction (Extended)</h4>
                     <p class="form-hint">Auto, manifest, cycloplegic &amp; final Rx — subjective table below remains the primary clinical record.</p>
                     <div class="table-wrapper">
                         <table class="clinic-table refraction-table">
@@ -1687,6 +2032,10 @@
                     </div>
                     <div class="u-csp-34">
                         <span id="adminUsersStatus" class="form-hint" class="u-csp-7"></span>
+                        <label class="admin-inline-check admin-show-inactive">
+                            <input type="checkbox" id="adminUsersShowInactive" />
+                            Show inactive
+                        </label>
                         <button type="button" class="btn-secondary btn-sm" id="adminUsersRefreshBtn">
                             <i class="fa-solid fa-rotate"></i> Refresh
                         </button>
@@ -3038,6 +3387,7 @@
 <script src="cornea-idb-crypto.js"></script>
 <script src="cornea-secure-patients.js"></script>
 <script src="js/ui.js"></script>
+<script src="js/sidebar-nav.js"></script>
 <script src="js/form-section-collapse.js"></script>
 <script src="js/form-section-nav.js"></script>
 <script src="js/clinical-fields.js"></script>
@@ -3046,6 +3396,7 @@
 <script src="js/visits.js"></script>
 <script src="js/diagnosis.js"></script>
 <script src="js/dashboard.js"></script>
+<script src="js/role-dashboard.js"></script>
 <script src="js/printing.js"></script>
 <script src="cornea-mobile-visit-summary.js"></script><!-- backlog B2 -->
 <script src="js/lid-autocomplete.js"></script>

@@ -286,8 +286,14 @@
     const cloudPanel = document.getElementById('adminUsersPanel');
     const offlinePanel = document.getElementById('offlineUsersPanel');
     const cloudOn = !!global.__corneaCloudMode;
-    if (cloudPanel) cloudPanel.style.display = cloudOn ? '' : 'none';
-    if (offlinePanel) offlinePanel.style.display = cloudOn ? 'none' : '';
+    if (cloudPanel) {
+      cloudPanel.classList.toggle('emr-section-hidden', !cloudOn);
+      cloudPanel.toggleAttribute('hidden', !cloudOn);
+    }
+    if (offlinePanel) {
+      offlinePanel.classList.toggle('emr-section-hidden', cloudOn);
+      offlinePanel.toggleAttribute('hidden', cloudOn);
+    }
   }
 
   function updateOfflineLoginCopy() {
@@ -547,6 +553,30 @@
     return saved;
   }
 
+  async function deleteOfflineUser(userId) {
+    requirePermission(PERMISSIONS.USERS_MANAGE);
+    const id = String(userId || '');
+    const row = await getUserById(id);
+    if (!row) throw new Error('User not found');
+    if (id === currentUser?.id) throw new Error('You cannot delete your own account');
+    if (row.role === 'administrator') {
+      const all = await listUsers();
+      const admins = all.filter((u) => u.role === 'administrator' && u.isActive !== false);
+      if (admins.length <= 1) throw new Error('Cannot delete the last administrator account');
+    }
+    const label = row.fullName || row.username;
+    if (!window.confirm(`Permanently delete offline user ${label}?`)) return false;
+
+    await new Promise((resolve, reject) => {
+      const tx = global.db.transaction([STORE_USERS], 'readwrite');
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error || new Error('Delete failed'));
+      tx.objectStore(STORE_USERS).delete(id);
+    });
+    await renderOfflineUsersAdmin();
+    return true;
+  }
+
   function isAuthenticated() {
     if (global.__corneaCloudMode && (global.CorneaApi?.isEnabled?.() || global.__corneaUser)) return true;
     return !!currentUser;
@@ -591,11 +621,17 @@
       }
       body.innerHTML = users.map((u) => {
         const status = u.isActive
-          ? '<span style="color:var(--success);">Active</span>'
-          : '<span style="color:var(--danger);">Disabled</span>';
+          ? '<span class="admin-user-status admin-user-status-active">Active</span>'
+          : '<span class="admin-user-status admin-user-status-inactive">Disabled</span>';
         const lastLogin = u.lastLoginAt
           ? new Date(u.lastLoginAt).toLocaleString()
           : 'Never';
+        const isSelf = currentUser?.id === u.id;
+        const deleteBtn = isSelf
+          ? ''
+          : `<button type="button" class="btn-danger btn-sm" data-offline-delete="${escapeHtml(u.id)}" title="Delete offline user">
+              <i class="fa-solid fa-trash" aria-hidden="true"></i> Delete
+            </button>`;
         return `
           <tr>
             <td>${escapeHtml(u.fullName)}</td>
@@ -603,16 +639,26 @@
             <td>${escapeHtml(u.roleLabel)}</td>
             <td>${status}</td>
             <td>${escapeHtml(lastLogin)}</td>
-            <td class="no-print">
+            <td class="no-print admin-user-actions">
               <button type="button" class="btn-secondary btn-sm" data-offline-edit="${escapeHtml(u.id)}">
-                <i class="fa-solid fa-pen"></i> Edit
+                <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit
               </button>
+              ${deleteBtn}
             </td>
           </tr>`;
       }).join('');
 
       body.querySelectorAll('[data-offline-edit]').forEach((btn) => {
         btn.addEventListener('click', () => openEditUserModal(btn.getAttribute('data-offline-edit')));
+      });
+      body.querySelectorAll('[data-offline-delete]').forEach((btn) => {
+        btn.addEventListener('click', async () => {
+          try {
+            await deleteOfflineUser(btn.getAttribute('data-offline-delete'));
+          } catch (err) {
+            alert(err.message || 'Delete failed');
+          }
+        });
       });
     } catch (err) {
       body.innerHTML = `<tr><td colspan="6"><div class="empty-state">${escapeHtml(err.message)}</div></td></tr>`;
@@ -635,7 +681,7 @@
             <p id="offlineCreateError" class="form-hint" style="color:var(--danger);display:none;"></p>
           </div>
           <div class="emr-modal-footer">
-            <button type="button" class="btn-secondary" onclick="closeEmrModal('offlineUserCreateModal')">Cancel</button>
+            <button type="button" class="btn-secondary" data-csp-action="closeEmrModal" data-csp-args='["offlineUserCreateModal"]'>Cancel</button>
             <button type="button" class="btn-primary" id="offlineCreateSaveBtn">Create</button>
           </div>
         </div>
@@ -652,7 +698,7 @@
             <p id="offlineEditError" class="form-hint" style="color:var(--danger);display:none;"></p>
           </div>
           <div class="emr-modal-footer">
-            <button type="button" class="btn-secondary" onclick="closeEmrModal('offlineUserEditModal')">Cancel</button>
+            <button type="button" class="btn-secondary" data-csp-action="closeEmrModal" data-csp-args='["offlineUserEditModal"]'>Cancel</button>
             <button type="button" class="btn-primary" id="offlineEditSaveBtn">Save</button>
           </div>
         </div>

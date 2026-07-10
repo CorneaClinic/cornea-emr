@@ -190,13 +190,14 @@ export async function updateClinicUser({ clinicId, userId, actorUserId, patch })
 
 /**
  * Permanently remove a clinic user. Sessions and related rows cascade or null out via FK rules.
+ * If a foreign-key block prevents hard delete, the account is deactivated instead.
  * @param {object} params
  * @param {string} params.clinicId
  * @param {string} params.userId
  * @param {string} params.actorUserId
  */
 export async function deleteClinicUser({ clinicId, userId, actorUserId }) {
-  if (userId === actorUserId) {
+  if (String(userId) === String(actorUserId)) {
     throw new ForbiddenError('You cannot delete your own account');
   }
 
@@ -204,18 +205,60 @@ export async function deleteClinicUser({ clinicId, userId, actorUserId }) {
 
   if (existing.role === 'admin') {
     const { rows } = await query(
-      `SELECT COUNT(*)::int AS n FROM users WHERE clinic_id = $1 AND role = 'admin'`,
+      `SELECT COUNT(*)::int AS n FROM users WHERE clinic_id = $1 AND role = 'admin' AND is_active = true`,
       [clinicId]
     );
     if (rows[0].n <= 1) {
-      throw new ForbiddenError('Cannot delete the last admin account in this clinic');
+      throw new ForbiddenError('Cannot delete the last active admin account in this clinic');
     }
   }
 
-  const { rowCount } = await query(
-    `DELETE FROM users WHERE clinic_id = $1 AND id = $2`,
-    [clinicId, userId]
-  );
-  if (!rowCount) throw new NotFoundError('User not found');
-  return { success: true, deletedUserId: userId };
+  // Clear auth sessions first so delete is not blocked by session FKs in odd states.
+  await query(`DELETE FROM user_sessions WHERE user_id = $1`, [userId]);
+  try {
+    await query(`DELETE FROM password_reset_tokens WHERE user_id = $1`, [userId]);
+  } catch (_) {
+    /* older DBs may not have this table yet */
+  }
+
+  try {
+    const { rowCount } = await query(
+      `DELETE FROM users WHERE clinic_id = $1 AND id = $2`,
+      [clinicId, userId]
+    );
+    if (!rowCount) throw new NotFoundError('User not found');
+    return {
+      success: true,
+      deleted: true,
+      deactivated: false,
+      deletedUserId: userId,
+      email: existing.email,
+      fullName: existing.fullName
+    };
+  } catch (err) {
+    // 23503 = foreign_key_violation — keep clinic history, disable sign-in instead.
+    if (err && (err.code === '23503' || /foreign key/i.test(String(err.message || '')))) {
+      const { rowCount } = await query(
+        `
+          UPDATE users
+             SET is_active = false,
+                 failed_login_count = 0,
+                 locked_until = NULL
+           WHERE clinic_id = $1 AND id = $2
+        `,
+        [clinicId, userId]
+      );
+      if (!rowCount) throw new NotFoundError('User not found');
+      return {
+        success: true,
+        deleted: false,
+        deactivated: true,
+        deletedUserId: userId,
+        email: existing.email,
+        fullName: existing.fullName,
+        message: 'User could not be removed from history tables, so the account was deactivated instead.'
+      };
+    }
+    throw err;
+  }
 }

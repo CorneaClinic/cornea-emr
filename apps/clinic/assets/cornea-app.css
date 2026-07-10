@@ -63,11 +63,8 @@ body.cornea-auth-pending .topbar {
     pointer-events: none !important;
 }
 
-body.cornea-auth-pending #corneaCloudLoginModal.is-open,
-body.cornea-auth-pending #corneaPwChangeModal.is-open,
-body.cornea-auth-pending #corneaOfflineLogin.is-open {
-    visibility: visible !important;
-    pointer-events: auto !important;
+body.cornea-auth-pending .nav-fab {
+    display: none !important;
 }
 
 #corneaCloudLoginModal.emr-modal-overlay {
@@ -239,7 +236,37 @@ body.cornea-auth-pending #corneaOfflineLogin.is-open {
     .brand-text h1 { font-size: 1rem; font-weight: 700; letter-spacing: .02em; }
     .brand-text p  { font-size: 0.72rem; color: rgba(255,255,255,.6); font-weight: 400; margin-top: 1px; }
 
-    .sidebar-nav { padding: 16px 12px; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+    .sidebar-nav { padding: 16px 12px; flex: 1; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+
+    .sidebar-tools {
+        padding: 0 12px 8px;
+    }
+
+    .sidebar-search-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,.08);
+        border: 1px solid rgba(255,255,255,.14);
+        border-radius: var(--radius);
+        padding: 8px 10px;
+        color: rgba(255,255,255,.7);
+    }
+
+    .sidebar-search-label input {
+        flex: 1;
+        border: 0;
+        background: transparent;
+        color: #fff;
+        font: inherit;
+        font-size: 0.82rem;
+        outline: none;
+        min-width: 0;
+    }
+
+    .sidebar-search-label input::placeholder {
+        color: rgba(255,255,255,.42);
+    }
 
     .nav-label {
         font-size: 0.65rem;
@@ -249,6 +276,254 @@ body.cornea-auth-pending #corneaOfflineLogin.is-open {
         color: rgba(255,255,255,.38);
         padding: 10px 8px 4px;
         margin-top: 6px;
+    }
+
+    .nav-label-static {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-group {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+    }
+
+    .nav-accordion {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+        margin-top: 4px;
+    }
+
+    .nav-accordion-toggle {
+        appearance: none;
+        -webkit-appearance: none;
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        border-radius: var(--radius);
+        border: 1px solid transparent;
+        background: transparent;
+        color: rgba(255,255,255,.78);
+        font: inherit;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: .04em;
+        text-transform: uppercase;
+        text-align: left;
+        cursor: pointer;
+        transition: background var(--transition), color var(--transition);
+    }
+
+    .nav-accordion-toggle:hover {
+        background: rgba(255,255,255,.08);
+        color: #fff;
+    }
+
+    .nav-accordion-toggle:focus-visible {
+        outline: 2px solid rgba(255,255,255,.55);
+        outline-offset: 2px;
+    }
+
+    .nav-accordion-toggle > i:first-child {
+        width: 18px;
+        text-align: center;
+    }
+
+    .nav-accordion-toggle > span:first-of-type {
+        flex: 1;
+    }
+
+    .nav-accordion-chevron {
+        margin-left: auto;
+        font-size: 0.7rem;
+        transition: transform .18s ease;
+        opacity: .7;
+    }
+
+    .nav-accordion.is-open .nav-accordion-chevron {
+        transform: rotate(180deg);
+    }
+
+    .nav-accordion-panel {
+        display: none;
+        flex-direction: column;
+        gap: 2px;
+        padding: 0 0 4px 6px;
+        border-left: 1px solid rgba(255,255,255,.12);
+        margin: 0 0 4px 16px;
+    }
+
+    .nav-accordion.is-open > .nav-accordion-panel {
+        display: flex;
+        animation: navPanelIn .18s ease;
+    }
+
+    @keyframes navPanelIn {
+        from { opacity: 0; transform: translateY(-4px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .nav-placeholder-note {
+        margin: 4px 8px 8px;
+        font-size: 0.72rem;
+        color: rgba(255,255,255,.45);
+        line-height: 1.35;
+    }
+
+    .nav-row {
+        display: flex;
+        align-items: center;
+        gap: 2px;
+    }
+
+    .nav-row .nav-item {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .nav-pin-btn {
+        appearance: none;
+        border: 0;
+        background: transparent;
+        color: rgba(255,255,255,.4);
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        cursor: pointer;
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .nav-pin-btn:hover,
+    .nav-pin-btn.is-pinned {
+        color: #ffd54f;
+        background: rgba(255,255,255,.08);
+    }
+
+    .nav-pin-btn:focus-visible {
+        outline: 2px solid rgba(255,255,255,.55);
+        outline-offset: 1px;
+    }
+
+    .nav-item-label {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .nav-badge {
+        margin-left: 6px;
+        min-width: 1.25rem;
+        padding: 1px 6px;
+        border-radius: 999px;
+        background: rgba(255,255,255,.18);
+        color: #fff;
+        font-size: 0.65rem;
+        font-weight: 700;
+        text-align: center;
+        flex-shrink: 0;
+    }
+
+    .nav-item-soon {
+        opacity: 0.72;
+        cursor: default;
+    }
+
+    .nav-item-soon:hover {
+        background: rgba(255,255,255,.06);
+        color: rgba(255,255,255,.72);
+    }
+
+    .nav-soon-badge {
+        margin-left: 6px;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: rgba(255,255,255,.55);
+        border: 1px solid rgba(255,255,255,.22);
+        border-radius: 999px;
+        padding: 2px 7px;
+        flex-shrink: 0;
+    }
+
+    .nav-soon-badge-inline {
+        color: var(--text-secondary, #5a6b7d);
+        border-color: var(--emr-border, #d7e0ea);
+    }
+
+    .sidebar-search-empty {
+        margin: 12px 8px;
+        font-size: 0.8rem;
+        color: rgba(255,255,255,.5);
+    }
+
+    .nav-fab {
+        position: fixed;
+        right: 22px;
+        bottom: 22px;
+        z-index: 150;
+        display: flex;
+        flex-direction: column-reverse;
+        align-items: flex-end;
+        gap: 10px;
+    }
+
+    .nav-fab-main {
+        width: 52px;
+        height: 52px;
+        border-radius: 50%;
+        border: 0;
+        background: var(--primary-mid, #1565c0);
+        color: #fff;
+        box-shadow: var(--shadow-md, 0 8px 24px rgba(0,0,0,.2));
+        cursor: pointer;
+        font-size: 1.2rem;
+    }
+
+    .nav-fab-main:focus-visible {
+        outline: 2px solid var(--primary-light, #1e88e5);
+        outline-offset: 3px;
+    }
+
+    .nav-fab-menu {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        min-width: 180px;
+    }
+
+    .nav-fab-item {
+        appearance: none;
+        border: 1px solid var(--border, #d7e0ea);
+        background: var(--surface, #fff);
+        color: var(--text, #1a2b3c);
+        border-radius: var(--radius);
+        padding: 10px 12px;
+        text-align: left;
+        font: inherit;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: var(--shadow-sm);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .nav-fab-item:hover {
+        border-color: var(--primary-light, #1e88e5);
+        color: var(--primary-mid, #1565c0);
+    }
+
+    @media (max-width: 900px) {
+        .nav-fab { right: 16px; bottom: 16px; }
     }
 
     .nav-item {
@@ -456,6 +731,7 @@ body.cornea-auth-pending #corneaOfflineLogin.is-open {
     .page-subtitle { font-size: 0.78rem; color: var(--text-muted); font-weight: 400; }
 
     .topbar-right { display: flex; align-items: center; gap: 12px; }
+    .topbar-cluster { display: flex; align-items: center; gap: 10px; }
 
     .topbar-badge {
         display: flex; align-items: center; gap: 8px;
@@ -3291,6 +3567,153 @@ body.cornea-auth-pending #corneaOfflineLogin.is-open {
         gap: 10px;
     }
 
+    .quick-action-groups {
+        display: flex;
+        flex-direction: column;
+        gap: 18px;
+    }
+
+    .quick-action-group-label {
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: var(--text-secondary, #5a6b7d);
+        margin-bottom: 8px;
+    }
+
+    .quick-action-soon {
+        opacity: 0.75;
+    }
+
+    .role-dash-header {
+        margin-bottom: 18px;
+    }
+
+    .role-dash-header-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 14px;
+        align-items: start;
+    }
+
+    .role-dash-strong {
+        font-weight: 700;
+        color: var(--text, #1a2b3c);
+        margin-top: 2px;
+    }
+
+    .role-dash-header-tools {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .role-dash-search {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        border: 1px solid var(--border, #d7e0ea);
+        border-radius: var(--radius);
+        padding: 6px 10px;
+        background: var(--surface-raised, #fff);
+        min-width: 180px;
+        flex: 1;
+    }
+
+    .role-dash-search input {
+        border: 0;
+        outline: none;
+        font: inherit;
+        width: 100%;
+        background: transparent;
+    }
+
+    .role-dash-subheader {
+        border-top: 1px solid var(--border, #e6edf5);
+    }
+
+    .role-widget-value {
+        font-size: 1.6rem;
+        font-weight: 700;
+        color: var(--primary, #0a4d8c);
+        margin-bottom: 6px;
+    }
+
+    .role-widget .card-header {
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .role-widget-hide {
+        margin-left: auto;
+    }
+
+    @media (max-width: 600px) {
+        .role-dash-header-tools {
+            width: 100%;
+        }
+        .role-dash-search {
+            min-width: 0;
+            width: 100%;
+        }
+    }
+
+    .dashboard-section {
+        margin-bottom: 22px;
+    }
+
+    .dashboard-section-title {
+        margin: 0 0 12px;
+        font-size: 0.95rem;
+        font-weight: 700;
+        color: var(--primary, #0a4d8c);
+    }
+
+    .dashboard-section-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 16px;
+    }
+
+    .dashboard-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+    }
+
+    .dashboard-list li {
+        border-bottom: 1px solid var(--emr-border, #e6edf5);
+    }
+
+    .dashboard-list li:last-child {
+        border-bottom: none;
+    }
+
+    .dashboard-list-link {
+        width: 100%;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 10px 0;
+        border: 0;
+        background: transparent;
+        text-align: left;
+        font: inherit;
+        color: inherit;
+        cursor: pointer;
+    }
+
+    .dashboard-list-link:hover {
+        color: var(--primary-mid, #1565c0);
+    }
+
+    .dashboard-list-link span {
+        color: var(--text-secondary, #5a6b7d);
+        font-size: 0.85rem;
+    }
+
     .quick-action-btn {
         display: flex;
         flex-direction: column;
@@ -3720,6 +4143,98 @@ body.cornea-auth-pending #corneaOfflineLogin.is-open {
     #emrPatientModal .emr-modal-body {
         min-height: 0;
     }
+    .emr-modal-overlay:not(.is-open) {
+        pointer-events: none;
+    }
+
+    .emr-section-hidden {
+        display: none !important;
+    }
+
+    .admin-show-inactive {
+        margin-right: 8px;
+        font-size: 0.85rem;
+        color: var(--text-secondary, #5a6a7a);
+    }
+
+    .admin-user-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+    }
+
+    .admin-user-status-active { color: var(--success, #2e7d32); }
+    .admin-user-status-inactive { color: var(--danger, #c62828); }
+
+    .admin-user-readonly {
+        padding: 8px 0;
+        color: var(--text-secondary, #5a6a7a);
+    }
+
+    .admin-user-tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 16px;
+        border-bottom: 1px solid var(--emr-border, #d7e0ea);
+        padding-bottom: 8px;
+    }
+
+    .admin-user-tab {
+        border: 0;
+        background: transparent;
+        padding: 8px 12px;
+        font: inherit;
+        font-weight: 600;
+        color: var(--text-secondary, #5a6a7a);
+        cursor: pointer;
+        border-radius: var(--radius-sm, 6px);
+    }
+
+    .admin-user-tab.is-active {
+        color: var(--primary, #0a4d8c);
+        background: var(--primary-light, #e8f1fa);
+    }
+
+    .admin-inline-check {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 500;
+    }
+
+    .admin-sections-fieldset {
+        border: 1px solid var(--emr-border, #d7e0ea);
+        border-radius: var(--radius, 8px);
+        padding: 12px;
+        margin: 0;
+    }
+
+    .admin-sections-fieldset.is-disabled {
+        opacity: 0.65;
+    }
+
+    .admin-section-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .admin-section-default {
+        display: block;
+        font-size: 0.8rem;
+        color: var(--text-secondary, #5a6a7a);
+    }
+
+    .admin-form-error {
+        color: var(--danger, #c62828);
+        margin-top: 10px;
+    }
+
+    .admin-form-error.is-visible {
+        display: block;
+    }
+
     .emr-modal-header {
         display: flex; align-items: center; justify-content: space-between;
         padding: 16px 22px; border-bottom: 1px solid var(--emr-border);
