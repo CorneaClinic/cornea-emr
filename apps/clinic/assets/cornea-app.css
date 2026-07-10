@@ -1,3 +1,76 @@
+/* Offline security lock overlay (kept in static CSS for strict CSP). */
+.cornea-session-lock {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: rgba(13, 33, 55, 0.92);
+    padding: 24px;
+}
+
+.cornea-session-lock.is-open {
+    display: flex;
+}
+
+/* Never show lock overlay while cloud login modal is active */
+body.emr-modal-open #corneaSessionLock,
+body.cornea-auth-pending #corneaSessionLock,
+#corneaCloudLoginModal.is-open ~ #corneaSessionLock {
+    display: none !important;
+}
+
+#corneaSessionLock[hidden] {
+    display: none !important;
+}
+
+.cornea-session-lock-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px 32px;
+    max-width: 420px;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+.cornea-session-lock-icon {
+    font-size: 2rem;
+    color: var(--primary-mid, #1565c0);
+    margin-bottom: 12px;
+}
+
+.offline-security-list {
+    margin: 0;
+    padding-left: 18px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.offline-security-list li {
+    margin-bottom: 6px;
+}
+
+/* Auth gate: keep cloud/offline login visible; hide app chrome (static CSS for CSP). */
+body.cornea-auth-pending .main-wrapper,
+body.cornea-auth-pending #sidebar,
+body.cornea-auth-pending .sidebar-overlay,
+body.cornea-auth-pending .topbar {
+    visibility: hidden !important;
+    pointer-events: none !important;
+}
+
+body.cornea-auth-pending #corneaCloudLoginModal.is-open,
+body.cornea-auth-pending #corneaPwChangeModal.is-open,
+body.cornea-auth-pending #corneaOfflineLogin.is-open {
+    visibility: visible !important;
+    pointer-events: auto !important;
+}
+
+#corneaCloudLoginModal.emr-modal-overlay {
+    z-index: 10001;
+}
+
 /* =============================================
        CSS VARIABLES & RESET
     ============================================= */

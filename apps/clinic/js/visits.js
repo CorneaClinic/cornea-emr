@@ -183,15 +183,15 @@ function loadRecords() {
         const row = document.createElement('tr');
         const canEdit = window.CorneaOfflineAuth?.hasPermission?.('visits:write') ?? false;
         const canDelete = window.CorneaOfflineAuth?.hasPermission?.('visits:delete') ?? false;
-        const editBtn = canEdit ? `<button type="button" class="btn-secondary btn-sm" onclick="loadAndEditRecord(${record.id})"><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>` : '';
-        const deleteBtn = canDelete ? `<button type="button" class="btn-danger btn-sm" onclick="deleteRecord(${record.id})"><i class="fa-solid fa-trash" aria-hidden="true"></i></button>` : '';
+        const editBtn = canEdit ? `<button type="button" class="btn-secondary btn-sm" data-csp-action="loadAndEditRecord" data-csp-args='[${record.id}]'><i class="fa-solid fa-pen" aria-hidden="true"></i> Edit</button>` : '';
+        const deleteBtn = canDelete ? `<button type="button" class="btn-danger btn-sm" data-csp-action="deleteRecord" data-csp-args='[${record.id}]'><i class="fa-solid fa-trash" aria-hidden="true"></i></button>` : '';
         row.innerHTML = `
             <td><span class="patient-id-badge">${escapeHtml(record.patientId ?? '') || '—'}</span></td>
             <td>${escapeHtml(record.fullName ?? '') || 'Unnamed'}</td>
             <td>${escapeHtml(record.visitDate ?? '') || '—'}</td>
             <td>${escapeHtml(record.phone ?? '') || '—'}</td>
             <td class="no-print records-actions">
-                <button type="button" class="btn-info" onclick="viewRecordReadOnly(${record.id}, 'records')"><i class="fa-solid fa-eye" aria-hidden="true"></i> View</button>
+                <button type="button" class="btn-info" data-csp-action="viewRecordReadOnly" data-csp-args='[${record.id},"records"]'><i class="fa-solid fa-eye" aria-hidden="true"></i> View</button>
                 ${editBtn}
                 ${deleteBtn}
             </td>

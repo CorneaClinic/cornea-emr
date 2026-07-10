@@ -322,6 +322,9 @@
     if (document.getElementById('corneaOfflineLogin')) return;
 
     const style = document.createElement('style');
+    const nonceSource = document.querySelector('script[nonce], style[nonce]');
+    const nonce = nonceSource?.getAttribute('nonce');
+    if (nonce) style.setAttribute('nonce', nonce);
     style.textContent = `
       body.cornea-auth-pending .main-wrapper,
       body.cornea-auth-pending #sidebar,

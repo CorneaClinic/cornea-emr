@@ -75,6 +75,18 @@
     return (now() - ts) / (24 * 60 * 60 * 1000);
   }
 
+  function hasUnlockTimestamp() {
+    return Number(localStorage.getItem(LAST_UNLOCK_KEY) || '0') > 0;
+  }
+
+  /** Public cloud site uses the cloud sign-in modal — not the offline lock overlay. */
+  function usesSessionLockOverlay() {
+    if (global.CorneaAuthEnv?.isPublicDeployment?.()) {
+      return global.CorneaAuthEnv?.isOfflineFallbackActive?.() === true;
+    }
+    return true;
+  }
+
   async function unlockAfterOfflineLogin(password) {
     const salt = 'cornea-offline-phi-v1';
     await global.CorneaIdbCrypto.unlockWithPassword(password, salt);
@@ -91,11 +103,19 @@
   }
 
   function ensureLockScreen() {
+    // Public cloud UI uses Cloud Sign In — never inject the offline lock DOM
+    // (unstyled lock content was appearing on the right under strict CSP).
+    if (!usesSessionLockOverlay()) {
+      const stray = document.getElementById('corneaSessionLock');
+      if (stray) stray.remove();
+      return;
+    }
     if (document.getElementById('corneaSessionLock')) return;
     const el = document.createElement('div');
     el.id = 'corneaSessionLock';
     el.className = 'cornea-session-lock';
     el.setAttribute('aria-hidden', 'true');
+    el.hidden = true;
     el.innerHTML = `
       <div class="cornea-session-lock-card" role="dialog" aria-modal="true" aria-labelledby="corneaSessionLockTitle">
         <div class="cornea-session-lock-icon"><i class="fa-solid fa-lock"></i></div>
@@ -117,6 +137,12 @@
   }
 
   function showLockScreen(reason) {
+    if (!usesSessionLockOverlay()) {
+      hideLockScreen();
+      const cloudOpen = document.getElementById('corneaCloudLoginModal')?.classList.contains('is-open');
+      if (!cloudOpen) void global.CorneaApi?.signIn?.();
+      return;
+    }
     ensureLockScreen();
     const el = document.getElementById('corneaSessionLock');
     const msg = document.getElementById('corneaSessionLockMsg');
@@ -126,6 +152,7 @@
         : 'Your session was locked due to inactivity. Sign in again to view patient data on this device.';
     }
     if (el) {
+      el.hidden = false;
       el.classList.add('is-open');
       el.setAttribute('aria-hidden', 'false');
     }
@@ -135,16 +162,29 @@
   function hideLockScreen() {
     const el = document.getElementById('corneaSessionLock');
     if (el) {
+      el.hidden = true;
       el.classList.remove('is-open');
       el.setAttribute('aria-hidden', 'true');
+      if (!usesSessionLockOverlay()) el.remove();
     }
-    global.CorneaAuthEnv?.unlockUi?.();
   }
 
   async function lockSession(reason) {
     global.CorneaIdbCrypto?.clearSessionKey?.();
-    if (idleTimer) clearTimeout(idleTimer);
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
     if (global.CorneaSync) global.CorneaSync.stopLongPoll?.();
+    if (!usesSessionLockOverlay()) {
+      hideLockScreen();
+      if (global.__corneaCloudMode && global.CorneaApi?.logout) {
+        await global.CorneaApi.logout();
+      }
+      const cloudOpen = document.getElementById('corneaCloudLoginModal')?.classList.contains('is-open');
+      if (!cloudOpen) void global.CorneaApi?.signIn?.();
+      return;
+    }
     if (global.__corneaCloudMode && global.CorneaApi?.logout) {
       await global.CorneaApi.logout();
     } else {
@@ -193,6 +233,10 @@
       });
     }
     global.CorneaIdbCrypto?.clearSessionKey?.();
+    if (idleTimer) {
+      clearTimeout(idleTimer);
+      idleTimer = null;
+    }
     if (global.CorneaSync) {
       try {
         await global.CorneaSync.setMeta?.('pull_cursor', '0');
@@ -201,7 +245,17 @@
   }
 
   async function checkDataExpiry() {
+    // Cloud-hosted clinic UI: never block startup with local expiry dialogs.
+    if (global.CorneaAuthEnv?.isPublicDeployment?.() && !global.CorneaAuthEnv?.isOfflineFallbackActive?.()) {
+      return;
+    }
+
+    // First run / fresh browser sessions have no unlock timestamp yet.
+    // Do not force an expiry lock in that state ("Infinity days" false positive).
+    if (!hasUnlockTimestamp()) return;
+
     const age = daysSinceUnlock();
+    if (!Number.isFinite(age) || age > 3650) return;
     const userKey = global.__corneaUser?.email
       || global.CorneaOfflineAuth?.getCurrentUser?.()?.username
       || 'local';
@@ -214,8 +268,12 @@
     );
     if (proceed) {
       await purgeExpiredLocalPhi();
-      alert('Local patient cache cleared. Sign in to download records from cloud.');
-      showLockScreen('expiry');
+      hideLockScreen();
+      if (global.CorneaAuthEnv?.isPublicDeployment?.()) {
+        await global.CorneaApi?.signIn?.();
+      } else {
+        showLockScreen('expiry');
+      }
     }
   }
 
@@ -257,6 +315,9 @@
     if (document.getElementById('corneaOfflineSecurityStyles')) return;
     const style = document.createElement('style');
     style.id = 'corneaOfflineSecurityStyles';
+    const nonceSource = document.querySelector('script[nonce], style[nonce]');
+    const nonce = nonceSource?.getAttribute('nonce');
+    if (nonce) style.setAttribute('nonce', nonce);
     style.textContent = `
       .cornea-session-lock {
         position: fixed; inset: 0; z-index: 10001;
@@ -276,8 +337,12 @@
   }
 
   async function onAppReady() {
-    injectStyles();
-    ensureLockScreen();
+    // Styles are provided by static CSS (assets/cornea-app.css) for strict CSP.
+    if (usesSessionLockOverlay()) {
+      ensureLockScreen();
+    } else {
+      hideLockScreen();
+    }
     bindActivity();
     hideLockScreen();
     await checkDataExpiry();
@@ -300,7 +365,8 @@
     checkDataExpiry,
     renderSecurityPanel,
     onAppReady,
-    hideLockScreen
+    hideLockScreen,
+    touchUnlockTime
   };
 
   if (document.readyState === 'loading') {

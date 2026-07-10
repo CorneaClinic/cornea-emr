@@ -319,6 +319,17 @@
     hideOfflineLoginOverlay();
     global.CorneaAuthEnv?.clearOfflineFallback?.();
     const overlay = document.getElementById('corneaCloudLoginModal');
+    // Avoid flash/reset when boot + lock paths both request sign-in.
+    if (overlay?.classList.contains('is-open') && overlay._corneaLoginResolve) {
+      global.CorneaAuthEnv?.lockUi?.();
+      return new Promise((resolve) => {
+        const prev = overlay._corneaLoginResolve;
+        overlay._corneaLoginResolve = (result) => {
+          try { prev?.(result); } catch (_) { /* ignore */ }
+          resolve(result);
+        };
+      });
+    }
     const errEl = document.getElementById('corneaLoginError');
     const urlEl = document.getElementById('corneaLoginApiUrl');
     const emailEl = document.getElementById('corneaLoginEmail');

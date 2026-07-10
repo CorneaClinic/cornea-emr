@@ -40,6 +40,30 @@
 
   function unlockUi() {
     document.body?.classList.remove('cornea-auth-pending');
+    const sessionLock = document.getElementById('corneaSessionLock');
+    if (sessionLock) {
+      sessionLock.hidden = true;
+      sessionLock.classList.remove('is-open');
+      sessionLock.setAttribute('aria-hidden', 'true');
+    }
+    if (!isAuthenticated()) {
+      return;
+    }
+    for (const modalId of AUTH_MODAL_IDS) {
+      const modal = document.getElementById(modalId);
+      if (!modal) continue;
+      modal.classList.remove('is-open');
+      modal.setAttribute('aria-hidden', 'true');
+    }
+    const offline = document.getElementById('corneaOfflineLogin');
+    if (offline) {
+      offline.classList.remove('is-open');
+      offline.setAttribute('aria-hidden', 'true');
+      offline.style.display = 'none';
+    }
+    if (!document.querySelector('.emr-modal-overlay.is-open')) {
+      document.body?.classList.remove('emr-modal-open');
+    }
   }
 
   function enableOfflineFallback() {

@@ -629,30 +629,32 @@ window.openPatientFormModal = function(mode) {
     });
 };
 
-window.viewRecordReadOnly = function(id, target) {
+window.viewRecordReadOnly = async function(id, target) {
     if (!window.db) return;
-    window.db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).get(id).onsuccess = (e) => {
-        const data = e.target.result;
-        if (!data) return;
-        window._currentViewRecordId = data.id;
-        document.getElementById('currentRecordId').value = data.id;
-        const uuidEl = document.getElementById('currentRecordUuid');
-        if (uuidEl) uuidEl.value = data.uuid || '';
-        populateFormFromData(data);
-        window.refreshPatientVisitHistory();
-        if (target === 'records') {
-            const panel = document.getElementById('recordReadOnlyPanel');
-            const title = document.getElementById('recordReadOnlyTitle');
-            if (panel) panel.hidden = false;
-            if (title) title.textContent = (data.fullName || 'Patient') + ' · ' + (data.visitDate || '');
-            renderPatientReadOnly(data, 'recordReadOnlyContent');
-            switchTab('recordsTab');
-        } else {
-            renderPatientReadOnly(data, 'patientReadOnlyContent');
-            updatePatientReadOnlyToolbar(true);
-            switchTab('formTab');
-        }
-    };
+    const data = window.CorneaSecurePatients?.get
+        ? await window.CorneaSecurePatients.get(id)
+        : await new Promise((resolve) => {
+            window.db.transaction([STORE_NAME], 'readonly').objectStore(STORE_NAME).get(id).onsuccess = (e) => resolve(e.target.result);
+        });
+    if (!data) return;
+    window._currentViewRecordId = data.id;
+    document.getElementById('currentRecordId').value = data.id;
+    const uuidEl = document.getElementById('currentRecordUuid');
+    if (uuidEl) uuidEl.value = data.uuid || '';
+    populateFormFromData(data);
+    window.refreshPatientVisitHistory();
+    if (target === 'records') {
+        const panel = document.getElementById('recordReadOnlyPanel');
+        const title = document.getElementById('recordReadOnlyTitle');
+        if (panel) panel.hidden = false;
+        if (title) title.textContent = (data.fullName || 'Patient') + ' · ' + (data.visitDate || '');
+        renderPatientReadOnly(data, 'recordReadOnlyContent');
+        switchTab('recordsTab');
+    } else {
+        renderPatientReadOnly(data, 'patientReadOnlyContent');
+        updatePatientReadOnlyToolbar(true);
+        switchTab('formTab');
+    }
 };
 
 function renderEmrReadOnlyGrid(containerId, fields) {
