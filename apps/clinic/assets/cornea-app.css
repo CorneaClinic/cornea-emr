@@ -208,7 +208,11 @@ body.cornea-auth-pending .nav-fab {
     ============================================= */
     .sidebar {
         width: var(--sidebar-w);
-        min-height: 100vh;
+        height: 100vh;
+        height: 100dvh;
+        max-height: 100vh;
+        max-height: 100dvh;
+        overflow: hidden;
         background: var(--primary);
         display: flex;
         flex-direction: column;
@@ -225,6 +229,7 @@ body.cornea-auth-pending .nav-fab {
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-shrink: 0;
     }
 
     .brand-icon {
@@ -241,10 +246,43 @@ body.cornea-auth-pending .nav-fab {
     .brand-text h1 { font-size: 1rem; font-weight: 700; letter-spacing: .02em; }
     .brand-text p  { font-size: 0.72rem; color: rgba(255,255,255,.6); font-weight: 400; margin-top: 1px; }
 
-    .sidebar-nav { padding: 16px 12px; flex: 1; display: flex; flex-direction: column; gap: 4px; overflow-y: auto; }
+    .sidebar-nav {
+        padding: 16px 12px;
+        flex: 1 1 auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        overflow-x: hidden;
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch;
+        overscroll-behavior: contain;
+        scrollbar-gutter: stable;
+        scrollbar-width: thin;
+        scrollbar-color: rgba(255,255,255,.35) rgba(255,255,255,.08);
+    }
+
+    .sidebar-nav::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-track {
+        background: rgba(255,255,255,.06);
+        border-radius: 8px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,.32);
+        border-radius: 8px;
+    }
+
+    .sidebar-nav::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,.48);
+    }
 
     .sidebar-tools {
         padding: 0 12px 8px;
+        flex-shrink: 0;
     }
 
     .sidebar-search-label {
@@ -585,6 +623,7 @@ body.cornea-auth-pending .nav-fab {
         font-size: 0.72rem;
         color: rgba(255,255,255,.38);
         line-height: 1.5;
+        flex-shrink: 0;
     }
 
     .brand-icon img,
