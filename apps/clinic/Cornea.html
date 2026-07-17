@@ -2378,7 +2378,7 @@
                         </div>
                         <div class="search-box no-print" class="u-csp-35">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" id="kpPatientSearch" placeholder="Search…" onkeyup="filterKpPatientsTable()">
+                            <input type="text" id="kpPatientSearch" placeholder="Search…" data-csp-input="filterKpPatientsTable" data-csp-args='[]'>
                         </div>
                     </div>
                     <div class="card-body">
@@ -2407,10 +2407,10 @@
                             </div>
                         </div>
                         <div class="kp-filters no-print">
-                            <div class="form-group"><label>Procedure</label><select id="kpFilterProcedure" onchange="filterKpPatientsTable()"><option value="">All</option></select></div>
-                            <div class="form-group"><label>Urgency</label><select id="kpFilterUrgency" onchange="filterKpPatientsTable()"><option value="">All</option><option>Emergency</option><option>Urgent</option><option>Elective</option></select></div>
-                            <div class="form-group"><label>Status</label><select id="kpFilterStatus" onchange="filterKpPatientsTable()"><option value="">All</option><option>Waiting</option><option>Matched</option><option>Scheduled</option><option>Completed</option><option>Cancelled</option></select></div>
-                            <div class="form-group"><label>Prognosis</label><select id="kpFilterPrognosis" onchange="filterKpPatientsTable()"><option value="">All</option><option>Good</option><option>Fair</option><option>Poor</option><option>Nil</option></select></div>
+                            <div class="form-group"><label>Procedure</label><select id="kpFilterProcedure" data-csp-change="filterKpPatientsTable" data-csp-args='[]'><option value="">All</option></select></div>
+                            <div class="form-group"><label>Urgency</label><select id="kpFilterUrgency" data-csp-change="filterKpPatientsTable" data-csp-args='[]'><option value="">All</option><option>Emergency</option><option>Urgent</option><option>Elective</option></select></div>
+                            <div class="form-group"><label>Status</label><select id="kpFilterStatus" data-csp-change="filterKpPatientsTable" data-csp-args='[]'><option value="">All</option><option>Waiting</option><option>Matched</option><option>Scheduled</option><option>Completed</option><option>Cancelled</option></select></div>
+                            <div class="form-group"><label>Prognosis</label><select id="kpFilterPrognosis" data-csp-change="filterKpPatientsTable" data-csp-args='[]'><option value="">All</option><option>Good</option><option>Fair</option><option>Poor</option><option>Nil</option></select></div>
                         </div>
                         <div class="table-scroll">
                             <table class="records-table">
@@ -2445,7 +2445,7 @@
                         </div>
                         <div class="search-box no-print" class="u-csp-35">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" id="kpTissueSearch" placeholder="Search…" onkeyup="filterKpTissuesTable()">
+                            <input type="text" id="kpTissueSearch" placeholder="Search…" data-csp-input="filterKpTissuesTable" data-csp-args='[]'>
                         </div>
                     </div>
                     <div class="card-body">
@@ -2461,7 +2461,7 @@
                             <div id="kpTissueTraceabilityPanel" class="no-print"></div>
                         </div>
                         <div class="kp-filters no-print">
-                            <div class="form-group"><label>Status</label><select id="kpTissueFilterStatus" onchange="filterKpTissuesTable()"><option value="">All</option><option>Available</option><option>Reserved</option><option>Ordered</option><option>Used</option><option>Expired</option><option>Discarded</option></select></div>
+                            <div class="form-group"><label>Status</label><select id="kpTissueFilterStatus" data-csp-change="filterKpTissuesTable" data-csp-args='[]'><option value="">All</option><option>Available</option><option>Reserved</option><option>Ordered</option><option>Used</option><option>Expired</option><option>Discarded</option></select></div>
                         </div>
                         <div class="table-scroll">
                             <table class="records-table">
@@ -2497,13 +2497,13 @@
                         <div class="kp-form-grid" class="u-csp-39">
                             <div class="form-group span-2">
                                 <label for="kpMatchPatientSelect">Select patient</label>
-                                <select id="kpMatchPatientSelect" onchange="runKpMatching()"><option value="">— Choose patient —</option></select>
+                                <select id="kpMatchPatientSelect" data-csp-change="runKpMatching" data-csp-args='[]'><option value="">— Choose patient —</option></select>
                             </div>
                         </div>
                         <div id="kpMatchProtocolSummary"></div>
                         <div id="kpMatchToolbar" class="kp-match-toolbar no-print" hidden>
-                            <label><input type="checkbox" id="kpMatchCompatibleOnly" onchange="runKpMatching()"> Show protocol-compatible only</label>
-                            <label><input type="checkbox" id="kpMatchAvailableOnly" checked onchange="runKpMatching()"> Available / reserved tissue only</label>
+                            <label><input type="checkbox" id="kpMatchCompatibleOnly" data-csp-change="runKpMatching" data-csp-args='[]'> Show protocol-compatible only</label>
+                            <label><input type="checkbox" id="kpMatchAvailableOnly" checked data-csp-change="runKpMatching" data-csp-args='[]'> Available / reserved tissue only</label>
                         </div>
                         <div id="kpMatchBestBanner"></div>
                         <div id="kpMatchResults"></div>
@@ -2855,16 +2855,16 @@
             <input type="hidden" id="kpTissueRecordId">
             <div class="kp-form-grid">
                 <div class="form-group"><label for="kpTissueId">Tissue ID</label><input type="text" id="kpTissueId" readonly placeholder="Auto-generated" /></div>
-                <div class="form-group"><label for="kpDonorAge">Donor age</label><input type="number" id="kpDonorAge" min="0" max="120" onchange="updateKpTissueGrades()" /></div>
+                <div class="form-group"><label for="kpDonorAge">Donor age</label><input type="number" id="kpDonorAge" min="0" max="120" data-csp-change="updateKpTissueGrades" data-csp-args='[]' /></div>
                 <div class="form-group"><label for="kpDonorGender">Donor gender</label>
                     <select id="kpDonorGender"><option value="">—</option><option>Male</option><option>Female</option></select>
                 </div>
                 <div class="form-group"><label for="kpDeathToPreservation">Death-to-preservation (hrs)</label><input type="number" id="kpDeathToPreservation" min="0" step="0.1" /></div>
-                <div class="form-group"><label for="kpPreservationDate">Preservation date</label><input type="date" id="kpPreservationDate" onchange="updateKpTissueGrades()" /></div>
+                <div class="form-group"><label for="kpPreservationDate">Preservation date</label><input type="date" id="kpPreservationDate" data-csp-change="updateKpTissueGrades" data-csp-args='[]' /></div>
                 <div class="form-group"><label for="kpExpiryDate">Expiry date</label><input type="date" id="kpExpiryDate" /></div>
-                <div class="form-group"><label for="kpSpecular">Specular count</label><input type="number" id="kpSpecular" min="0" onchange="updateKpTissueGrades()" /></div>
+                <div class="form-group"><label for="kpSpecular">Specular count</label><input type="number" id="kpSpecular" min="0" data-csp-change="updateKpTissueGrades" data-csp-args='[]' /></div>
                 <div class="form-group"><label for="kpEdema">Edema level</label>
-                    <select id="kpEdema" onchange="updateKpTissueGrades()"><option value="">—</option><option>None</option><option>Mild</option><option>Moderate</option><option>Severe</option></select>
+                    <select id="kpEdema" data-csp-change="updateKpTissueGrades" data-csp-args='[]'><option value="">—</option><option>None</option><option>Mild</option><option>Moderate</option><option>Severe</option></select>
                 </div>
                 <div class="form-group"><label for="kpClarity">Tissue clarity</label>
                     <select id="kpClarity"><option value="">—</option><option>Clear</option><option>Mild haze</option><option>Hazy</option><option>Opaque</option></select>

@@ -3,6 +3,31 @@
  * Phase 1 extraction from Cornea.html
  * Store names: use globals from js/storage.js (var STORE_KP_* — do not redeclare here).
  */
+
+function kpIdsEqual(a, b) {
+    if (a == null || b == null) return false;
+    if (a === b) return true;
+    return String(a) === String(b);
+}
+
+function kpFindById(list, id) {
+    return (list || []).find((x) => kpIdsEqual(x.id, id));
+}
+
+/** Preserve numeric IndexedDB keys and cloud UUID strings. */
+function kpParseRecordId(raw) {
+    if (raw == null || raw === '') return undefined;
+    const s = String(raw).trim();
+    if (/^\d+$/.test(s)) return parseInt(s, 10);
+    return s;
+}
+
+function kpCspBtn(cls, icon, action, args, label) {
+    const argJson = JSON.stringify(Array.isArray(args) ? args : [args]);
+    const labelHtml = label ? ` ${escapeHtml(label)}` : '';
+    return `<button type="button" class="${cls} btn-sm" data-csp-action="${action}" data-csp-args='${argJson}'><i class="fa-solid ${icon}"></i>${labelHtml}</button>`;
+}
+
 function renderKpPatientReadOnly(p) {
     const panel = document.getElementById('kpPatientReadOnlyDetail');
     const title = document.getElementById('kpPatientReadOnlyTitle');
@@ -65,7 +90,7 @@ function renderKpTissueReadOnly(t) {
 window.openKpPatientModal = async function(mode) {
     const lock = window.CorneaRecordLock;
     if (mode === 'edit' && window.__corneaCloudMode && window.CorneaApi?.isEnabled?.() && lock) {
-        const p = _kpPatientsCache.find(x => x.id === window._kpSelectedPatientId);
+        const p = kpFindById(_kpPatientsCache, window._kpSelectedPatientId);
         if (p?.uuid) {
             const editResult = await lock.beforeEditEntity(lock.ENTITY.kp_patient, p.uuid, { entityLabel: 'keratoplasty patient' });
             if (!editResult.ok) return;
@@ -77,7 +102,7 @@ window.openKpPatientModal = async function(mode) {
         resetKpPatientForm();
         if (title) title.textContent = 'Register Keratoplasty Patient';
     } else {
-        const p = _kpPatientsCache.find(x => x.id === window._kpSelectedPatientId);
+        const p = kpFindById(_kpPatientsCache, window._kpSelectedPatientId);
         if (!p) { alert('Select a patient from the table first.'); return; }
         document.getElementById('kpRecordId').value = p.id;
         Object.keys(p).forEach(k => {
@@ -93,7 +118,7 @@ window.openKpPatientModal = async function(mode) {
 window.openKpTissueModal = async function(mode) {
     const lock = window.CorneaRecordLock;
     if (mode === 'edit' && window.__corneaCloudMode && window.CorneaApi?.isEnabled?.() && lock) {
-        const t = _kpTissuesCache.find(x => x.id === window._kpSelectedTissueId);
+        const t = kpFindById(_kpTissuesCache, window._kpSelectedTissueId);
         if (t?.uuid) {
             const editResult = await lock.beforeEditEntity(lock.ENTITY.kp_tissue, t.uuid, { entityLabel: 'corneal tissue' });
             if (!editResult.ok) return;
@@ -105,7 +130,7 @@ window.openKpTissueModal = async function(mode) {
         resetKpTissueForm();
         if (title) title.textContent = 'Register Corneal Tissue';
     } else {
-        const t = _kpTissuesCache.find(x => x.id === window._kpSelectedTissueId);
+        const t = kpFindById(_kpTissuesCache, window._kpSelectedTissueId);
         if (!t) { alert('Select tissue from the table first.'); return; }
         document.getElementById('kpTissueRecordId').value = t.id;
         Object.keys(t).forEach(k => {
@@ -119,12 +144,12 @@ window.openKpTissueModal = async function(mode) {
 };
 
 window.viewKpPatientReadOnly = function(id) {
-    const p = _kpPatientsCache.find(x => x.id === id);
+    const p = kpFindById(_kpPatientsCache, id);
     if (p) { switchKpPanel('kpPatientsPanel'); renderKpPatientReadOnly(p); }
 };
 
 window.viewKpTissueReadOnly = function(id) {
-    const t = _kpTissuesCache.find(x => x.id === id);
+    const t = kpFindById(_kpTissuesCache, id);
     if (t) { switchKpPanel('kpTissuePanel'); renderKpTissueReadOnly(t); }
 };
 let _kpPatientsCache = [];
@@ -634,7 +659,7 @@ function collectKpPatientForm() {
     const data = { lastModified: new Date().toISOString() };
     ids.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
     const rid = document.getElementById('kpRecordId')?.value;
-    if (rid) data.id = parseInt(rid, 10);
+    if (rid) data.id = kpParseRecordId(rid);
     return data;
 }
 
@@ -648,7 +673,7 @@ function collectKpTissueForm() {
     const data = { lastModified: new Date().toISOString() };
     ids.forEach(id => { const el = document.getElementById(id); if (el) data[id] = el.value; });
     const rid = document.getElementById('kpTissueRecordId')?.value;
-    if (rid) data.id = parseInt(rid, 10);
+    if (rid) data.id = kpParseRecordId(rid);
     const og = calcOpticalGrade(data.kpDonorAge, data.kpSpecular);
     const tgNum = calcTherapeuticGrade(data.kpDonorAge, data.kpEdema, kpProcessingDays(data.kpPreservationDate), data.kpSpecular);
     data.kpOpticalGrade = og ? 'Grade ' + og : data.kpOpticalGrade;
@@ -663,7 +688,7 @@ window.saveKpPatient = async function() {
     const data = collectKpPatientForm();
     if (!data.kpPatientId) data.kpPatientId = await kpNextId(STORE_KP_PATIENTS, 'KP-P-');
     const all = await kpDbGetAll(STORE_KP_PATIENTS);
-    const dup = all.find(r => r.kpPatientId === data.kpPatientId && r.id !== data.id);
+    const dup = all.find(r => r.kpPatientId === data.kpPatientId && !kpIdsEqual(r.id, data.id));
     if (dup) { alert('Patient ID already exists.'); return; }
     if (!data.kpRegDate) data.kpRegDate = new Date().toISOString().split('T')[0];
     try {
@@ -673,7 +698,7 @@ window.saveKpPatient = async function() {
         closeEmrModal('kpPatientModal');
         resetKpPatientForm();
         await initKeratoplastyTab();
-        const saved = _kpPatientsCache.find(x => x.id === savedId);
+        const saved = kpFindById(_kpPatientsCache, savedId);
         if (saved) renderKpPatientReadOnly(saved);
     } catch (e) {
         alert('Error saving patient.');
@@ -686,7 +711,7 @@ window.saveKpTissue = async function() {
     const data = collectKpTissueForm();
     if (!data.kpTissueId) data.kpTissueId = await kpNextId(STORE_KP_TISSUES, 'KP-T-');
     const all = await kpDbGetAll(STORE_KP_TISSUES);
-    const dup = all.find(r => r.kpTissueId === data.kpTissueId && r.id !== data.id);
+    const dup = all.find(r => r.kpTissueId === data.kpTissueId && !kpIdsEqual(r.id, data.id));
     if (dup) { alert('Tissue ID already exists.'); return; }
     try {
         const savedId = await kpDbPut(STORE_KP_TISSUES, data);
@@ -695,7 +720,7 @@ window.saveKpTissue = async function() {
         closeEmrModal('kpTissueModal');
         resetKpTissueForm();
         await initKeratoplastyTab();
-        const saved = _kpTissuesCache.find(x => x.id === savedId);
+        const saved = kpFindById(_kpTissuesCache, savedId);
         if (saved) renderKpTissueReadOnly(saved);
     } catch (e) {
         alert('Error saving tissue.');
@@ -786,10 +811,10 @@ function renderKpPatientsTable() {
             <td>${p._matchScore ? kpBadgeMatch(p._matchScore) : '—'}</td>
             <td>${escapeHtml(p._recommendedTissue||'—')}</td>
             <td class="no-print records-actions">
-                <button type="button" class="btn-info btn-sm" onclick="viewKpPatientReadOnly(${p.id})"><i class="fa-solid fa-eye"></i></button>
-                <button type="button" class="btn-secondary btn-sm" onclick="editKpPatient(${p.id})"><i class="fa-solid fa-pen"></i></button>
-                <button type="button" class="btn-secondary btn-sm" onclick="matchKpPatient(${p.id})"><i class="fa-solid fa-link"></i></button>
-                <button type="button" class="btn-danger btn-sm" onclick="deleteKpPatient(${p.id})"><i class="fa-solid fa-trash"></i></button>
+                ${kpCspBtn('btn-info', 'fa-eye', 'viewKpPatientReadOnly', [p.id])}
+                ${kpCspBtn('btn-secondary', 'fa-pen', 'editKpPatient', [p.id])}
+                ${kpCspBtn('btn-secondary', 'fa-link', 'matchKpPatient', [p.id])}
+                ${kpCspBtn('btn-danger', 'fa-trash', 'deleteKpPatient', [p.id])}
             </td>
         </tr>
     `).join('');
@@ -826,9 +851,9 @@ function renderKpTissuesTable() {
             <td>${kpBadgeStatus(t.kpTissueStatus, 'tissue')} ${window.CorneaEyeBank?.quarantineBadge?.(t.kpQuarantineStatus) || ''}</td>
             <td style="font-size:0.78rem;">${escapeHtml(procs)}</td>
             <td class="no-print records-actions">
-                <button type="button" class="btn-info btn-sm" onclick="viewKpTissueReadOnly(${t.id})"><i class="fa-solid fa-eye"></i></button>
-                <button type="button" class="btn-secondary btn-sm" onclick="editKpTissue(${t.id})"><i class="fa-solid fa-pen"></i></button>
-                <button type="button" class="btn-danger btn-sm" onclick="deleteKpTissue(${t.id})"><i class="fa-solid fa-trash"></i></button>
+                ${kpCspBtn('btn-info', 'fa-eye', 'viewKpTissueReadOnly', [t.id])}
+                ${kpCspBtn('btn-secondary', 'fa-pen', 'editKpTissue', [t.id])}
+                ${kpCspBtn('btn-danger', 'fa-trash', 'deleteKpTissue', [t.id])}
             </td>
         </tr>`;
     }).join('');
@@ -886,8 +911,8 @@ window.runKpMatching = function() {
     const summary = document.getElementById('kpMatchProtocolSummary');
     if (!el || !out) return;
 
-    const pid = parseInt(el.value, 10);
-    const patient = _kpPatientsCache.find(p => p.id === pid);
+    const pid = kpParseRecordId(el.value);
+    const patient = kpFindById(_kpPatientsCache, pid);
 
     if (!patient) {
         if (summary) summary.innerHTML = '';
@@ -940,9 +965,7 @@ window.runKpMatching = function() {
             banner.innerHTML = `<div class="kp-best-banner">
                 <div><strong>Recommended tissue:</strong> ${escapeHtml(bestCompat.tissue.kpTissueId)}
                 ${kpBadgeMatch(bestCompat.score)} <span class="badge badge-compatible">Protocol compatible</span></div>
-                <button type="button" class="btn-primary btn-sm no-print" onclick="kpReserveTissueForPatient(${patient.id}, ${bestCompat.tissue.id})">
-                    <i class="fa-solid fa-bookmark"></i> Reserve for patient
-                </button>
+                ${kpCspBtn('btn-primary', 'fa-bookmark', 'kpReserveTissueForPatient', [patient.id, bestCompat.tissue.id], 'Reserve for patient')}
             </div>`;
         } else {
             banner.innerHTML = '<div class="kp-warning"><i class="fa-solid fa-triangle-exclamation"></i> No tissue fully meets protocol requirements. Review matches below for closest options.</div>';
@@ -950,14 +973,14 @@ window.runKpMatching = function() {
     }
 
     let html = '';
-    matches.forEach((m, idx) => {
+    matches.forEach((m) => {
         const cls = m.compatible ? m.label.toLowerCase() : 'contraindicated';
-        const isBest = bestCompat && m.tissue.id === bestCompat.tissue.id;
+        const isBest = bestCompat && kpIdsEqual(m.tissue.id, bestCompat.tissue.id);
         const compatBadge = m.compatible
             ? '<span class="badge badge-compatible">Compatible</span>'
             : '<span class="badge badge-incompatible">Not compatible</span>';
         const grades = kpGetTissueGrades(m.tissue);
-        html += `<div class="kp-match-card ${cls}${isBest ? ' best-match' : ''}" id="kp-match-${m.tissue.id}">
+        html += `<div class="kp-match-card ${cls}${isBest ? ' best-match' : ''}" id="kp-match-${escapeHtml(String(m.tissue.id))}">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;">
                 <div>
                     <strong>${escapeHtml(m.tissue.kpTissueId)}</strong>
@@ -974,8 +997,8 @@ window.runKpMatching = function() {
             ${renderKpMatchChecklist(m.checklist)}
             ${m.warnings.length ? '<p style="font-size:0.78rem;color:var(--warning);margin-top:8px;"><i class="fa-solid fa-triangle-exclamation"></i> ' + m.warnings.map(escapeHtml).join(' · ') + '</p>' : ''}
             <div class="no-print" style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-                ${m.compatible ? `<button type="button" class="btn-primary btn-sm" onclick="kpReserveTissueForPatient(${patient.id}, ${m.tissue.id})"><i class="fa-solid fa-bookmark"></i> Reserve</button>` : ''}
-                <button type="button" class="btn-secondary btn-sm" onclick="editKpTissue(${m.tissue.id})"><i class="fa-solid fa-pen"></i> View tissue</button>
+                ${m.compatible ? kpCspBtn('btn-primary', 'fa-bookmark', 'kpReserveTissueForPatient', [patient.id, m.tissue.id], 'Reserve') : ''}
+                ${kpCspBtn('btn-secondary', 'fa-pen', 'editKpTissue', [m.tissue.id], 'View tissue')}
             </div>
         </div>`;
     });
@@ -989,8 +1012,8 @@ window.runKpMatching = function() {
 };
 
 window.kpReserveTissueForPatient = async function(patientId, tissueId) {
-    const patient = _kpPatientsCache.find(p => p.id === patientId);
-    const tissue = _kpTissuesCache.find(t => t.id === tissueId);
+    const patient = kpFindById(_kpPatientsCache, patientId);
+    const tissue = kpFindById(_kpTissuesCache, tissueId);
     if (!patient || !tissue) return;
     if (!confirm(`Reserve tissue ${tissue.kpTissueId} for ${patient.kpFullName}?`)) return;
     tissue.kpTissueStatus = 'Reserved';
@@ -1013,8 +1036,8 @@ window.kpReserveTissueForPatient = async function(patientId, tissueId) {
 };
 
 window.printKpMatchReport = function() {
-    const pid = parseInt(document.getElementById('kpMatchPatientSelect')?.value, 10);
-    const patient = _kpPatientsCache.find(p => p.id === pid);
+    const pid = kpParseRecordId(document.getElementById('kpMatchPatientSelect')?.value);
+    const patient = kpFindById(_kpPatientsCache, pid);
     if (!patient) { alert('Select a patient first.'); return; }
     runKpMatching();
     const content = document.getElementById('kpMatchPanel')?.innerHTML;

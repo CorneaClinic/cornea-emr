@@ -150,9 +150,9 @@
         <div class="emr-toolbar" style="margin-bottom:10px;">
           <div class="emr-toolbar-title"><i class="fa-solid fa-link"></i> Eye bank traceability</div>
           <div class="emr-toolbar-actions no-print">
-            <button type="button" class="btn-secondary btn-sm" onclick="CorneaEyeBank.openCustodyModal(${tissue.id})"><i class="fa-solid fa-truck"></i> Custody event</button>
-            <button type="button" class="btn-secondary btn-sm" onclick="CorneaEyeBank.openColdChainModal(${tissue.id})"><i class="fa-solid fa-temperature-low"></i> Temp check</button>
-            <button type="button" class="btn-secondary btn-sm" onclick="CorneaEyeBank.exportTraceability(${tissue.id})"><i class="fa-solid fa-file-export"></i> Export CSV</button>
+            <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaEyeBank.openCustodyModal" data-csp-args='${JSON.stringify([tissue.id])}'><i class="fa-solid fa-truck"></i> Custody event</button>
+            <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaEyeBank.openColdChainModal" data-csp-args='${JSON.stringify([tissue.id])}'><i class="fa-solid fa-temperature-low"></i> Temp check</button>
+            <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaEyeBank.exportTraceability" data-csp-args='${JSON.stringify([tissue.id])}'><i class="fa-solid fa-file-export"></i> Export CSV</button>
           </div>
         </div>
         <div class="eye-bank-serology-grid">
