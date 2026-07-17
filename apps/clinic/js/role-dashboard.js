@@ -170,7 +170,7 @@
       actions: [
         action('Keratoplasty Centre', 'fa-hand-holding-medical', 'switchTab', ['keratoplastyTab'], { section: 'keratoplasty' }),
         action('Appointments', 'fa-calendar-days', 'switchTab', ['appointmentsTab'], { section: 'appointments_recall' }),
-        action('Surgical Centre', 'fa-hospital', 'navComingSoon', ['Surgical Centre'], { soon: true })
+        action('Surgical Centre', 'fa-hospital', 'switchTab', ['surgicalCentreTab'], { section: 'surgical_centre' })
       ],
       panels: ['surgical', 'system', 'announcements']
     },
@@ -224,7 +224,7 @@
       ],
       actions: [
         action('AI Surgical Advisor', 'fa-robot', 'navComingSoon', ['AI Surgical Advisor'], { soon: true }),
-        action('Surgical Centre', 'fa-hospital', 'navComingSoon', ['Surgical Centre'], { soon: true }),
+        action('Surgical Centre', 'fa-hospital', 'switchTab', ['surgicalCentreTab'], { section: 'surgical_centre' }),
         action('Research Dashboard', 'fa-chart-line', 'switchTab', ['researchTab'], { section: 'research_analytics' }),
         action('Keratitis Centre', 'fa-virus', 'switchTab', ['keratitisTab'], { section: 'keratitis_ulcer' })
       ],

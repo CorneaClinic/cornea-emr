@@ -7,18 +7,18 @@ window._kpSelectedPatientId = null;
 window._kpSelectedTissueId = null;
 
 var PAGE_META = {
-    dashboardTab: { title: 'Dashboard', subtitle: 'Overview & institute metrics' },
-    formTab:      { title: 'Patient Form', subtitle: 'Read-only visit record · use Edit to modify' },
-    recordsTab:   { title: 'Patient Records', subtitle: 'All stored patient visits' },
+    dashboardTab: { title: 'Dashboard', subtitle: 'Institute metrics, activity & quick actions' },
+    formTab:      { title: 'General Cornea Clinic', subtitle: 'Patient registration and visit documentation' },
+    recordsTab:   { title: 'Patient Records', subtitle: 'Search and open stored patient visits' },
     auditTrailTab:{ title: 'Audit Trail', subtitle: 'Who changed which patient records' },
     flowTab:      { title: 'Patient Flow', subtitle: 'Today\'s patients by clinic station' },
     appointmentsTab: { title: 'Appointments & Recall', subtitle: 'Day schedule and follow-up recall queue' },
-    databaseTab:  { title: 'Database Management', subtitle: 'Export, import & manage local data' },
-    keratoplastyTab: { title: 'Keratoplasty Register', subtitle: 'Patient register, tissue inventory & matching' },
-    keratitisTab: { title: 'Keratitis & Ulcer Service', subtitle: 'Microbial keratitis workflow, cultures & daily monitoring' },
-    dryEyeTab: { title: 'Dry Eye / OSD Clinic', subtitle: 'OSD register, serial assessments & OSD index scoring' },
-    researchTab: { title: 'Research & Outcomes', subtitle: 'Registry analytics, cohort export, FHIR interchange & graft survival' },
-    kcRegistryTab: { title: 'KC & CXL Registry', subtitle: 'Keratoconus programme, serial topography & cross-linking' },
+    databaseTab:  { title: 'Database & Settings', subtitle: 'Export, import, users & local data management' },
+    keratoplastyTab: { title: 'Keratoplasty Centre', subtitle: 'Patient register, tissue inventory & matching' },
+    keratitisTab: { title: 'Keratitis & Ulcer Centre', subtitle: 'Microbial keratitis workflow, cultures & daily monitoring' },
+    dryEyeTab: { title: 'Dry Eye & Ocular Surface Centre', subtitle: 'OSD register, serial assessments & OSD index scoring' },
+    researchTab: { title: 'Research Dashboard', subtitle: 'Registry analytics, cohort export, FHIR interchange & graft survival' },
+    kcRegistryTab: { title: 'KC & Cross-Linking Centre', subtitle: 'Keratoconus programme, serial topography & cross-linking' },
     clinicalMediaTab: { title: 'Clinical Media', subtitle: 'Imaging library, DICOM ingest, timeline & comparison' }
 };
 
@@ -110,11 +110,10 @@ window.switchTab = function(tabId) {
         target.setAttribute('aria-hidden', 'false');
     }
 
-    const navItem = document.querySelector(`.nav-item[data-tab="${tabId}"]`);
-    if (navItem) {
+    document.querySelectorAll(`.nav-item[data-tab="${tabId}"]`).forEach((navItem) => {
         navItem.classList.add('active');
         navItem.setAttribute('aria-current', 'page');
-    }
+    });
 
     const meta = PAGE_META[tabId];
     if (meta) {
@@ -141,6 +140,9 @@ window.switchTab = function(tabId) {
     if (tabId === 'appointmentsTab' && typeof initAppointmentsTab === 'function') {
         initAppointmentsTab();
     }
+    if (tabId === 'surgicalCentreTab' && typeof initSurgicalCentreTab === 'function') {
+        initSurgicalCentreTab();
+    }
 
     if (tabId === 'formTab') {
         requestAnimationFrame(() => {
@@ -158,7 +160,13 @@ window.switchTab = function(tabId) {
     if (tabId === 'databaseTab') {
         loadIcdApiSettingsIntoForm();
         renderIcdReadOnlyView();
-        if (window.CorneaAdminUsers?.refresh) window.CorneaAdminUsers.refresh();
+        if (window.CorneaAdminUsers) {
+            if (typeof window.CorneaAdminUsers.init === 'function') {
+                window.CorneaAdminUsers.init();
+            } else if (window.CorneaAdminUsers.refresh) {
+                window.CorneaAdminUsers.refresh();
+            }
+        }
         if (window.CorneaOfflineAuth?.renderOfflineUsersAdmin) window.CorneaOfflineAuth.renderOfflineUsersAdmin();
     }
     if (tabId === 'keratoplastyTab') {
@@ -183,6 +191,14 @@ window.switchTab = function(tabId) {
     }
 
     if (window.innerWidth < 900) closeSidebar();
+    if (window.CorneaSidebarNav?.onTabChange) {
+        window.CorneaSidebarNav.onTabChange(tabId);
+    }
+};
+
+window.navComingSoon = function (moduleName) {
+    const name = moduleName || 'This module';
+    alert(`${name} is reserved in the navigation for a future release and is not available yet.`);
 };
 
 function toggleSidebar() {

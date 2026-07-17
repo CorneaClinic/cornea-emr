@@ -15,6 +15,7 @@
     auditTrailTab: 'audit_trail',
     flowTab: 'patient_flow',
     appointmentsTab: 'appointments_recall',
+    surgicalCentreTab: 'surgical_centre',
     keratoplastyTab: 'keratoplasty',
     keratitisTab: 'keratitis_ulcer',
     dryEyeTab: 'dry_eye_osd',

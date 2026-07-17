@@ -167,4 +167,60 @@ export async function updateOrCase(req, id, body) {
   return mapOrCase(rows[0]);
 }
 
+function timeToMinutes(value) {
+  if (!value) return null;
+  const [h, m] = String(value).slice(0, 5).split(':').map(Number);
+  if (!Number.isFinite(h) || !Number.isFinite(m)) return null;
+  return h * 60 + m;
+}
+
+function rangesOverlap(startA, durA, startB, durB) {
+  if (startA == null || startB == null) return true;
+  const endA = startA + (durA || 60);
+  const endB = startB + (durB || 60);
+  return startA < endB && startB < endA;
+}
+
+/** Prevent double-booking theatre or surgeon on the same day. */
+export async function checkOrScheduleConflict(clinicId, opts = {}) {
+  const date = parseDate(opts.procedureDate, 'procedureDate', true);
+  const theatre = optionalString(opts.theatre, 'theatre');
+  const surgeonName = optionalString(opts.surgeonName, 'surgeonName');
+  const startMin = timeToMinutes(opts.startTime);
+  const duration = optionalInt(opts.durationMinutes, 'durationMinutes') ?? 60;
+  const excludeCaseId = opts.excludeCaseId ? requireUuid(opts.excludeCaseId, 'excludeCaseId') : null;
+
+  if (!theatre && !surgeonName) return null;
+
+  const { rows } = await query(
+    `
+      SELECT id, case_number, theatre, surgeon_name, start_time, duration_minutes
+      FROM or_schedule_cases
+      WHERE clinic_id = $1
+        AND procedure_date = $2
+        AND status <> 'cancelled'
+        AND ($3::uuid IS NULL OR id <> $3)
+        AND (
+          ($4::text IS NOT NULL AND theatre = $4)
+          OR ($5::text IS NOT NULL AND surgeon_name = $5)
+        )
+    `,
+    [clinicId, date, excludeCaseId, theatre, surgeonName]
+  );
+
+  for (const row of rows) {
+    const otherStart = timeToMinutes(row.start_time);
+    if (rangesOverlap(startMin, duration, otherStart, row.duration_minutes)) {
+      const who =
+        theatre && row.theatre === theatre
+          ? `theatre ${theatre}`
+          : `surgeon ${surgeonName || row.surgeon_name}`;
+      throw new ValidationError(
+        `Schedule conflict: ${who} already booked on ${date} (${row.case_number}).`
+      );
+    }
+  }
+  return null;
+}
+
 export { PROCEDURE_TYPES, STATUSES };

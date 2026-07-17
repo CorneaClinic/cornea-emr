@@ -113,21 +113,23 @@
             <button type="button" class="nav-accordion-toggle" id="navToggleSurgical" data-csp-action="toggleNavSection" data-csp-args='["surgical"]' aria-expanded="false" aria-controls="navPanelSurgical">
                 <i class="fa-solid fa-hospital" aria-hidden="true"></i>
                 <span>Surgical Services</span>
-                <span class="nav-soon-badge">Soon</span>
                 <i class="fa-solid fa-chevron-down nav-accordion-chevron" aria-hidden="true"></i>
             </button>
             <div class="nav-accordion-panel" id="navPanelSurgical" role="region" aria-labelledby="navToggleSurgical" hidden>
-                <p class="nav-placeholder-note">Coming Soon — architecture reserved</p>
-                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Surgical Dashboard"]' data-nav-label="Surgical Dashboard" aria-disabled="true"><i class="fa-solid fa-gauge" aria-hidden="true"></i><span class="nav-item-label">Surgical Dashboard</span></button>
-                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["AI Surgical Advisor"]' data-nav-label="AI Surgical Advisor" aria-disabled="true"><i class="fa-solid fa-robot" aria-hidden="true"></i><span class="nav-item-label">AI Surgical Advisor</span></button>
-                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Pre-operative Clinic"]' data-nav-label="Pre-operative Clinic" aria-disabled="true"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i><span class="nav-item-label">Pre-operative Clinic</span></button>
-                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["OT Scheduling"]' data-nav-label="OT Scheduling" aria-disabled="true"><i class="fa-solid fa-calendar-check" aria-hidden="true"></i><span class="nav-item-label">OT Scheduling</span><span class="nav-badge" data-nav-badge="pending-surgery" hidden></span></button>
+                <button type="button" class="nav-item" data-csp-action="switchTab" data-csp-args='["surgicalCentreTab"]' data-tab="surgicalCentreTab" data-emr-section="surgical_centre" data-nav-key="surgical-centre" data-nav-label="Surgical Centre" data-nav-parent="surgical" id="nav-surgicalCentreTab" aria-controls="surgicalCentreTab">
+                    <i class="fa-solid fa-hospital-user" aria-hidden="true"></i>
+                    <span class="nav-item-label">Surgical Centre</span>
+                    <span class="nav-badge" data-nav-badge="surgical-alerts" hidden></span>
+                </button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Surgical Waiting List"]' data-nav-label="Surgical Waiting List" aria-disabled="true"><i class="fa-solid fa-list-ul" aria-hidden="true"></i><span class="nav-item-label">Surgical Waiting List</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Pre-operative"]' data-nav-label="Pre-operative" aria-disabled="true"><i class="fa-solid fa-clipboard-check" aria-hidden="true"></i><span class="nav-item-label">Pre-operative</span></button>
                 <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Block Room"]' data-nav-label="Block Room" aria-disabled="true"><i class="fa-solid fa-syringe" aria-hidden="true"></i><span class="nav-item-label">Block Room</span></button>
                 <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Operating Theatre"]' data-nav-label="Operating Theatre" aria-disabled="true"><i class="fa-solid fa-bed-pulse" aria-hidden="true"></i><span class="nav-item-label">Operating Theatre</span></button>
-                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Recovery"]' data-nav-label="Recovery" aria-disabled="true"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i><span class="nav-item-label">Recovery</span></button>
-                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Post-op"]' data-nav-label="Post-op" aria-disabled="true"><i class="fa-solid fa-user-doctor" aria-hidden="true"></i><span class="nav-item-label">Post-op</span></button>
-                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Quality Dashboard"]' data-nav-label="Quality Dashboard" aria-disabled="true"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span class="nav-item-label">Quality Dashboard</span></button>
-                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Eye Bank"]' data-nav-label="Eye Bank" aria-disabled="true"><i class="fa-solid fa-hand-holding-heart" aria-hidden="true"></i><span class="nav-item-label">Eye Bank</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Recovery & Discharge"]' data-nav-label="Recovery & Discharge" aria-disabled="true"><i class="fa-solid fa-heart-pulse" aria-hidden="true"></i><span class="nav-item-label">Recovery &amp; Discharge</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Post-operative"]' data-nav-label="Post-operative" aria-disabled="true"><i class="fa-solid fa-user-doctor" aria-hidden="true"></i><span class="nav-item-label">Post-operative</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Surgical Registry"]' data-nav-label="Surgical Registry" aria-disabled="true"><i class="fa-solid fa-book-medical" aria-hidden="true"></i><span class="nav-item-label">Surgical Registry</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["Quality & Outcomes"]' data-nav-label="Quality & Outcomes" aria-disabled="true"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i><span class="nav-item-label">Quality &amp; Outcomes</span></button>
+                <button type="button" class="nav-item nav-item-soon" data-csp-action="navComingSoon" data-csp-args='["AI Surgical Advisor"]' data-nav-label="AI Surgical Advisor" aria-disabled="true"><i class="fa-solid fa-robot" aria-hidden="true"></i><span class="nav-item-label">AI Surgical Advisor</span></button>
             </div>
         </div>
 
@@ -1728,6 +1730,136 @@
             </div>
         </div>
 
+        <!-- ===== SURGICAL CENTRE TAB (PHASE 1 FOUNDATION) ===== -->
+        <div id="surgicalCentreTab" class="tab-content" role="tabpanel" aria-labelledby="nav-surgicalCentreTab" aria-hidden="true">
+            <div class="kp-subnav no-print" role="tablist" aria-label="Surgical Centre sections">
+                <button type="button" class="kp-subnav-btn surgical-subnav-btn active" data-surgical-panel="surgicalDashboardPanel" data-csp-action="CorneaSurgicalCentre.switchPanel" data-csp-args='["dashboard"]'>
+                    <i class="fa-solid fa-gauge" aria-hidden="true"></i> Command dashboard
+                </button>
+                <button type="button" class="kp-subnav-btn surgical-subnav-btn" data-surgical-panel="surgicalWaitingPanel" data-csp-action="CorneaSurgicalCentre.switchPanel" data-csp-args='["waiting"]'>
+                    <i class="fa-solid fa-list-check" aria-hidden="true"></i> Surgical waiting list
+                </button>
+                <button type="button" class="kp-subnav-btn surgical-subnav-btn" data-surgical-panel="surgicalEpisodesPanel" data-csp-action="CorneaSurgicalCentre.switchPanel" data-csp-args='["episodes"]'>
+                    <i class="fa-solid fa-route" aria-hidden="true"></i> Surgical episodes
+                </button>
+                <button type="button" class="kp-subnav-btn surgical-subnav-btn" data-surgical-panel="surgicalPreopPanel" data-csp-action="CorneaSurgicalCentre.switchPanel" data-csp-args='["preop"]'>
+                    <i class="fa-solid fa-clipboard-check" aria-hidden="true"></i> Pre-operative
+                </button>
+                <button type="button" class="kp-subnav-btn surgical-subnav-btn" data-surgical-panel="surgicalSchedulingPanel" data-csp-action="CorneaSurgicalCentre.switchPanel" data-csp-args='["scheduling"]'>
+                    <i class="fa-solid fa-calendar-check" aria-hidden="true"></i> OT scheduling
+                </button>
+            </div>
+
+            <div id="surgicalDashboardPanel" class="kp-panel surgical-panel active">
+                <div id="surgicalCentreOfflineBanner" class="registry-offline-banner no-print" role="status" aria-live="polite" hidden></div>
+                <div class="card section-theme-kp-alerts">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon red"><i class="fa-solid fa-gauge-high"></i></div>
+                            <span class="card-title">Surgical command dashboard</span>
+                        </div>
+                        <div class="emr-toolbar-actions no-print">
+                            <input type="date" id="surgicalDatePicker" onchange="CorneaSurgicalCentre.refreshDashboard()" class="u-csp-20" />
+                            <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaSurgicalCentre.refreshDashboard" data-csp-args='[]'><i class="fa-solid fa-rotate"></i> Refresh</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="kp-stats-grid" id="surgicalDashboardStats"></div>
+                        <h4 class="u-csp-36 mt-3">Safety alerts</h4>
+                        <div id="surgicalSafetyFlags" class="form-hint">No active alerts.</div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="surgicalWaitingPanel" class="kp-panel surgical-panel">
+                <div class="card section-theme-kp-patients">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon purple"><i class="fa-solid fa-list-check"></i></div>
+                            <span class="card-title">Surgical waiting list</span>
+                        </div>
+                        <div class="search-box no-print">
+                            <i class="fa-solid fa-magnifying-glass"></i>
+                            <input type="text" id="surgicalWaitingSearch" placeholder="Search patient / MRN / procedure" onkeyup="CorneaSurgicalCentre.renderWaitingList()">
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-scroll">
+                            <table class="records-table">
+                                <thead><tr><th>Episode</th><th>Patient</th><th>Diagnosis</th><th>Eye</th><th>Procedure</th><th>Priority</th><th>Stage</th><th>Status</th><th class="no-print">Actions</th></tr></thead>
+                                <tbody id="surgicalWaitingBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="surgicalEpisodesPanel" class="kp-panel surgical-panel">
+                <div class="card section-theme-kp-match">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon indigo"><i class="fa-solid fa-route"></i></div>
+                            <span class="card-title">Longitudinal surgical episodes</span>
+                        </div>
+                        <div class="emr-toolbar-actions no-print">
+                            <button type="button" class="btn-primary btn-sm" data-csp-action="CorneaSurgicalCentre.openNewEpisodeModal" data-csp-args='[]'><i class="fa-solid fa-plus"></i> New episode</button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-scroll">
+                            <table class="records-table">
+                                <thead><tr><th>Episode ID</th><th>Patient</th><th>Current stage</th><th>Responsible surgeon</th><th>Workflow</th><th>Safety</th><th class="no-print">Actions</th></tr></thead>
+                                <tbody id="surgicalEpisodesBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="surgicalPreopPanel" class="kp-panel surgical-panel" hidden>
+                <div class="card section-theme-kp-alerts">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon red"><i class="fa-solid fa-clipboard-check"></i></div>
+                            <span class="card-title">Pre-operative assessment queue</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint">Episodes awaiting or in pre-operative assessment. Open an episode to record fit-for-surgery status and complete the safety checklist.</p>
+                        <div class="table-scroll">
+                            <table class="records-table">
+                                <thead><tr><th>Episode</th><th>Patient</th><th>Procedure</th><th>Pre-op status</th><th>Checklist</th><th class="no-print">Actions</th></tr></thead>
+                                <tbody id="surgicalPreopBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="surgicalSchedulingPanel" class="kp-panel surgical-panel" hidden>
+                <div class="card section-theme-kp-match">
+                    <div class="card-header">
+                        <div class="card-header-left">
+                            <div class="card-icon indigo"><i class="fa-solid fa-calendar-check"></i></div>
+                            <span class="card-title">OT scheduling</span>
+                        </div>
+                        <div class="emr-toolbar-actions no-print">
+                            <input type="date" id="surgicalScheduleDate" onchange="CorneaSurgicalCentre.renderSchedulingPanel()" class="u-csp-20" />
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <p class="form-hint">Schedule episodes into the existing OR calendar. Conflicts on theatre or surgeon are blocked.</p>
+                        <div class="table-scroll">
+                            <table class="records-table">
+                                <thead><tr><th>Episode</th><th>Patient</th><th>Procedure</th><th>Surgeon</th><th>Scheduled</th><th>OR case</th><th class="no-print">Actions</th></tr></thead>
+                                <tbody id="surgicalSchedulingBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ===== RECORDS TAB ===== -->
         <div id="recordsTab" class="tab-content" role="tabpanel" aria-labelledby="nav-recordsTab" aria-hidden="true">
             <div class="card mb-4 section-theme-records" id="section-records">
@@ -3057,6 +3189,131 @@
     </div>
 </div>
 
+<div id="surgicalEpisodeModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="surgicalEpisodeModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="surgicalEpisodeModalTitle"><i class="fa-solid fa-route"></i> Surgical episode</h2>
+            <button type="button" class="emr-modal-close" data-csp-action="closeEmrModal" data-csp-args='["surgicalEpisodeModal"]' aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="surgicalEpisodeId">
+            <div id="surgicalEpisodeSummary" class="mb-3"></div>
+            <h4>Stage timeline</h4>
+            <div id="surgicalStageTimeline" class="surgical-stage-timeline mb-3"></div>
+            <div id="surgicalEpisodeAlerts" class="mb-3"></div>
+            <div id="surgicalRequiredActions" class="mb-3"></div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" data-csp-action="CorneaSurgicalCentre.openPreopModal" data-csp-args='[]'>Pre-op assessment</button>
+            <button type="button" class="btn-secondary" data-csp-action="CorneaSurgicalCentre.openSafetyModal" data-csp-args='[]'>Safety checklist</button>
+            <button type="button" class="btn-secondary" data-csp-action="CorneaSurgicalCentre.openScheduleModal" data-csp-args='[]'>Schedule OT</button>
+            <button type="button" class="btn-primary" data-csp-action="CorneaSurgicalCentre.advanceCurrentEpisode" data-csp-args='[]'><i class="fa-solid fa-forward-step"></i> Advance stage</button>
+            <button type="button" class="btn-secondary" data-csp-action="closeEmrModal" data-csp-args='["surgicalEpisodeModal"]'>Close</button>
+        </div>
+    </div>
+</div>
+
+<div id="surgicalNewEpisodeModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="surgicalNewEpisodeModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="surgicalNewEpisodeModalTitle"><i class="fa-solid fa-plus"></i> New surgical episode</h2>
+            <button type="button" class="emr-modal-close" data-csp-action="closeEmrModal" data-csp-args='["surgicalNewEpisodeModal"]' aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <div class="kp-form-grid">
+                <div class="form-group"><label class="required" for="surgicalNewPatientName">Patient name</label><input type="text" id="surgicalNewPatientName" required /></div>
+                <div class="form-group"><label for="surgicalNewPatientMrn">MRN</label><input type="text" id="surgicalNewPatientMrn" /></div>
+                <div class="form-group"><label class="required" for="surgicalNewDiagnosis">Diagnosis</label><input type="text" id="surgicalNewDiagnosis" required /></div>
+                <div class="form-group"><label class="required" for="surgicalNewProcedure">Planned procedure</label><input type="text" id="surgicalNewProcedure" placeholder="e.g. PK, DALK" required /></div>
+                <div class="form-group"><label for="surgicalNewEye">Eye</label><select id="surgicalNewEye"><option value="OD">OD</option><option value="OS">OS</option><option value="OU">OU</option></select></div>
+                <div class="form-group"><label for="surgicalNewPriority">Priority</label><select id="surgicalNewPriority"><option value="ELECTIVE">Elective</option><option value="PRIORITY">Priority</option><option value="URGENT">Urgent</option><option value="EMERGENCY">Emergency</option></select></div>
+                <div class="form-group"><label for="surgicalNewSurgeon">Surgeon</label><input type="text" id="surgicalNewSurgeon" /></div>
+                <div class="form-group span-2"><label for="surgicalNewNotes">Notes</label><textarea id="surgicalNewNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" data-csp-action="closeEmrModal" data-csp-args='["surgicalNewEpisodeModal"]'>Cancel</button>
+            <button type="button" class="btn-primary" data-csp-action="CorneaSurgicalCentre.saveNewEpisode" data-csp-args='[]'>Create episode</button>
+        </div>
+    </div>
+</div>
+
+<div id="surgicalPreopModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="surgicalPreopModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="surgicalPreopModalTitle"><i class="fa-solid fa-clipboard-check"></i> Pre-operative assessment</h2>
+            <button type="button" class="emr-modal-close" data-csp-action="closeEmrModal" data-csp-args='["surgicalPreopModal"]' aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="surgicalPreopEpisodeId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label class="required" for="surgicalPreopFit">Fit for surgery</label><select id="surgicalPreopFit"><option value="FIT_FOR_SURGERY">Fit for surgery</option><option value="FIT_WITH_CONDITIONS">Fit with conditions</option><option value="REQUIRES_REVIEW">Requires review</option><option value="NOT_FIT">Not fit</option></select></div>
+                <div class="form-group"><label for="surgicalPreopAnaesthesia">Anaesthesia plan</label><input type="text" id="surgicalPreopAnaesthesia" /></div>
+                <div class="form-group span-2"><label for="surgicalPreopMedical">Medical history</label><textarea id="surgicalPreopMedical" rows="2"></textarea></div>
+                <div class="form-group span-2"><label for="surgicalPreopMeds">Medications</label><textarea id="surgicalPreopMeds" rows="2"></textarea></div>
+                <div class="form-group span-2"><label for="surgicalPreopAllergies">Allergies</label><textarea id="surgicalPreopAllergies" rows="2"></textarea></div>
+                <div class="form-group"><label><input type="checkbox" id="surgicalPreopAllergyAlert" /> Allergy alert</label></div>
+                <div class="form-group span-2"><label for="surgicalPreopInvestigations">Investigations</label><textarea id="surgicalPreopInvestigations" rows="2"></textarea></div>
+                <div class="form-group span-2"><label for="surgicalPreopConditions">Conditions / caveats</label><textarea id="surgicalPreopConditions" rows="2"></textarea></div>
+                <div class="form-group span-2"><label for="surgicalPreopNotes">Notes</label><textarea id="surgicalPreopNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" data-csp-action="closeEmrModal" data-csp-args='["surgicalPreopModal"]'>Cancel</button>
+            <button type="button" class="btn-primary" data-csp-action="CorneaSurgicalCentre.savePreop" data-csp-args='[]'>Save assessment</button>
+        </div>
+    </div>
+</div>
+
+<div id="surgicalSafetyModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="surgicalSafetyModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="surgicalSafetyModalTitle"><i class="fa-solid fa-shield-heart"></i> Pre-operative safety checklist</h2>
+            <button type="button" class="emr-modal-close" data-csp-action="closeEmrModal" data-csp-args='["surgicalSafetyModal"]' aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="surgicalSafetyEpisodeId">
+            <div id="surgicalSafetyChecklistForm"></div>
+            <hr class="my-3" />
+            <h4>Emergency override</h4>
+            <p class="form-hint">Use only when mandatory items cannot be completed before OT. Reason is audited.</p>
+            <div class="kp-form-grid">
+                <div class="form-group span-2"><label for="surgicalOverrideReason">Override reason</label><textarea id="surgicalOverrideReason" rows="2"></textarea></div>
+                <div class="form-group"><label><input type="checkbox" id="surgicalOverrideEmergency" /> Emergency case</label></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" data-csp-action="CorneaSurgicalCentre.applyOverride" data-csp-args='[]'>Apply override</button>
+            <button type="button" class="btn-secondary" data-csp-action="closeEmrModal" data-csp-args='["surgicalSafetyModal"]'>Cancel</button>
+            <button type="button" class="btn-primary" data-csp-action="CorneaSurgicalCentre.saveSafetyChecklist" data-csp-args='[]'>Save checklist</button>
+        </div>
+    </div>
+</div>
+
+<div id="surgicalScheduleModal" class="emr-modal-overlay" aria-hidden="true">
+    <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="surgicalScheduleModalTitle">
+        <div class="emr-modal-header">
+            <h2 id="surgicalScheduleModalTitle"><i class="fa-solid fa-calendar-check"></i> Schedule OT</h2>
+            <button type="button" class="emr-modal-close" data-csp-action="closeEmrModal" data-csp-args='["surgicalScheduleModal"]' aria-label="Close">&times;</button>
+        </div>
+        <div class="emr-modal-body">
+            <input type="hidden" id="surgicalScheduleEpisodeId">
+            <div class="kp-form-grid">
+                <div class="form-group"><label class="required" for="surgicalScheduleDate">Procedure date</label><input type="date" id="surgicalScheduleDateInput" required /></div>
+                <div class="form-group"><label for="surgicalScheduleTime">Start time</label><input type="time" id="surgicalScheduleTime" /></div>
+                <div class="form-group"><label for="surgicalScheduleDuration">Duration (min)</label><input type="number" id="surgicalScheduleDuration" value="60" min="15" max="480" /></div>
+                <div class="form-group"><label for="surgicalScheduleTheatre">Theatre</label><select id="surgicalScheduleTheatre"><option>OR-1</option><option>OR-2</option><option>OR-3</option></select></div>
+                <div class="form-group"><label for="surgicalScheduleSurgeon">Surgeon</label><input type="text" id="surgicalScheduleSurgeon" /></div>
+                <div class="form-group span-2"><label for="surgicalScheduleNotes">Notes</label><textarea id="surgicalScheduleNotes" rows="2"></textarea></div>
+            </div>
+        </div>
+        <div class="emr-modal-footer">
+            <button type="button" class="btn-secondary" data-csp-action="closeEmrModal" data-csp-args='["surgicalScheduleModal"]'>Cancel</button>
+            <button type="button" class="btn-primary" data-csp-action="CorneaSurgicalCentre.saveSchedule" data-csp-args='[]'>Save to OR schedule</button>
+        </div>
+    </div>
+</div>
+
 <div id="orCaseModal" class="emr-modal-overlay" aria-hidden="true">
     <div class="emr-modal emr-modal-lg" role="dialog" aria-modal="true" aria-labelledby="orCaseModalTitle">
         <div class="emr-modal-header">
@@ -3445,6 +3702,7 @@
 <script src="cornea-patient-flow.js"></script>
 <script src="cornea-appointments.js"></script>
 <script src="cornea-or-schedule.js"></script>
+<script src="cornea-surgical-centre.js"></script>
 <script src="cornea-admin-users.js"></script>
 <script src="cornea-record-lock.js"></script>
 <script src="cornea-sso.js"></script>

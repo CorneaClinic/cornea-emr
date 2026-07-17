@@ -31,6 +31,7 @@ import teachingCasesRouter from './teaching-cases.js';
 import drawingRouter from './drawing.js';
 import icdRouter from './icd.js';
 import dashboardRouter from './dashboard.js';
+import surgicalCentreRouter from './surgical-centre.js';
 import { createEntityMediaRouter } from './entityMedia.js';
 import { PERMISSIONS } from '../core/permissions.js';
 
@@ -73,6 +74,7 @@ router.use('/appointments', appointmentsRouter);
 router.use('/dicom', dicomRouter);
 router.use('/dry-eye-registry', dryEyeRegistryRouter);
 router.use('/or-schedule', orScheduleRouter);
+router.use('/surgical-centre', surgicalCentreRouter);
 router.use('/record-locks', recordLocksRouter);
 router.use('/ectasia-ai', ectasiaAiRouter);
 router.use('/eye-bank', eyeBankRouter);

@@ -59,6 +59,7 @@ window.fetchInstituteKpis = async function () {
         const section = document.getElementById('instituteKpisSection');
         if (section) section.removeAttribute('hidden');
         if (hint) hint.removeAttribute('hidden');
+        window.CorneaRoleDashboard?.syncWidgetValues?.();
         return;
     }
     try {
@@ -66,15 +67,20 @@ window.fetchInstituteKpis = async function () {
         const data = res?.data;
         window.applyCloudVisitStats(data);
         window.renderInstituteKpis(data);
+        window.CorneaRoleDashboard?.syncWidgetValues?.();
     } catch (err) {
         console.warn('[Dashboard] Institute KPIs:', err);
         window.renderInstituteKpis(null);
+        window.CorneaRoleDashboard?.syncWidgetValues?.();
     }
 };
 
 window.updateDashboardStats = async function() {
     if (!window.db) {
         window.fetchInstituteKpis().catch(() => {});
+        if (window.CorneaRoleDashboard?.onDashboardRefresh) {
+            window.CorneaRoleDashboard.onDashboardRefresh();
+        }
         return;
     }
     const records = window.CorneaSecurePatients?.getAll
@@ -113,5 +119,47 @@ window.updateDashboardStats = async function() {
                 : '—';
         }
 
+        const recentList = document.getElementById('dashRecentPatientsList');
+        const recentHint = document.getElementById('dashRecentPatientsHint');
+        if (recentList) {
+            const sorted = [...records].sort((a, b) =>
+                String(b.lastModified || b.visitDate || '').localeCompare(String(a.lastModified || a.visitDate || ''))
+            ).slice(0, 5);
+            if (!sorted.length) {
+                recentList.innerHTML = '';
+                if (recentHint) recentHint.removeAttribute('hidden');
+            } else {
+                if (recentHint) recentHint.setAttribute('hidden', 'hidden');
+                recentList.innerHTML = sorted.map((r) => {
+                    const name = escapeHtml(r.fullName || r.patientId || 'Patient');
+                    const when = escapeHtml(r.visitDate || '—');
+                    const id = Number(r.id);
+                    const open = Number.isFinite(id)
+                        ? ` data-csp-action="viewRecordReadOnly" data-csp-args='[${id},"records"]'`
+                        : '';
+                    return `<li><button type="button" class="dashboard-list-link"${open}><strong>${name}</strong> <span>${when}</span></button></li>`;
+                }).join('');
+            }
+        }
+
+        const sysDb = document.getElementById('dashSysDb');
+        const sysCloud = document.getElementById('dashSysCloud');
+        const sysSession = document.getElementById('dashSysSession');
+        if (sysDb) sysDb.textContent = 'Active';
+        if (sysCloud) {
+            sysCloud.textContent = window.__corneaCloudMode && window.CorneaApi?.isEnabled?.()
+                ? 'Connected'
+                : 'Offline / local';
+        }
+        if (sysSession) {
+            const user = window.__corneaUser?.email
+                || window.CorneaOfflineAuth?.getCurrentUser?.()?.username
+                || '—';
+            sysSession.textContent = user;
+        }
+
         window.fetchInstituteKpis().catch(() => {});
+        if (window.CorneaRoleDashboard?.onDashboardRefresh) {
+            window.CorneaRoleDashboard.onDashboardRefresh();
+        }
 };
