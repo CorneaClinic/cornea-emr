@@ -1256,6 +1256,9 @@
         if (!name) { alert('Full name is required.'); return; }
 
         const data = global.collectKpPatientForm?.() || {};
+        const mrn = global.CorneaPatientId?.requireMrnForRegistry?.('kpEmrPatientMrn')
+            || document.getElementById('kpEmrPatientMrn')?.value?.trim();
+        if (!mrn) return;
         if (!data.kpPatientId && global.kpNextId) {
           data.kpPatientId = await global.kpNextId(STORE_KP_PATIENTS, 'KP-P-');
         }

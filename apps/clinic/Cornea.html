@@ -629,7 +629,7 @@
                     <div class="section-grid">
                         <div class="form-group">
                             <label class="required" for="patientId">Patient ID</label>
-                            <input type="text" id="patientId" placeholder="e.g. CC-2024-001" required />
+                            <input type="text" id="patientId" placeholder="e.g. CC-2026-0001" required />
                             <p id="patientIdAutofillHint" class="form-hint" hidden></p>
                         </div>
                         <div class="form-group">
@@ -2416,7 +2416,7 @@
                             <table class="records-table">
                                 <thead>
                                     <tr>
-                                        <th>ID</th><th>Name</th><th>Diagnosis</th><th>Procedure</th><th>Prognosis</th>
+                                        <th>Patient ID</th><th>Registry ID</th><th>Name</th><th>Diagnosis</th><th>Procedure</th><th>Prognosis</th>
                                         <th>Urgency</th><th>Status</th><th>Match</th><th>Recommended</th><th class="no-print">Actions</th>
                                     </tr>
                                 </thead>
@@ -2798,7 +2798,8 @@
         <div class="emr-modal-body">
             <input type="hidden" id="kpRecordId">
             <div class="kp-form-grid" id="kpPatientFormFields">
-                <div class="form-group"><label for="kpPatientId">Patient ID</label><input type="text" id="kpPatientId" readonly placeholder="Auto-generated" /></div>
+                <div class="form-group"><label for="kpEmrPatientMrn">Patient ID</label><input type="text" id="kpEmrPatientMrn" placeholder="Same ID as Patient Records (e.g. CC-2026-0001)" required /></div>
+                <div class="form-group"><label for="kpPatientId">Registry ID</label><input type="text" id="kpPatientId" readonly placeholder="Auto-generated (KP-P-0001)" /></div>
                 <div class="form-group"><label class="required" for="kpFullName">Full Name</label><input type="text" id="kpFullName" required /></div>
                 <div class="form-group"><label for="kpAge">Age</label><input type="number" id="kpAge" min="0" max="120" /></div>
                 <div class="form-group"><label for="kpGender">Gender</label>
@@ -3065,7 +3066,7 @@
                 <div class="form-group"><label for="ukStatus">Status</label>
                     <select id="ukStatus"><option>Active</option><option>Healing</option><option>Resolved</option><option>Referred</option></select>
                 </div>
-                <div class="form-group"><label for="ukEmrMrn">EMR MRN (optional)</label><input type="text" id="ukEmrMrn" /></div>
+                <div class="form-group"><label for="ukEmrMrn">Patient ID</label><input type="text" id="ukEmrMrn" placeholder="Same ID as Patient Records" required /></div>
                 <div class="form-group span-2"><label for="ukAntimicrobialPlan">Antimicrobial plan</label><textarea id="ukAntimicrobialPlan" rows="2"></textarea></div>
                 <div class="form-group span-2"><label for="ukNotes">Notes</label><textarea id="ukNotes" rows="2"></textarea></div>
             </div>
@@ -3144,7 +3145,7 @@
                 <div class="form-group"><label for="kcAge">Age</label><input type="number" id="kcAge" min="0" max="120" /></div>
                 <div class="form-group"><label for="kcGender">Gender</label><select id="kcGender"><option value="">—</option><option>Male</option><option>Female</option><option>Other</option></select></div>
                 <div class="form-group"><label for="kcPhone">Phone</label><input type="tel" id="kcPhone" /></div>
-                <div class="form-group"><label for="kcEmrPatientMrn">EMR Patient ID</label><input type="text" id="kcEmrPatientMrn" placeholder="Links to Patient Records" /></div>
+                <div class="form-group"><label for="kcEmrPatientMrn">Patient ID</label><input type="text" id="kcEmrPatientMrn" placeholder="Same ID as Patient Records" required /></div>
                 <div class="form-group"><label for="kcEyeInvolvement">Eye involvement</label><select id="kcEyeInvolvement"><option value="">—</option><option>OD</option><option>OS</option><option>OU</option></select></div>
                 <div class="form-group"><label for="kcDiagnosis">Diagnosis</label><select id="kcDiagnosis"><option>Keratoconus</option><option>Pellucid marginal degeneration</option><option>Post-LASIK ectasia</option><option>Forme fruste keratoconus</option><option>Other</option></select></div>
                 <div class="form-group"><label for="kcStaging">Staging</label><select id="kcStaging"><option value="">—</option><option>Stage I</option><option>Stage II</option><option>Stage III</option><option>Stage IV</option><option>ABCD A</option><option>ABCD B</option><option>ABCD C</option><option>ABCD D</option></select></div>
@@ -3231,7 +3232,7 @@
             <div class="kp-form-grid">
                 <div class="form-group"><label for="deCaseIdField">Case ID</label><input type="text" id="deCaseIdField" readonly /></div>
                 <div class="form-group"><label class="required" for="deFullName">Patient name</label><input type="text" id="deFullName" required /></div>
-                <div class="form-group"><label for="deMrn">MRN</label><input type="text" id="deMrn" /></div>
+                <div class="form-group"><label for="deMrn">Patient ID</label><input type="text" id="deMrn" placeholder="Same ID as Patient Records" required /></div>
                 <div class="form-group"><label for="deSubtype">Primary subtype</label><select id="deSubtype"><option>MGD</option><option>Aqueous deficient</option><option>Evaporative</option><option>Mixed</option><option>Sjögren suspect</option><option>Other</option></select></div>
                 <div class="form-group"><label for="deStatus">Status</label><select id="deStatus"><option>Active</option><option>Stable</option><option>Discharged</option></select></div>
                 <div class="form-group span-2"><label for="deNotes">Notes</label><textarea id="deNotes" rows="2"></textarea></div>
@@ -3803,6 +3804,7 @@
 <script src="cornea-posterior-segment-taxonomy.js"></script>
 <script src="cornea-posterior-segment.js"></script>
 <script src="js/anterior-drawing.js"></script>
+<script src="js/patient-id.js"></script>
 <script src="js/keratoplasty.js"></script>
 <script src="cornea-kp-graft-outcomes.js"></script>
 <script src="cornea-eye-bank-traceability.js"></script>

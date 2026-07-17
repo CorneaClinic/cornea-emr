@@ -9,7 +9,8 @@ import {
   getPatientByMrn,
   createPatient,
   updatePatient,
-  listPatientVisits
+  listPatientVisits,
+  nextMrn
 } from '../services/patientService.js';
 import {
   findDuplicatePatients,
@@ -46,6 +47,16 @@ router.get(
   asyncHandler(async (req, res) => {
     const result = await listPatients(req.user.clinicId, req.query);
     res.json(result);
+  })
+);
+
+router.get(
+  '/next-mrn',
+  authenticate,
+  requirePermission(PERMISSIONS.PATIENTS_READ),
+  asyncHandler(async (req, res) => {
+    const mrn = await nextMrn(req.user.clinicId);
+    res.json({ data: { mrn } });
   })
 );
 

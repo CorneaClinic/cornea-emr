@@ -26,7 +26,7 @@
     { key: 'kcAge', label: 'Age', type: 'number' },
     { key: 'kcGender', label: 'Gender', select: ['Male', 'Female', 'Other'] },
     { key: 'kcPhone', label: 'Phone', type: 'tel' },
-    { key: 'kcEmrPatientMrn', label: 'EMR Patient ID (MRN)', hint: 'Links to Patient Records' },
+    { key: 'kcEmrPatientMrn', label: 'Patient ID', hint: 'Same ID as Patient Records' },
     { key: 'kcEyeInvolvement', label: 'Eye involvement', select: EYE_OPTIONS },
     { key: 'kcDiagnosis', label: 'Diagnosis', select: KC_DIAGNOSES },
     { key: 'kcStaging', label: 'Staging', select: KC_STAGING },

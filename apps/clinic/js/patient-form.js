@@ -607,7 +607,12 @@ window.openPatientFormModal = function(mode) {
             return;
         }
 
-        requestAnimationFrame(() => {
+        requestAnimationFrame(async () => {
+            const pidEl = document.getElementById('patientId');
+            if (pidEl && !pidEl.value.trim() && window.CorneaPatientId?.nextLocalMrn) {
+                pidEl.value = await window.CorneaPatientId.nextLocalMrn();
+                setPatientIdAutofillHint('Suggested Patient ID — use the same ID in all registries and patient records.', false);
+            }
             window.refreshPatientVisitHistory();
             afterOpen();
         });

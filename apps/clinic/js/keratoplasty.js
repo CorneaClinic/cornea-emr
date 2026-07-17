@@ -34,14 +34,16 @@ function renderKpPatientReadOnly(p) {
     if (!p || !panel) return;
     window._kpSelectedPatientId = p.id;
     panel.hidden = false;
-    if (title) title.textContent = (p.kpFullName || 'Patient') + ' · ' + (p.kpPatientId || '');
+    if (title) title.textContent = (p.kpFullName || 'Patient') + ' · ' + (p.kpEmrPatientMrn || p.kpPatientId || '');
     const graftPanel = document.getElementById('kpGraftOutcomesDetail');
     if (graftPanel) graftPanel.hidden = false;
     if (typeof window.renderKpGraftOutcomes === 'function') {
         window.renderKpGraftOutcomes(p.id, p.uuid);
     }
     renderEmrReadOnlyGrid('kpPatientReadOnlyContent', [
-        { label: 'Patient ID', value: p.kpPatientId }, { label: 'Full Name', value: p.kpFullName },
+        { label: 'Patient ID', value: p.kpEmrPatientMrn || p.kpPatientId },
+        { label: 'Registry ID', value: p.kpPatientId },
+        { label: 'Full Name', value: p.kpFullName },
         { label: 'Age', value: p.kpAge }, { label: 'Gender', value: p.kpGender }, { label: 'Phone', value: p.kpPhone },
         { label: 'Address', value: p.kpAddress, full: true }, { label: 'Eye', value: p.kpEye },
         { label: 'Diagnosis', value: p.kpDiagnosis }, { label: 'Procedure', value: p.kpProcedure },
@@ -100,6 +102,7 @@ window.openKpPatientModal = async function(mode) {
     const title = document.getElementById('kpPatientModalTitle');
     if (mode === 'new') {
         resetKpPatientForm();
+        window.CorneaPatientId?.prefillField?.('kpEmrPatientMrn');
         if (title) title.textContent = 'Register Keratoplasty Patient';
     } else {
         const p = kpFindById(_kpPatientsCache, window._kpSelectedPatientId);
@@ -796,7 +799,7 @@ async function refreshKpPatientMatches() {
 }
 
 function collectKpPatientForm() {
-    const ids = ['kpPatientId','kpFullName','kpAge','kpGender','kpPhone','kpAddress','kpEye','kpDiagnosis',
+    const ids = ['kpEmrPatientMrn','kpPatientId','kpFullName','kpAge','kpGender','kpPhone','kpAddress','kpEye','kpDiagnosis',
         'kpProcedure','kpPrognosis','kpUrgency','kpCornealSize','kpDonorAgePref','kpEndothelialReq',
         'kpInfection','kpVisualAxis','kpNotes','kpStatus','kpRegDate','kpSurgeryDate'];
     const data = { lastModified: new Date().toISOString() };
@@ -828,6 +831,9 @@ window.saveKpPatient = async function() {
     if (!window.db) { alert('Database not ready.'); return; }
     const name = document.getElementById('kpFullName')?.value?.trim();
     if (!name) { alert('Full name is required.'); return; }
+    const mrn = window.CorneaPatientId?.requireMrnForRegistry?.('kpEmrPatientMrn')
+        || document.getElementById('kpEmrPatientMrn')?.value?.trim();
+    if (!mrn) return;
     const data = collectKpPatientForm();
     if (!data.kpPatientId) data.kpPatientId = await kpNextId(STORE_KP_PATIENTS, 'KP-P-');
     const all = await kpDbGetAll(STORE_KP_PATIENTS);
@@ -873,7 +879,7 @@ window.saveKpTissue = async function() {
 
 window.resetKpPatientForm = function() {
     document.getElementById('kpRecordId').value = '';
-    ['kpPatientId','kpFullName','kpAge','kpGender','kpPhone','kpAddress','kpEye','kpDiagnosis',
+    ['kpEmrPatientMrn','kpPatientId','kpFullName','kpAge','kpGender','kpPhone','kpAddress','kpEye','kpDiagnosis',
         'kpProcedure','kpPrognosis','kpUrgency','kpCornealSize','kpDonorAgePref','kpEndothelialReq',
         'kpInfection','kpVisualAxis','kpNotes','kpSurgeryDate'].forEach(id => {
         const el = document.getElementById(id);
@@ -943,14 +949,15 @@ function renderKpPatientsTable() {
     const body = document.getElementById('kpPatientsBody');
     if (!body) return;
     if (!_kpPatientsCache.length) {
-        body.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-user-injured"></i><p>No keratoplasty patients registered.</p></div></td></tr>';
+        body.innerHTML = '<tr><td colspan="11"><div class="empty-state"><i class="fa-solid fa-user-injured"></i><p>No keratoplasty patients registered.</p></div></td></tr>';
         return;
     }
     body.innerHTML = _kpPatientsCache.map(p => `
         <tr data-kp-procedure="${escapeHtml(p.kpProcedure||'')}" data-kp-urgency="${escapeHtml(p.kpUrgency||'')}"
             data-kp-status="${escapeHtml(p.kpStatus||'')}" data-kp-prognosis="${escapeHtml(p.kpPrognosis||'')}"
-            data-kp-search="${escapeHtml((p.kpPatientId+' '+p.kpFullName+' '+p.kpDiagnosis).toLowerCase())}">
-            <td><span class="patient-id-badge">${escapeHtml(p.kpPatientId||'—')}</span></td>
+            data-kp-search="${escapeHtml((p.kpEmrPatientMrn+' '+p.kpPatientId+' '+p.kpFullName+' '+p.kpDiagnosis).toLowerCase())}">
+            <td><span class="patient-id-badge">${escapeHtml(p.kpEmrPatientMrn||'—')}</span></td>
+            <td>${escapeHtml(p.kpPatientId||'—')}</td>
             <td>${escapeHtml(p.kpFullName||'—')}</td>
             <td>${escapeHtml(p.kpDiagnosis||'—')}</td>
             <td>${escapeHtml(p.kpProcedure||'—')}</td>
@@ -1309,9 +1316,9 @@ function kpDownloadCsv(filename, headers, rows) {
 }
 
 window.exportKpPatientsCsv = function() {
-    const headers = ['Patient ID','Name','Diagnosis','Procedure','Prognosis','Urgency','Status','Match %','Recommended Tissue'];
+    const headers = ['Patient ID','Registry ID','Name','Diagnosis','Procedure','Prognosis','Urgency','Status','Match %','Recommended Tissue'];
     const rows = _kpPatientsCache.map(p => [
-        p.kpPatientId, p.kpFullName, p.kpDiagnosis, p.kpProcedure, p.kpPrognosis,
+        p.kpEmrPatientMrn || '', p.kpPatientId, p.kpFullName, p.kpDiagnosis, p.kpProcedure, p.kpPrognosis,
         p.kpUrgency, p.kpStatus, p._matchScore || '', p._recommendedTissue || ''
     ]);
     kpDownloadCsv('Keratoplasty_Patients_' + new Date().toISOString().split('T')[0] + '.csv', headers, rows);

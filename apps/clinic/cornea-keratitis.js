@@ -205,6 +205,9 @@
           document.getElementById('ukCaseId').value = nextCaseId();
           document.getElementById('ukFullName').value = '';
           document.getElementById('ukPresentationDate').value = new Date().toISOString().slice(0, 10);
+          const mrnEl = document.getElementById('ukEmrMrn');
+          if (mrnEl) mrnEl.value = '';
+          global.CorneaPatientId?.prefillField?.('ukEmrMrn');
         } else {
           const c = _cases.find((x) => x.id === _selectedId);
           if (!c) { alert('Select a case first.'); return; }
@@ -236,6 +239,9 @@
       if (!guardCloudRegistryWrite()) return;
       const name = document.getElementById('ukFullName')?.value?.trim();
       if (!name) { alert('Name required.'); return; }
+      const mrn = global.CorneaPatientId?.requireMrnForRegistry?.('ukEmrMrn')
+        || document.getElementById('ukEmrMrn')?.value?.trim();
+      if (!mrn) return;
       const row = {
         ukCaseId: document.getElementById('ukCaseId')?.value || nextCaseId(),
         ukFullName: name,

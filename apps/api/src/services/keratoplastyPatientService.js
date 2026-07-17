@@ -14,6 +14,7 @@ import {
   formatDate
 } from '../core/validation.js';
 import { auditMutation } from './auditService.js';
+import { resolveEmrPatientLink } from './patientIdentityService.js';
 
 const SORT_FIELDS = {
   fullName: 'kp.full_name',
@@ -89,8 +90,25 @@ function parseKeratoplastyPatientInput(body) {
     recommendedTissueId: body.recommendedTissueId != null
       ? requireUuid(body.recommendedTissueId, 'recommendedTissueId')
       : null,
+    emrPatientMrn: optionalString(body.emrPatientMrn ?? body.kpEmrPatientMrn, 'emrPatientMrn'),
+    emrPatientUuid: body.emrPatientUuid != null
+      ? requireUuid(body.emrPatientUuid, 'emrPatientUuid')
+      : undefined,
     legacyLocalId: optionalInt(body.legacyLocalId, 'legacyLocalId')
   };
+}
+
+/**
+ * @param {string} clinicId
+ * @param {ReturnType<typeof parseKeratoplastyPatientInput>} input
+ */
+async function applyEmrPatientLink(clinicId, input) {
+  if (input.emrPatientMrn === undefined && input.emrPatientUuid === undefined) return input;
+  const mrn = input.emrPatientMrn ?? null;
+  const link = await resolveEmrPatientLink(clinicId, mrn);
+  input.emrPatientMrn = link.emrPatientMrn;
+  input.emrPatientUuid = link.emrPatientUuid;
+  return input;
 }
 
 /**
@@ -228,24 +246,27 @@ export async function createKeratoplastyPatient(req, body) {
   if (!input.kpPatientId) {
     input.kpPatientId = await nextKpPatientId(clinicId);
   }
+  await applyEmrPatientLink(clinicId, input);
 
   try {
     const { rows } = await query(
       `
         INSERT INTO keratoplasty_patients (
-          clinic_id, kp_patient_id, full_name, age, gender, phone, address,
+          clinic_id, kp_patient_id, emr_patient_uuid, emr_patient_mrn, full_name, age, gender, phone, address,
           eye, diagnosis, procedure, prognosis, urgency, corneal_size_mm,
           donor_age_pref, endothelial_req, infection, visual_axis, status,
           reg_date, surgery_date, notes, recommended_tissue_id, legacy_local_id
         )
         VALUES (
-          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23
+          $1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24,$25
         )
         RETURNING *
       `,
       [
         clinicId,
         input.kpPatientId,
+        input.emrPatientUuid,
+        input.emrPatientMrn,
         input.fullName,
         input.age,
         input.gender,
@@ -296,6 +317,7 @@ export async function updateKeratoplastyPatient(req, id, body) {
   const clinicId = req.user.clinicId;
   const existing = await getKeratoplastyPatientById(clinicId, id);
   const parsed = parseKeratoplastyPatientInput({ ...existing, ...body, fullName: body.fullName ?? existing.fullName });
+  await applyEmrPatientLink(clinicId, parsed);
 
   const revision = body.revision != null ? Number(body.revision) : existing.revision;
   if (Number.isNaN(revision)) {
@@ -327,11 +349,13 @@ export async function updateKeratoplastyPatient(req, id, body) {
                surgery_date = $21,
                notes = $22,
                recommended_tissue_id = $23,
-               legacy_local_id = $24,
+               emr_patient_uuid = $24,
+               emr_patient_mrn = $25,
+               legacy_local_id = $26,
                revision = revision + 1
          WHERE id = $1
            AND clinic_id = $2
-           AND revision = $25
+           AND revision = $27
         RETURNING *
       `,
       [
@@ -358,6 +382,8 @@ export async function updateKeratoplastyPatient(req, id, body) {
         parsed.surgeryDate,
         parsed.notes,
         parsed.recommendedTissueId,
+        parsed.emrPatientUuid ?? existing.emrPatientUuid,
+        parsed.emrPatientMrn ?? existing.emrPatientMrn,
         parsed.legacyLocalId ?? existing.legacyLocalId,
         revision
       ]

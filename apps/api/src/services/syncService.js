@@ -12,6 +12,7 @@ import {
 } from './sync-mappers.js';
 import { auditMutation } from './auditService.js';
 import { deletePatientIfOrphaned, purgeOrphanPatients } from './patientService.js';
+import { resolveEmrPatientLink } from './patientIdentityService.js';
 
 const PULL_LIMIT_MAX = 500;
 
@@ -271,25 +272,30 @@ async function applyKpPatientMutation(client, clinicId, mutation) {
     row.kp_patient_id = `KP-P-${String(num + 1).padStart(4, '0')}`;
   }
 
+  const emrLink = await resolveEmrPatientLink(clinicId, row.emr_patient_mrn);
+  row.emr_patient_mrn = emrLink.emrPatientMrn;
+  row.emr_patient_uuid = emrLink.emrPatientUuid;
+
   let saved;
   if (existing) {
     const updated = await client.query(
       `
         UPDATE keratoplasty_patients SET
-          kp_patient_id = $3, full_name = $4, age = $5, gender = $6, phone = $7, address = $8,
-          eye = $9, diagnosis = $10, procedure = $11, prognosis = $12, urgency = $13,
-          corneal_size_mm = $14, donor_age_pref = $15, endothelial_req = $16, infection = $17,
-          visual_axis = $18, status = $19, reg_date = $20, surgery_date = $21, notes = $22,
-          legacy_local_id = COALESCE(legacy_local_id, $23), revision = revision + 1
+          kp_patient_id = $3, emr_patient_uuid = $4, emr_patient_mrn = $5,
+          full_name = $6, age = $7, gender = $8, phone = $9, address = $10,
+          eye = $11, diagnosis = $12, procedure = $13, prognosis = $14, urgency = $15,
+          corneal_size_mm = $16, donor_age_pref = $17, endothelial_req = $18, infection = $19,
+          visual_axis = $20, status = $21, reg_date = $22, surgery_date = $23, notes = $24,
+          legacy_local_id = COALESCE(legacy_local_id, $25), revision = revision + 1
         WHERE id = $1 AND clinic_id = $2
         RETURNING *
       `,
       [
-        existing.id, clinicId, row.kp_patient_id, row.full_name, row.age, row.gender,
-        row.phone, row.address, row.eye, row.diagnosis, row.procedure, row.prognosis,
-        row.urgency, row.corneal_size_mm, row.donor_age_pref, row.endothelial_req,
-        row.infection, row.visual_axis, row.status, row.reg_date, row.surgery_date,
-        row.notes, row.legacy_local_id
+        existing.id, clinicId, row.kp_patient_id, row.emr_patient_uuid, row.emr_patient_mrn,
+        row.full_name, row.age, row.gender, row.phone, row.address, row.eye, row.diagnosis,
+        row.procedure, row.prognosis, row.urgency, row.corneal_size_mm, row.donor_age_pref,
+        row.endothelial_req, row.infection, row.visual_axis, row.status, row.reg_date,
+        row.surgery_date, row.notes, row.legacy_local_id
       ]
     );
     saved = updated.rows[0];
@@ -297,15 +303,15 @@ async function applyKpPatientMutation(client, clinicId, mutation) {
     const inserted = await client.query(
       `
         INSERT INTO keratoplasty_patients (
-          clinic_id, kp_patient_id, full_name, age, gender, phone, address, eye, diagnosis,
+          clinic_id, kp_patient_id, emr_patient_uuid, emr_patient_mrn, full_name, age, gender, phone, address, eye, diagnosis,
           procedure, prognosis, urgency, corneal_size_mm, donor_age_pref, endothelial_req,
           infection, visual_axis, status, reg_date, surgery_date, notes, legacy_local_id
         )
-        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22)
+        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21,$22,$23,$24)
         RETURNING *
       `,
       [
-        clinicId, row.kp_patient_id, row.full_name, row.age, row.gender, row.phone,
+        clinicId, row.kp_patient_id, row.emr_patient_uuid, row.emr_patient_mrn, row.full_name, row.age, row.gender, row.phone,
         row.address, row.eye, row.diagnosis, row.procedure, row.prognosis, row.urgency,
         row.corneal_size_mm, row.donor_age_pref, row.endothelial_req, row.infection,
         row.visual_axis, row.status, row.reg_date, row.surgery_date, row.notes, row.legacy_local_id

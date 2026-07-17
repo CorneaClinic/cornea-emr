@@ -343,6 +343,7 @@
         const el = document.getElementById(id);
         if (el) el.value = '';
       });
+      global.CorneaPatientId?.prefillField?.('kcEmrPatientMrn');
       ['kcAge', 'kcIndexDate'].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ''; });
       ['kcGender', 'kcEyeInvolvement', 'kcDiagnosis', 'kcStaging', 'kcFamilyHistoryKc', 'kcAtopy', 'kcEyeRubbing'].forEach((id) => {
         const el = document.getElementById(id);
@@ -377,6 +378,9 @@
     if (!guardCloudRegistryWrite()) return;
     const name = document.getElementById('kcFullName')?.value?.trim();
     if (!name) { alert('Full name is required.'); return; }
+    const mrn = global.CorneaPatientId?.requireMrnForRegistry?.('kcEmrPatientMrn')
+      || document.getElementById('kcEmrPatientMrn')?.value?.trim();
+    if (!mrn) return;
     const recordId = document.getElementById('kcRecordId')?.value;
     const row = {
       kcRegistryId: document.getElementById('kcRegistryId')?.value || nextLocalKcId(),

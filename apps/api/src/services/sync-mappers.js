@@ -139,6 +139,8 @@ export function mapKpPatientToLegacy(row) {
     kpRegDate: toDateOnlyString(row.reg_date),
     kpSurgeryDate: toDateOnlyString(row.surgery_date),
     kpNotes: row.notes,
+    kpEmrPatientMrn: row.emr_patient_mrn,
+    emrPatientUuid: row.emr_patient_uuid,
     recommendedTissueId: row.recommended_tissue_id,
     revision: row.revision,
     lastModified: row.updated_at,
@@ -216,6 +218,8 @@ export function legacyKpPatientToRow(body, clinicId) {
     reg_date: body.kpRegDate || null,
     surgery_date: body.kpSurgeryDate || null,
     notes: body.kpNotes ?? null,
+    emr_patient_mrn: body.kpEmrPatientMrn ?? body.emrPatientMrn ?? null,
+    emr_patient_uuid: body.emrPatientUuid ?? null,
     legacy_local_id: body.id != null ? Number(body.id) : null
   };
 }

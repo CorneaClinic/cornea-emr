@@ -13,6 +13,7 @@ import {
   formatDate
 } from '../core/validation.js';
 import { auditMutation } from './auditService.js';
+import { nextMrn } from './patientIdentityService.js';
 
 const SEX_VALUES = ['Male', 'Female', 'Other'];
 const SORT_FIELDS = {
@@ -21,6 +22,8 @@ const SORT_FIELDS = {
   createdAt: 'p.created_at',
   updatedAt: 'p.updated_at'
 };
+
+export { nextMrn } from './patientIdentityService.js';
 
 /**
  * @param {Record<string, unknown>} row

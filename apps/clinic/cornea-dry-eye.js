@@ -194,7 +194,8 @@
         document.getElementById('deCaseUuid').value = c?.uuid || '';
         document.getElementById('deCaseIdField').value = c?.deCaseId || nextCaseId();
         document.getElementById('deFullName').value = c?.deFullName || '';
-        document.getElementById('deMrn').value = c?.deMrn || document.getElementById('patientId')?.value || '';
+        document.getElementById('deMrn').value = c?.deMrn || '';
+        if (!c) global.CorneaPatientId?.prefillField?.('deMrn');
         document.getElementById('deSubtype').value = c?.deSubtype || 'MGD';
         document.getElementById('deStatus').value = c?.deStatus || 'Active';
         document.getElementById('deNotes').value = c?.deNotes || '';
@@ -228,6 +229,9 @@
         deNotes: document.getElementById('deNotes').value.trim()
       };
       if (!row.deFullName) { alert('Patient name required.'); return; }
+      const mrn = global.CorneaPatientId?.requireMrnForRegistry?.('deMrn') || row.deMrn;
+      if (!mrn) return;
+      row.deMrn = mrn;
       if (row.id) {
         const existing = _cases.find((c) => c.id === row.id);
         if (existing?.revision != null) row.revision = existing.revision;
