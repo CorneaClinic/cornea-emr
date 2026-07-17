@@ -237,16 +237,48 @@ function kpBadgeMatch(score) {
     return `<span class="badge badge-match-poor">${score}% Poor</span>`;
 }
 
-/** Parse YYYY-MM-DD as a local calendar date (avoids UTC midnight off-by-one). */
+/**
+ * Parse a calendar date as local midnight.
+ * Accepts YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, and ISO datetimes.
+ * Rejects locale strings without a year (e.g. "Fri Jul 17" → JS year 2001).
+ */
 function kpParseDateOnly(value) {
     if (!value) return null;
-    const s = String(value).trim().slice(0, 10);
-    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-    if (!m) {
-        const d = new Date(value);
-        return isNaN(d.getTime()) ? null : d;
+    if (value instanceof Date) {
+        return isNaN(value.getTime()) ? null : new Date(value.getFullYear(), value.getMonth(), value.getDate());
     }
-    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+    const raw = String(value).trim();
+    const iso = raw.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (iso) {
+        return new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    }
+    const dmy = raw.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
+    if (dmy) {
+        const day = Number(dmy[1]);
+        const month = Number(dmy[2]);
+        const year = Number(dmy[3]);
+        if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+            return new Date(year, month - 1, day);
+        }
+        return null;
+    }
+    // Never Date.parse yearless strings like "Fri Jul 17" (defaults to 2001 → day ~9132).
+    if (!/\d{4}/.test(raw)) return null;
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return null;
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Reformat parseable date fields to YYYY-MM-DD; leave corrupt strings untouched (math ignores them). */
+function kpNormalizeTissueDates(tissue) {
+    if (!tissue || typeof tissue !== 'object') return tissue;
+    const keys = ['kpPreservationDate', 'kpExpiryDate', 'kpQuarantineUntil', 'kpRegDate', 'kpSurgeryDate'];
+    for (const key of keys) {
+        if (!tissue[key]) continue;
+        const parsed = kpParseDateOnly(tissue[key]);
+        if (parsed) tissue[key] = kpFormatDateOnly(parsed);
+    }
+    return tissue;
 }
 
 function kpFormatDateOnly(date) {
@@ -722,8 +754,15 @@ window.initKeratoplastyTab = async function() {
     if (!window.db) return;
     try {
         _kpPatientsCache = await kpDbGetAll(STORE_KP_PATIENTS);
+        for (const p of _kpPatientsCache) {
+            for (const key of ['kpRegDate', 'kpSurgeryDate']) {
+                if (!p[key]) continue;
+                const parsed = kpParseDateOnly(p[key]);
+                if (parsed) p[key] = kpFormatDateOnly(parsed);
+            }
+        }
         window._kpPatientsCache = _kpPatientsCache;
-        _kpTissuesCache = await kpDbGetAll(STORE_KP_TISSUES);
+        _kpTissuesCache = (await kpDbGetAll(STORE_KP_TISSUES)).map(kpNormalizeTissueDates);
         await refreshKpPatientMatches();
         renderKpPatientsTable();
         renderKpTissuesTable();

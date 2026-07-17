@@ -6,6 +6,36 @@ const PATIENT_KEYS = ['patientId', 'fullName', 'dob', 'sex', 'phone', 'address',
 const VALID_SEX = ['Male', 'Female', 'Other'];
 
 /**
+ * Calendar DATE → YYYY-MM-DD. Never use String(date).slice(0,10) — that yields
+ * "Fri Jul 17" which JS parses as year 2001 and breaks processing-day math.
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function toDateOnlyString(value) {
+  if (value == null || value === '') return '';
+  if (value instanceof Date) {
+    if (Number.isNaN(value.getTime())) return '';
+    const y = value.getUTCFullYear();
+    const m = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(value.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(value).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  const dmy = s.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/);
+  if (dmy) {
+    const day = Number(dmy[1]);
+    const month = Number(dmy[2]);
+    const year = Number(dmy[3]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    }
+  }
+  return '';
+}
+
+/**
  * @param {unknown} value
  */
 export function normalizeSex(value) {
@@ -68,12 +98,12 @@ export function visitToLegacyRecord(patient, visit) {
     uuid: visit.id,
     patientId: patient.mrn,
     fullName: patient.full_name || patient.fullName,
-    dob: patient.dob ? String(patient.dob).slice(0, 10) : '',
+    dob: patient.dob ? toDateOnlyString(patient.dob) : '',
     sex: patient.sex || '',
     phone: patient.phone || '',
     address: patient.address || '',
     nationalId: patient.national_id || patient.nationalId || '',
-    visitDate: visit.visit_date ? String(visit.visit_date).slice(0, 10) : '',
+    visitDate: visit.visit_date ? toDateOnlyString(visit.visit_date) : '',
     lastModified: visit.updated_at,
     revision: visit.revision,
     sync_status: 'synced',
@@ -106,8 +136,8 @@ export function mapKpPatientToLegacy(row) {
     kpInfection: row.infection,
     kpVisualAxis: row.visual_axis,
     kpStatus: row.status,
-    kpRegDate: row.reg_date ? String(row.reg_date).slice(0, 10) : '',
-    kpSurgeryDate: row.surgery_date ? String(row.surgery_date).slice(0, 10) : '',
+    kpRegDate: toDateOnlyString(row.reg_date),
+    kpSurgeryDate: toDateOnlyString(row.surgery_date),
     kpNotes: row.notes,
     recommendedTissueId: row.recommended_tissue_id,
     revision: row.revision,
@@ -128,8 +158,8 @@ export function mapKpTissueToLegacy(row) {
     kpDonorAge: row.donor_age,
     kpDonorGender: row.donor_gender,
     kpDeathToPreservation: row.death_to_preservation_hrs,
-    kpPreservationDate: row.preservation_date ? String(row.preservation_date).slice(0, 10) : '',
-    kpExpiryDate: row.expiry_date ? String(row.expiry_date).slice(0, 10) : '',
+    kpPreservationDate: toDateOnlyString(row.preservation_date),
+    kpExpiryDate: toDateOnlyString(row.expiry_date),
     kpSpecular: row.specular_count,
     kpEdema: row.edema,
     kpClarity: row.clarity,
@@ -150,7 +180,7 @@ export function mapKpTissueToLegacy(row) {
     kpSerologyCmv: row.serology_cmv,
     kpQuarantineStatus: row.quarantine_status || 'Cleared',
     kpQuarantineReason: row.quarantine_reason,
-    kpQuarantineUntil: row.quarantine_until ? String(row.quarantine_until).slice(0, 10) : '',
+    kpQuarantineUntil: toDateOnlyString(row.quarantine_until),
     kpReceivedAt: row.received_at,
     kpReservedFor: row.reserved_for_kp_patient_id,
     revision: row.revision,

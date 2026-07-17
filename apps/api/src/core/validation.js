@@ -194,14 +194,22 @@ export function optionalObject(value, field) {
 }
 
 /**
+ * Calendar DATE → YYYY-MM-DD. Avoid String(date).slice(0,10) ("Fri Jul 17").
  * @param {string | Date | null | undefined} value
  */
 export function formatDate(value) {
   if (!value) return null;
   if (value instanceof Date) {
-    return value.toISOString().slice(0, 10);
+    if (Number.isNaN(value.getTime())) return null;
+    const y = value.getUTCFullYear();
+    const m = String(value.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(value.getUTCDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
   }
-  return String(value).slice(0, 10);
+  const s = String(value).trim();
+  const iso = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) return `${iso[1]}-${iso[2]}-${iso[3]}`;
+  return null;
 }
 
 /**
