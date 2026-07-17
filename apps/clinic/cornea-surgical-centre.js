@@ -66,8 +66,8 @@
   }
 
   function actionBtn(label, icon, fn, id) {
-    const safeId = esc(id);
-    return `<button type="button" class="btn-secondary btn-sm" onclick="CorneaSurgicalCentre.${fn}('${safeId}')"><i class="fa-solid ${icon}"></i> ${esc(label)}</button>`;
+    const args = JSON.stringify([id]);
+    return `<button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaSurgicalCentre.${fn}" data-csp-args='${args}'><i class="fa-solid ${icon}"></i> ${esc(label)}</button>`;
   }
 
   function renderDashboard() {

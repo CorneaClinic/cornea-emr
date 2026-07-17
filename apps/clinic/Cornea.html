@@ -1768,7 +1768,7 @@
                             <span class="card-title">Surgical command dashboard</span>
                         </div>
                         <div class="emr-toolbar-actions no-print">
-                            <input type="date" id="surgicalDatePicker" onchange="CorneaSurgicalCentre.refreshDashboard()" class="u-csp-20" />
+                            <input type="date" id="surgicalDatePicker" data-csp-change="CorneaSurgicalCentre.refreshDashboard" data-csp-args='[]' class="u-csp-20" />
                             <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaSurgicalCentre.refreshDashboard" data-csp-args='[]'><i class="fa-solid fa-rotate"></i> Refresh</button>
                         </div>
                     </div>
@@ -1797,7 +1797,7 @@
                         </div>
                         <div class="search-box no-print">
                             <i class="fa-solid fa-magnifying-glass"></i>
-                            <input type="text" id="surgicalWaitingSearch" placeholder="Search patient / MRN / procedure" onkeyup="CorneaSurgicalCentre.renderWaitingList()">
+                            <input type="text" id="surgicalWaitingSearch" placeholder="Search patient / MRN / procedure" data-csp-input="CorneaSurgicalCentre.renderWaitingList" data-csp-args='[]'>
                         </div>
                     </div>
                     <div class="card-body">
@@ -1861,7 +1861,7 @@
                             <span class="card-title">OT scheduling</span>
                         </div>
                         <div class="emr-toolbar-actions no-print">
-                            <input type="date" id="surgicalScheduleDate" onchange="CorneaSurgicalCentre.renderSchedulingPanel()" class="u-csp-20" />
+                            <input type="date" id="surgicalScheduleDate" data-csp-change="CorneaSurgicalCentre.renderSchedulingPanel" data-csp-args='[]' class="u-csp-20" />
                         </div>
                     </div>
                     <div class="card-body">
@@ -3401,7 +3401,7 @@
         </div>
         <div class="emr-modal-body">
             <input type="hidden" id="surgicalWhoEpisodeId">
-            <div class="form-group"><label for="surgicalWhoPhase">Phase</label><select id="surgicalWhoPhase" onchange="CorneaSurgicalCentre.renderWhoPhaseForm()"><option value="sign_in">Sign in</option><option value="time_out">Time out</option><option value="sign_out">Sign out</option></select></div>
+            <div class="form-group"><label for="surgicalWhoPhase">Phase</label><select id="surgicalWhoPhase" data-csp-change="CorneaSurgicalCentre.renderWhoPhaseForm" data-csp-args='[]'><option value="sign_in">Sign in</option><option value="time_out">Time out</option><option value="sign_out">Sign out</option></select></div>
             <div id="surgicalWhoChecklistForm"></div>
         </div>
         <div class="emr-modal-footer">

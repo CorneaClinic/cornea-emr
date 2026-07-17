@@ -858,6 +858,23 @@ export async function recordEpisodeEvent(req, id, body) {
       throw new ValidationError('Invalid episode event');
   }
 
+  if (event === 'ENTER_BLOCK' || event === 'SURGERY_STARTED') {
+    const gate = validateAdvanceToStage(
+      {
+        ...existing,
+        consentStatus: patch.consent_status || existing.consentStatus,
+        stage
+      },
+      stage
+    );
+    if (!gate.ok) {
+      throw new ValidationError(gate.message || 'Safety gate blocked this event', {
+        code: gate.code,
+        incomplete: gate.incomplete
+      });
+    }
+  }
+
   const stageHistory = [...(existing.stageHistory || [])];
   if (stage !== existing.stage || stageStatus !== existing.stageStatus) {
     stageHistory.push({ stage, status: stageStatus, at: now, by: userId, event });
