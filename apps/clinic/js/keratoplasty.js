@@ -129,6 +129,7 @@ window.openKpTissueModal = async function(mode) {
     if (mode === 'new') {
         resetKpTissueForm();
         if (title) title.textContent = 'Register Corneal Tissue';
+        updateKpTissueGrades();
     } else {
         const t = kpFindById(_kpTissuesCache, window._kpSelectedTissueId);
         if (!t) { alert('Select tissue from the table first.'); return; }
@@ -138,6 +139,12 @@ window.openKpTissueModal = async function(mode) {
             const el = document.getElementById(k);
             if (el && t[k] != null) el.value = t[k];
         });
+        const expiryEl = document.getElementById('kpExpiryDate');
+        if (expiryEl) {
+            const suggested = kpCalcExpiryFromPreservation(t.kpPreservationDate, t.kpStorageMedium);
+            expiryEl.dataset.kpAutoExpiry = (expiryEl.value === suggested) ? suggested : '';
+        }
+        updateKpTissueGrades();
         if (title) title.textContent = 'Edit Corneal Tissue';
     }
     openEmrModal('kpTissueModal');
@@ -230,11 +237,87 @@ function kpBadgeMatch(score) {
     return `<span class="badge badge-match-poor">${score}% Poor</span>`;
 }
 
+/** Parse YYYY-MM-DD as a local calendar date (avoids UTC midnight off-by-one). */
+function kpParseDateOnly(value) {
+    if (!value) return null;
+    const s = String(value).trim().slice(0, 10);
+    const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (!m) {
+        const d = new Date(value);
+        return isNaN(d.getTime()) ? null : d;
+    }
+    return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+function kpFormatDateOnly(date) {
+    if (!(date instanceof Date) || isNaN(date.getTime())) return '';
+    const y = date.getFullYear();
+    const mo = String(date.getMonth() + 1).padStart(2, '0');
+    const da = String(date.getDate()).padStart(2, '0');
+    return `${y}-${mo}-${da}`;
+}
+
+function kpTodayDateOnly() {
+    const n = new Date();
+    return new Date(n.getFullYear(), n.getMonth(), n.getDate());
+}
+
+function kpAddCalendarDays(date, days) {
+    const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+    d.setDate(d.getDate() + days);
+    return d;
+}
+
+function kpCalendarDaysBetween(fromDate, toDate) {
+    const a = Date.UTC(fromDate.getFullYear(), fromDate.getMonth(), fromDate.getDate());
+    const b = Date.UTC(toDate.getFullYear(), toDate.getMonth(), toDate.getDate());
+    return Math.round((b - a) / 86400000);
+}
+
+/**
+ * Processing day 1 = preservation calendar date (eye-bank convention).
+ * Uses local calendar dates only — never Date.parse('YYYY-MM-DD') UTC.
+ */
 function kpProcessingDays(preservationDate) {
-    if (!preservationDate) return null;
-    const d = new Date(preservationDate);
-    if (isNaN(d.getTime())) return null;
-    return Math.floor((Date.now() - d.getTime()) / 86400000) + 1;
+    const preserved = kpParseDateOnly(preservationDate);
+    if (!preserved) return null;
+    const days = kpCalendarDaysBetween(preserved, kpTodayDateOnly());
+    if (days < 0) return 0;
+    return days + 1;
+}
+
+/** Cold-storage media: usable through processing day 14. Organ culture: day 28. */
+function kpShelfLifeProcessingDays(storageMedium) {
+    const m = String(storageMedium || '').toLowerCase();
+    if (/organ\s*cult|organocult|\boc\b|mem\b/.test(m)) return 28;
+    if (/optisol|cornisol|eusol|life\s*4|hypotherm|cold\s*stor|mccarey|chen/.test(m)) return 14;
+    return 14;
+}
+
+/**
+ * Expiry = last calendar day the tissue remains within shelf-life processing window.
+ * Preservation day 1 → for 14-day cold storage, expires end of processing day 14
+ * (= preservation date + 13 calendar days).
+ */
+function kpCalcExpiryFromPreservation(preservationDate, storageMedium) {
+    const preserved = kpParseDateOnly(preservationDate);
+    if (!preserved) return '';
+    const shelf = kpShelfLifeProcessingDays(storageMedium);
+    return kpFormatDateOnly(kpAddCalendarDays(preserved, Math.max(shelf, 1) - 1));
+}
+
+/** True only after the expiry calendar date has passed (valid through end of expiry day). */
+function kpIsExpiredOn(expiryDate, asOfDate) {
+    const exp = kpParseDateOnly(expiryDate);
+    if (!exp) return false;
+    const asOf = asOfDate ? kpParseDateOnly(asOfDate) || kpTodayDateOnly() : kpTodayDateOnly();
+    return kpCalendarDaysBetween(exp, asOf) > 0;
+}
+
+function kpDaysUntilExpiry(expiryDate) {
+    const exp = kpParseDateOnly(expiryDate);
+    if (!exp) return null;
+    return kpCalendarDaysBetween(kpTodayDateOnly(), exp);
 }
 
 /** Corneal tissue protocol — source: Corneal tissue protocol.docx */
@@ -279,6 +362,7 @@ window.updateKpTissueGrades = function() {
     const spec = document.getElementById('kpSpecular')?.value;
     const edema = document.getElementById('kpEdema')?.value;
     const pres = document.getElementById('kpPreservationDate')?.value;
+    const medium = document.getElementById('kpStorageMedium')?.value;
     const procDay = kpProcessingDays(pres);
     const og = document.getElementById('kpOpticalGrade');
     const tg = document.getElementById('kpTherapeuticGrade');
@@ -286,6 +370,26 @@ window.updateKpTissueGrades = function() {
     if (tg) {
         const g = calcTherapeuticGrade(age, edema, procDay, spec);
         tg.value = g ? 'Grade ' + g : '';
+    }
+    const expiryEl = document.getElementById('kpExpiryDate');
+    const hint = document.getElementById('kpExpiryHint');
+    if (expiryEl && pres) {
+        const suggested = kpCalcExpiryFromPreservation(pres, medium);
+        const prevAuto = expiryEl.dataset.kpAutoExpiry || '';
+        const current = expiryEl.value || '';
+        // Fill when empty, or keep in sync if still on the last auto-calculated value.
+        if (!current || current === prevAuto) {
+            expiryEl.value = suggested;
+            expiryEl.dataset.kpAutoExpiry = suggested;
+        }
+        if (hint) {
+            const shelf = kpShelfLifeProcessingDays(medium);
+            hint.textContent = suggested
+                ? `Suggested: ${suggested} (valid through processing day ${shelf} from preservation)`
+                : '';
+        }
+    } else if (hint) {
+        hint.textContent = '';
     }
 };
 
@@ -411,7 +515,7 @@ function kpEvaluateProtocol(patient, tissue) {
         return { compatible: false, checklist: [{ pass: false, text: 'Unknown procedure: ' + proc }], warnings, protocol: null };
     }
 
-    if (tissue.kpTissueStatus === 'Expired' || (tissue.kpExpiryDate && new Date(tissue.kpExpiryDate) < new Date())) {
+    if (tissue.kpTissueStatus === 'Expired' || kpIsExpiredOn(tissue.kpExpiryDate)) {
         warnings.push('Expired tissue — do not use');
         return { compatible: false, checklist: [{ pass: false, text: 'Tissue expired' }], warnings, protocol, optical, therapeutic, processingDay: day };
     }
@@ -526,7 +630,7 @@ function kpComputeMatchScore(patient, tissue) {
     const label = score >= 85 ? 'Excellent' : score >= 70 ? 'Good' : score >= 50 ? 'Fair' : 'Poor';
     const recommended = eval_.compatible && score >= 70 &&
         tissue.kpTissueStatus !== 'Expired' &&
-        !(tissue.kpExpiryDate && new Date(tissue.kpExpiryDate) < new Date());
+        !kpIsExpiredOn(tissue.kpExpiryDate);
 
     return {
         score: Math.min(100, Math.max(0, Math.round(score))),
@@ -751,10 +855,16 @@ window.resetKpTissueForm = function() {
         const el = document.getElementById(id);
         if (el) el.value = '';
     });
+    const expiryEl = document.getElementById('kpExpiryDate');
+    if (expiryEl) delete expiryEl.dataset.kpAutoExpiry;
+    const hint = document.getElementById('kpExpiryHint');
+    if (hint) hint.textContent = '';
     const st = document.getElementById('kpTissueStatus');
     if (st) st.value = 'Available';
     const qs = document.getElementById('kpQuarantineStatus');
     if (qs) qs.value = 'Cleared';
+    const medium = document.getElementById('kpStorageMedium');
+    if (medium && !medium.value) medium.value = 'Optisol-GS';
     ['kpSerologyHiv','kpSerologyHbv','kpSerologyHcv','kpSerologySyphilis','kpSerologyCmv'].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = '';
@@ -824,7 +934,6 @@ function renderKpPatientsTable() {
 function renderKpTissuesTable() {
     const body = document.getElementById('kpTissuesBody');
     if (!body) return;
-    const today = new Date();
     if (!_kpTissuesCache.length) {
         body.innerHTML = '<tr><td colspan="10"><div class="empty-state"><i class="fa-solid fa-eye-dropper"></i><p>No tissue in inventory.</p></div></td></tr>';
         return;
@@ -832,7 +941,7 @@ function renderKpTissuesTable() {
     body.innerHTML = _kpTissuesCache.map(t => {
         const day = kpProcessingDays(t.kpPreservationDate);
         const spec = parseInt(t.kpSpecular, 10) || 0;
-        const expired = t.kpExpiryDate && new Date(t.kpExpiryDate) < today;
+        const expired = kpIsExpiredOn(t.kpExpiryDate);
         const lowQ = spec > 0 && spec < 2000;
         let rowClass = '';
         if (expired || t.kpTissueStatus === 'Expired') rowClass = 'row-expired';
@@ -1063,11 +1172,12 @@ function updateKpStats() {
     const avail = _kpTissuesCache.filter(t => t.kpTissueStatus === 'Available').length;
     const emerg = _kpPatientsCache.filter(p => p.kpUrgency === 'Emergency').length;
     const done = _kpPatientsCache.filter(p => p.kpStatus === 'Completed').length;
-    const soon = new Date(); soon.setDate(soon.getDate() + 7);
+    const soonLimit = 7;
     const expiring = _kpTissuesCache.filter(t => {
         if (!t.kpExpiryDate || t.kpTissueStatus !== 'Available') return false;
-        const ex = new Date(t.kpExpiryDate);
-        return ex >= new Date() && ex <= soon;
+        if (kpIsExpiredOn(t.kpExpiryDate)) return false;
+        const d = kpDaysUntilExpiry(t.kpExpiryDate);
+        return d != null && d >= 0 && d <= soonLimit;
     }).length;
     set('kpStatPatients', _kpPatientsCache.length);
     set('kpStatWaiting', waiting);
@@ -1081,14 +1191,16 @@ function renderKpAlerts() {
     const box = document.getElementById('kpAlertsList');
     if (!box) return;
     const alerts = [];
-    const today = new Date();
     _kpTissuesCache.forEach(t => {
-        if (t.kpExpiryDate && new Date(t.kpExpiryDate) < today && t.kpTissueStatus === 'Available')
+        if (kpIsExpiredOn(t.kpExpiryDate) && t.kpTissueStatus === 'Available')
             alerts.push('Expired tissue: ' + t.kpTissueId);
         else if (t.kpExpiryDate && t.kpTissueStatus === 'Available') {
-            const ex = new Date(t.kpExpiryDate);
-            const d = Math.ceil((ex - today) / 86400000);
-            if (d >= 0 && d <= 7) alerts.push('Expiring in ' + d + 'd: ' + t.kpTissueId);
+            const d = kpDaysUntilExpiry(t.kpExpiryDate);
+            if (d != null && d >= 0 && d <= 7) {
+                alerts.push(d === 0
+                    ? 'Expires today: ' + t.kpTissueId
+                    : 'Expiring in ' + d + 'd: ' + t.kpTissueId);
+            }
         }
         if (parseInt(t.kpSpecular, 10) > 0 && parseInt(t.kpSpecular, 10) < 2000)
             alerts.push('Low specular: ' + t.kpTissueId);
