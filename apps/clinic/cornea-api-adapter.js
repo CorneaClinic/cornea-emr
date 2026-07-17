@@ -236,7 +236,7 @@
     if (global.CorneaSections) {
       global.CorneaSections.apply(user?.emrSections || null);
     }
-    if (user?.emrSections?.user_admin && global.CorneaAdminUsers) {
+    if (user && (user.emrSections?.user_admin || user.role === 'admin') && global.CorneaAdminUsers) {
       global.CorneaAdminUsers.init();
     }
   }
@@ -790,7 +790,17 @@
     getToken: () => token || localStorage.getItem(STORAGE_TOKEN) || '',
 
     async request(path, options = {}) {
-      return api(path, options);
+      const opts = { ...options };
+      if (
+        opts.body != null &&
+        typeof opts.body === 'object' &&
+        !(opts.body instanceof FormData) &&
+        !(opts.body instanceof Blob) &&
+        !(opts.body instanceof ArrayBuffer)
+      ) {
+        opts.body = JSON.stringify(opts.body);
+      }
+      return api(path, opts);
     },
 
     async downloadBlob(path) {

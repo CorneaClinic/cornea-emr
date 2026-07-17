@@ -38,7 +38,23 @@
     }
 
     const args = parseArgs(target.getAttribute('data-csp-args'));
-    const result = fn.apply(target, args);
+    let result;
+    try {
+      result = fn.apply(target, args);
+    } catch (err) {
+      console.error('[CSP] Handler failed:', action, err);
+      return;
+    }
+    if (result && typeof result.then === 'function') {
+      result.catch((err) => {
+        console.error('[CSP] Async handler failed:', action, err);
+        if (typeof global.showToast === 'function') {
+          global.showToast(err?.message || String(err), 'error');
+        } else {
+          global.alert?.(err?.message || String(err));
+        }
+      });
+    }
     if (result === false) event.preventDefault();
   });
 })();
