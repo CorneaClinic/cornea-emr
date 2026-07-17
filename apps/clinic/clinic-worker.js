@@ -21,11 +21,22 @@ export default {
 
     const contentType = headers.get('content-type') || '';
     const path = url.pathname || '';
-    const looksLikeStatic = /\.(js|mjs|css|map|json|wasm|png|jpe?g|gif|svg|ico|woff2?)$/i.test(path);
+    const isBinaryAsset = /\.(png|jpe?g|gif|webp|svg|ico|woff2?|ttf|otf|eot|wasm|map)$/i.test(path);
+    const looksLikeTextStatic = /\.(js|mjs|css|json)$/i.test(path);
+
+    // Binary assets (fonts/images) must pass through untouched — never .text().
+    if (isBinaryAsset && assetRes.ok) {
+      if (/\.woff2$/i.test(path)) headers.set('Content-Type', 'font/woff2');
+      else if (/\.woff$/i.test(path)) headers.set('Content-Type', 'font/woff');
+      if (/\/assets\/(vendor|fonts)\//i.test(path)) {
+        headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+      }
+      return new Response(assetRes.body, { status: assetRes.status, headers });
+    }
 
     // Guard: SPA/index fallback must never be served as JS/CSS (breaks nav/sections).
     // Check path + content-type; also sniff HTML bodies when type is wrong/missing.
-    if (looksLikeStatic && assetRes.ok) {
+    if (looksLikeTextStatic && assetRes.ok) {
       const peek = await assetRes.clone().text();
       const isHtml =
         contentType.includes('text/html') ||
