@@ -12,10 +12,15 @@ import {
   WORKFLOW_STAGES,
   SAFETY_CHECKLIST_ITEMS,
   PREOP_FIT_STATUSES,
+  WHO_CHECKLIST_PHASES,
+  POSTOP_MILESTONE_STAGES,
   defaultSafetyChecklist,
+  defaultWhoChecklist,
   computeChecklistCompletion,
   validateAdvanceToStage,
   deriveSafetyFlags,
+  deriveRequiredActions,
+  whoPhaseComplete,
   nextStage,
   procedureRequiresTissue
 } from '../core/surgical-workflow.js';
@@ -86,13 +91,25 @@ export function mapSurgicalEpisode(row) {
     preopAssessment: parseJsonObject(row.preop_assessment),
     safetyChecklist: parseJsonObject(row.safety_checklist),
     safetyOverride: row.safety_override || null,
+    whoChecklist: parseJsonObject(row.who_checklist),
+    postopFollowups: Array.isArray(row.postop_followups) ? row.postop_followups : [],
     safetyChecklistPct: computeChecklistCompletion(
       parseJsonObject(row.safety_checklist),
       row.planned_procedure
     ),
     safetyFlags: row.safety_flags || [],
+    requiredActions: deriveRequiredActions({
+      consentStatus: row.consent_status,
+      preopStatus: row.preop_status,
+      safetyChecklist: parseJsonObject(row.safety_checklist),
+      plannedProcedure: row.planned_procedure,
+      tissueId: row.tissue_id,
+      stage: row.stage,
+      whoSignInStatus: row.who_sign_in_status,
+      whoTimeOutStatus: row.who_time_out_status,
+      whoSignOutStatus: row.who_sign_out_status
+    }),
     stageHistory: row.stage_history || [],
-    requiredActions: row.required_actions || [],
     linkedDocuments: row.linked_documents || [],
     notes: row.notes,
     revision: row.revision,
@@ -104,6 +121,8 @@ export function getSurgicalWorkflowMeta() {
   return {
     stages: WORKFLOW_STAGES,
     safetyChecklistItems: SAFETY_CHECKLIST_ITEMS,
+    whoChecklistPhases: WHO_CHECKLIST_PHASES,
+    postopMilestoneStages: POSTOP_MILESTONE_STAGES,
     preopFitStatuses: PREOP_FIT_STATUSES,
     safetyFlagDefinitions: SAFETY_FLAG_DEFS
   };
@@ -695,7 +714,14 @@ export async function getSurgicalCentreDashboard(clinicId, dateStr) {
         COUNT(*) FILTER (
           WHERE (consent_status <> 'COMPLETE' OR who_sign_in_status = 'PENDING' OR who_time_out_status = 'PENDING')
           AND workflow_status = 'OPEN'
-        ) AS safety_alerts
+        ) AS safety_alerts,
+        COUNT(*) FILTER (
+          WHERE stage IN ('SURGICAL_DECISION', 'SURGICAL_RECOMMENDATION', 'PATIENT_COUNSELLING')
+          AND workflow_status = 'OPEN'
+        ) AS pending_decisions,
+        COUNT(*) FILTER (
+          WHERE stage LIKE 'POST_OP_%' AND stage_status <> 'COMPLETED' AND workflow_status = 'OPEN'
+        ) AS postop_due
       FROM surgical_episodes
       WHERE clinic_id = $1
     `,
@@ -713,8 +739,286 @@ export async function getSurgicalCentreDashboard(clinicId, dateStr) {
       completedCases: Number(r.completed_cases || 0),
       cancelledCases: Number(r.cancelled_cases || 0),
       emergencyCases: Number(r.emergency_cases || 0),
-      safetyAlerts: Number(r.safety_alerts || 0)
+      safetyAlerts: Number(r.safety_alerts || 0),
+      pendingDecisions: Number(r.pending_decisions || 0),
+      postopDue: Number(r.postop_due || 0)
     },
     safetyFlagDefinitions: SAFETY_FLAG_DEFS
   };
+}
+
+export async function saveWhoChecklist(req, id, body) {
+  const clinicId = req.user.clinicId;
+  const userId = req.user.sub;
+  const existing = await getSurgicalEpisodeById(clinicId, id);
+  const phaseId = requireString(body.phase, 'phase');
+  const phase = WHO_CHECKLIST_PHASES.find((p) => p.id === phaseId);
+  if (!phase) throw new ValidationError('Invalid WHO checklist phase');
+
+  const incoming = parseJsonObject(body.checklist);
+  const checklist = { ...defaultWhoChecklist(), ...parseJsonObject(existing.whoChecklist) };
+  checklist[phaseId] = { ...checklist[phaseId] };
+  for (const item of phase.items) {
+    if (!incoming[item.key]) continue;
+    const patch = incoming[item.key];
+    checklist[phaseId][item.key] = {
+      done: patch.done === true,
+      at: patch.done ? new Date().toISOString() : null,
+      by: patch.done ? userId : null,
+      note: optionalString(patch.note, `${item.key}.note`) || ''
+    };
+  }
+
+  const statusUpdates = {};
+  if (whoPhaseComplete(checklist, phaseId)) {
+    if (phase.statusField === 'whoSignInStatus') statusUpdates.who_sign_in_status = 'COMPLETED';
+    if (phase.statusField === 'whoTimeOutStatus') statusUpdates.who_time_out_status = 'COMPLETED';
+    if (phase.statusField === 'whoSignOutStatus') statusUpdates.who_sign_out_status = 'COMPLETED';
+  }
+
+  const { rows } = await query(
+    `
+      UPDATE surgical_episodes
+         SET who_checklist = $3,
+             who_sign_in_status = COALESCE($4, who_sign_in_status),
+             who_time_out_status = COALESCE($5, who_time_out_status),
+             who_sign_out_status = COALESCE($6, who_sign_out_status),
+             safety_flags = $7,
+             updated_by = $8,
+             revision = revision + 1
+       WHERE clinic_id = $1 AND id = $2
+      RETURNING *
+    `,
+    [
+      clinicId,
+      id,
+      JSON.stringify(checklist),
+      statusUpdates.who_sign_in_status || null,
+      statusUpdates.who_time_out_status || null,
+      statusUpdates.who_sign_out_status || null,
+      JSON.stringify(
+        deriveSafetyFlags({
+          ...existing,
+          whoChecklist: checklist,
+          whoSignInStatus: statusUpdates.who_sign_in_status || existing.whoSignInStatus,
+          whoTimeOutStatus: statusUpdates.who_time_out_status || existing.whoTimeOutStatus,
+          whoSignOutStatus: statusUpdates.who_sign_out_status || existing.whoSignOutStatus
+        })
+      ),
+      userId
+    ]
+  );
+  await auditMutation(req, 'surgical_episode', id, 'who_checklist', { phase: phaseId });
+  return mapSurgicalEpisode(rows[0]);
+}
+
+export async function recordEpisodeEvent(req, id, body) {
+  const clinicId = req.user.clinicId;
+  const userId = req.user.sub;
+  const existing = await getSurgicalEpisodeById(clinicId, id);
+  const event = requireString(body.event, 'event').trim().toUpperCase();
+  const now = new Date().toISOString();
+
+  const patch = { updated_by: userId };
+  let stage = existing.stage;
+  let stageStatus = existing.stageStatus;
+
+  switch (event) {
+    case 'CONSENT_COMPLETE':
+      patch.consent_status = 'COMPLETE';
+      if (stage === 'SURGICAL_DECISION' || stage === 'PATIENT_COUNSELLING') stage = 'CONSENT';
+      break;
+    case 'ENTER_BLOCK':
+      stage = 'BLOCK_ROOM';
+      stageStatus = 'IN_PROGRESS';
+      break;
+    case 'SURGERY_STARTED':
+      stage = 'OPERATING_THEATRE';
+      stageStatus = 'IN_PROGRESS';
+      patch.surgery_started_at = now;
+      break;
+    case 'SURGERY_COMPLETED':
+      stage = 'RECOVERY';
+      stageStatus = 'IN_PROGRESS';
+      patch.surgery_completed_at = now;
+      if (body.actualProcedure) patch.actual_procedure = requireString(body.actualProcedure, 'actualProcedure');
+      break;
+    case 'DISCHARGED':
+      stage = 'DISCHARGE';
+      stageStatus = 'COMPLETED';
+      patch.discharged_at = now;
+      break;
+    case 'WORKFLOW_COMPLETE':
+      patch.workflow_status = 'COMPLETED';
+      stage = 'FINAL_SURGICAL_OUTCOME';
+      stageStatus = 'COMPLETED';
+      patch.final_outcome_at = now;
+      break;
+    default:
+      throw new ValidationError('Invalid episode event');
+  }
+
+  const stageHistory = [...(existing.stageHistory || [])];
+  if (stage !== existing.stage || stageStatus !== existing.stageStatus) {
+    stageHistory.push({ stage, status: stageStatus, at: now, by: userId, event });
+  }
+
+  const { rows } = await query(
+    `
+      UPDATE surgical_episodes
+         SET consent_status = COALESCE($3, consent_status),
+             stage = $4,
+             stage_status = $5,
+             workflow_status = COALESCE($6, workflow_status),
+             surgery_started_at = COALESCE($7, surgery_started_at),
+             surgery_completed_at = COALESCE($8, surgery_completed_at),
+             discharged_at = COALESCE($9, discharged_at),
+             final_outcome_at = COALESCE($10, final_outcome_at),
+             actual_procedure = COALESCE($11, actual_procedure),
+             stage_history = $12,
+             safety_flags = $13,
+             updated_by = $14,
+             revision = revision + 1
+       WHERE clinic_id = $1 AND id = $2
+      RETURNING *
+    `,
+    [
+      clinicId,
+      id,
+      patch.consent_status || null,
+      stage,
+      stageStatus,
+      patch.workflow_status || null,
+      patch.surgery_started_at || null,
+      patch.surgery_completed_at || null,
+      patch.discharged_at || null,
+      patch.final_outcome_at || null,
+      patch.actual_procedure || null,
+      JSON.stringify(stageHistory),
+      JSON.stringify(
+        deriveSafetyFlags({
+          ...existing,
+          stage,
+          consentStatus: patch.consent_status || existing.consentStatus,
+          whoSignInStatus: existing.whoSignInStatus,
+          whoTimeOutStatus: existing.whoTimeOutStatus
+        })
+      ),
+      userId
+    ]
+  );
+  await auditMutation(req, 'surgical_episode', id, 'episode_event', { event });
+  return mapSurgicalEpisode(rows[0]);
+}
+
+export async function savePostopFollowup(req, id, body) {
+  const clinicId = req.user.clinicId;
+  const userId = req.user.sub;
+  const existing = await getSurgicalEpisodeById(clinicId, id);
+  const milestoneId = assertInSet(requireString(body.milestoneId, 'milestoneId').trim(), STAGES, 'milestoneId');
+
+  const entry = {
+    milestoneId,
+    visitDate: parseDate(body.visitDate, 'visitDate', true),
+    visualAcuity: optionalString(body.visualAcuity, 'visualAcuity'),
+    graftStatus: optionalString(body.graftStatus, 'graftStatus'),
+    complications: optionalString(body.complications, 'complications'),
+    notes: optionalString(body.notes, 'notes'),
+    completed: body.completed !== false,
+    recordedAt: new Date().toISOString(),
+    recordedBy: userId
+  };
+
+  const followups = Array.isArray(existing.postopFollowups) ? [...existing.postopFollowups] : [];
+  const idx = followups.findIndex((f) => f.milestoneId === milestoneId);
+  if (idx >= 0) followups[idx] = { ...followups[idx], ...entry };
+  else followups.push(entry);
+
+  let stage = existing.stage;
+  let stageStatus = existing.stageStatus;
+  const milestoneIdx = WORKFLOW_STAGES.findIndex((s) => s.id === milestoneId);
+  const currentIdx = WORKFLOW_STAGES.findIndex((s) => s.id === stage);
+  if (entry.completed && milestoneIdx >= 0 && milestoneIdx > currentIdx) {
+    stage = milestoneId;
+    stageStatus = 'COMPLETED';
+  }
+
+  const { rows } = await query(
+    `
+      UPDATE surgical_episodes
+         SET postop_followups = $3,
+             stage = $4,
+             stage_status = $5,
+             updated_by = $6,
+             revision = revision + 1
+       WHERE clinic_id = $1 AND id = $2
+      RETURNING *
+    `,
+    [clinicId, id, JSON.stringify(followups), stage, stageStatus, userId]
+  );
+  await auditMutation(req, 'surgical_episode', id, 'postop_followup', { milestoneId });
+  return mapSurgicalEpisode(rows[0]);
+}
+
+function stageIndex(stageId) {
+  return WORKFLOW_STAGES.findIndex((s) => s.id === stageId);
+}
+
+export async function linkKeratoplastyToEpisode(req, id, body) {
+  const clinicId = req.user.clinicId;
+  const existing = await getSurgicalEpisodeById(clinicId, id);
+  const kpId = requireUuid(body.keratoplastyPatientId, 'keratoplastyPatientId');
+  const { rows: kpRows } = await query(
+    `
+      SELECT id, full_name, eye, diagnosis, procedure, emr_patient_mrn, emr_patient_uuid, recommended_tissue_id
+      FROM keratoplasty_patients
+      WHERE clinic_id = $1 AND id = $2
+    `,
+    [clinicId, kpId]
+  );
+  if (!kpRows[0]) throw new NotFoundError('Keratoplasty patient not found');
+  const kp = kpRows[0];
+  const tissueId = kp.recommended_tissue_id || (await resolveTissueFromKeratoplasty(clinicId, kpId));
+
+  const { rows } = await query(
+    `
+      UPDATE surgical_episodes
+         SET keratoplasty_patient_id = $3,
+             tissue_id = COALESCE($4, tissue_id),
+             patient_id = COALESCE($5, patient_id),
+             patient_mrn = COALESCE($6, patient_mrn),
+             patient_name = COALESCE($7, patient_name),
+             eye = COALESCE($8, eye),
+             diagnosis = COALESCE($9, diagnosis),
+             planned_procedure = COALESCE($10, planned_procedure),
+             safety_flags = $11,
+             updated_by = $12,
+             revision = revision + 1
+       WHERE clinic_id = $1 AND id = $2
+      RETURNING *
+    `,
+    [
+      clinicId,
+      id,
+      kpId,
+      tissueId,
+      kp.emr_patient_uuid,
+      kp.emr_patient_mrn,
+      kp.full_name,
+      kp.eye ? String(kp.eye).toUpperCase().slice(0, 2) : null,
+      kp.diagnosis,
+      kp.procedure,
+      JSON.stringify(
+        deriveSafetyFlags({
+          ...existing,
+          tissueId,
+          keratoplastyPatientId: kpId,
+          plannedProcedure: kp.procedure || existing.plannedProcedure
+        })
+      ),
+      req.user.sub
+    ]
+  );
+  await auditMutation(req, 'surgical_episode', id, 'link_keratoplasty', { keratoplastyPatientId: kpId });
+  return mapSurgicalEpisode(rows[0]);
 }

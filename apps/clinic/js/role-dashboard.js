@@ -142,15 +142,16 @@
       showTodayActivity: false,
       showInstituteMetrics: false,
       widgets: [
-        widget('ot_list', "Today's OT List", 'fa-hospital', { soon: true }),
-        widget('block', 'Patients in Block Room', 'fa-syringe', { soon: true }),
-        widget('theatre', 'Patients in Theatre', 'fa-bed-pulse', { soon: true }),
+        widget('ot_list', "Today's OT List", 'fa-hospital', { valueId: 'roleW_otSched', linkTab: 'surgicalCentreTab', hint: 'Live count from Surgical Centre command board.' }),
+        widget('block', 'Patients in Block Room', 'fa-syringe', { valueId: 'roleW_inBlock', linkAction: 'CorneaSurgicalCentre.openFromNav', linkArgs: ['intraop'], hint: 'Block room board in Surgical Centre.' }),
+        widget('theatre', 'Patients in Theatre', 'fa-bed-pulse', { valueId: 'roleW_inOt', linkAction: 'CorneaSurgicalCentre.openFromNav', linkArgs: ['intraop'] }),
         widget('instruments', 'Instrument Checklist', 'fa-clipboard-check', { soon: true }),
         widget('sterile', 'Sterilization Status', 'fa-shield-halved', { soon: true }),
-        widget('pending_cases', 'Pending Cases', 'fa-list-check', { soon: true })
+        widget('pending_cases', 'Pending Cases', 'fa-list-check', { valueId: 'roleW_sxPending', linkAction: 'CorneaSurgicalCentre.openFromNav', linkArgs: ['waiting'] })
       ],
       actions: [
-        action('WHO Checklist', 'fa-clipboard-list', 'navComingSoon', ['WHO Checklist'], { soon: true }),
+        action('WHO Checklist', 'fa-clipboard-list', 'CorneaSurgicalCentre.openFromNav', ['intraop'], { section: 'surgical_centre' }),
+        action('Surgical Centre', 'fa-hospital', 'switchTab', ['surgicalCentreTab'], { section: 'surgical_centre' }),
         action('Keratoplasty', 'fa-hand-holding-medical', 'switchTab', ['keratoplastyTab'], { section: 'keratoplasty' }),
         action('Patient Flow', 'fa-route', 'switchTab', ['flowTab'], { section: 'patient_flow' })
       ],
@@ -160,7 +161,7 @@
       showTodayActivity: false,
       showInstituteMetrics: true,
       widgets: [
-        widget('ot_sched', "Today's OT Schedule", 'fa-calendar-check', { soon: true }),
+        widget('ot_sched', "Today's OT Schedule", 'fa-calendar-check', { valueId: 'roleW_otSched', linkAction: 'CorneaSurgicalCentre.openFromNav', linkArgs: ['scheduling'] }),
         widget('ot_util', 'OT Utilisation', 'fa-chart-pie', { soon: true }),
         widget('delays', 'Delays', 'fa-clock', { soon: true }),
         widget('cancelled', 'Cancelled Cases', 'fa-ban', { soon: true }),
@@ -216,8 +217,8 @@
       widgets: [
         widget('clinic_c', "Today's Clinic", 'fa-stethoscope', { valueId: 'roleW_todayVisits', linkTab: 'flowTab' }),
         widget('urgent_ref', 'Urgent Referrals', 'fa-truck-medical', { linkTab: 'flowTab' }),
-        widget('sx_decisions', 'Pending Surgical Decisions', 'fa-scale-balanced', { soon: true }),
-        widget('postop', 'Postoperative Reviews', 'fa-user-doctor', { linkTab: 'appointmentsTab' }),
+        widget('sx_decisions', 'Pending Surgical Decisions', 'fa-scale-balanced', { valueId: 'roleW_sxPending', linkAction: 'CorneaSurgicalCentre.openFromNav', linkArgs: ['waiting'] }),
+        widget('postop', 'Post-operative Reviews', 'fa-user-doctor', { valueId: 'roleW_postopDue', linkAction: 'CorneaSurgicalCentre.openFromNav', linkArgs: ['postop'] }),
         widget('ulcers', 'Corneal Ulcers', 'fa-virus', { linkTab: 'keratitisTab' }),
         widget('rejection', 'Graft Rejections', 'fa-heart-crack', { linkTab: 'keratoplastyTab' }),
         widget('emergency', 'Emergency Consultations', 'fa-bell', { linkTab: 'flowTab' })
@@ -547,6 +548,9 @@
     render();
     syncWidgetValues();
     updateClock();
+    if (global.__corneaCloudMode && global.CorneaApi?.isEnabled?.()) {
+      global.CorneaSurgicalCentre?.refreshDashboard?.().catch(() => {});
+    }
   }
 
   function updateClock() {

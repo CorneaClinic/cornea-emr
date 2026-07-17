@@ -162,5 +162,105 @@ export function deriveSafetyFlags(episode) {
   const pct = computeChecklistCompletion(episode.safetyChecklist, episode.plannedProcedure);
   if (pct < 100 && stageRequiresSafetyGate(episode.stage)) flags.push('FAILED_CHECKLIST');
   if (episode.preopAssessment?.allergyAlert) flags.push('ALLERGY_ALERT');
+  if (episode.whoSignInStatus === 'PENDING' && ['BLOCK_ROOM', 'OPERATING_THEATRE'].includes(episode.stage)) {
+    flags.push('WHO_SIGNIN_PENDING');
+  }
+  if (episode.whoTimeOutStatus === 'PENDING' && episode.stage === 'OPERATING_THEATRE') {
+    flags.push('WHO_TIMEOUT_PENDING');
+  }
   return flags;
+}
+
+/** WHO Surgical Safety Checklist — three phases. */
+export const WHO_CHECKLIST_PHASES = Object.freeze([
+  {
+    id: 'sign_in',
+    label: 'Sign in (before anaesthesia)',
+    statusField: 'whoSignInStatus',
+    items: [
+      { key: 'identity_confirmed', label: 'Patient identity confirmed', mandatory: true },
+      { key: 'site_marked', label: 'Site marked and confirmed', mandatory: true },
+      { key: 'anaesthesia_check', label: 'Anaesthesia safety check complete', mandatory: true },
+      { key: 'pulse_oximeter', label: 'Pulse oximeter on and functioning', mandatory: true },
+      { key: 'allergy_confirmed', label: 'Known allergy confirmed', mandatory: true },
+      { key: 'airway_risk', label: 'Difficult airway / aspiration risk assessed', mandatory: true }
+    ]
+  },
+  {
+    id: 'time_out',
+    label: 'Time out (before skin incision)',
+    statusField: 'whoTimeOutStatus',
+    items: [
+      { key: 'team_intro', label: 'Team members introduced by name and role', mandatory: true },
+      { key: 'procedure_confirmed', label: 'Procedure and site confirmed', mandatory: true },
+      { key: 'antibiotic_given', label: 'Antibiotic prophylaxis given (if indicated)', mandatory: false },
+      { key: 'critical_steps', label: 'Anticipated critical events reviewed', mandatory: true },
+      { key: 'imaging_displayed', label: 'Essential imaging displayed (if applicable)', mandatory: false }
+    ]
+  },
+  {
+    id: 'sign_out',
+    label: 'Sign out (before leaving theatre)',
+    statusField: 'whoSignOutStatus',
+    items: [
+      { key: 'procedure_recorded', label: 'Procedure name recorded', mandatory: true },
+      { key: 'instrument_count', label: 'Instrument / sponge / needle counts correct', mandatory: true },
+      { key: 'specimen_labelled', label: 'Specimen labelled (if applicable)', mandatory: false },
+      { key: 'equipment_issues', label: 'Equipment problems addressed', mandatory: true }
+    ]
+  }
+]);
+
+export const POSTOP_MILESTONE_STAGES = Object.freeze([
+  { id: 'POST_OP_DAY_1', label: 'Post-op day 1' },
+  { id: 'POST_OP_WEEK_1', label: 'Post-op week 1' },
+  { id: 'POST_OP_MONTH_1', label: 'Post-op month 1' },
+  { id: 'POST_OP_MONTH_3', label: 'Post-op month 3' },
+  { id: 'POST_OP_MONTH_6', label: 'Post-op month 6' },
+  { id: 'LONG_TERM_FOLLOW_UP', label: 'Long-term follow-up' },
+  { id: 'FINAL_SURGICAL_OUTCOME', label: 'Final surgical outcome' }
+]);
+
+export function defaultWhoChecklist() {
+  const checklist = {};
+  for (const phase of WHO_CHECKLIST_PHASES) {
+    checklist[phase.id] = {};
+    for (const item of phase.items) {
+      checklist[phase.id][item.key] = { done: false, at: null, by: null, note: '' };
+    }
+  }
+  return checklist;
+}
+
+export function whoPhaseComplete(checklist, phaseId) {
+  const phase = WHO_CHECKLIST_PHASES.find((p) => p.id === phaseId);
+  if (!phase) return false;
+  const entries = checklist?.[phaseId] || {};
+  return phase.items
+    .filter((item) => item.mandatory)
+    .every((item) => entries[item.key]?.done === true);
+}
+
+export function deriveRequiredActions(episode) {
+  const actions = [];
+  if (episode.consentStatus === 'INCOMPLETE') actions.push('Complete consent');
+  if (episode.preopStatus === 'REQUIRES_REVIEW' || episode.preopStatus === 'NOT_FIT') {
+    actions.push('Resolve pre-operative clearance');
+  }
+  if (mandatoryChecklistIncomplete(episode.safetyChecklist, episode.plannedProcedure).length) {
+    actions.push('Complete pre-operative safety checklist');
+  }
+  if (procedureRequiresTissue(episode.plannedProcedure) && !episode.tissueId) {
+    actions.push('Link donor tissue from eye bank');
+  }
+  if (episode.whoSignInStatus === 'PENDING' && ['BLOCK_ROOM', 'OPERATING_THEATRE', 'RECOVERY'].includes(episode.stage)) {
+    actions.push('Complete WHO sign-in');
+  }
+  if (episode.whoTimeOutStatus === 'PENDING' && ['OPERATING_THEATRE', 'RECOVERY'].includes(episode.stage)) {
+    actions.push('Complete WHO time-out');
+  }
+  if (episode.whoSignOutStatus === 'PENDING' && ['RECOVERY', 'DISCHARGE', 'WARD_DAY_CARE'].includes(episode.stage)) {
+    actions.push('Complete WHO sign-out');
+  }
+  return actions;
 }

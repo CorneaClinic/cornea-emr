@@ -10,9 +10,13 @@ import {
   getSurgicalCentreDashboard,
   getSurgicalEpisodeById,
   getSurgicalWorkflowMeta,
+  linkKeratoplastyToEpisode,
   listSurgicalEpisodes,
+  recordEpisodeEvent,
+  savePostopFollowup,
   savePreopAssessment,
   saveSafetyChecklist,
+  saveWhoChecklist,
   scheduleEpisodeOt,
   updateSurgicalEpisode
 } from '../services/surgicalEpisodeService.js';
@@ -124,6 +128,46 @@ router.post(
   requirePermission(PERMISSIONS.OR_SCHEDULE_WRITE),
   asyncHandler(async (req, res) => {
     const data = await scheduleEpisodeOt(req, req.params.id, req.body || {});
+    res.json({ data });
+  })
+);
+
+router.post(
+  '/episodes/:id/who-checklist',
+  authenticate,
+  requirePermission(PERMISSIONS.OR_SCHEDULE_WRITE),
+  asyncHandler(async (req, res) => {
+    const data = await saveWhoChecklist(req, req.params.id, req.body || {});
+    res.json({ data });
+  })
+);
+
+router.post(
+  '/episodes/:id/events',
+  authenticate,
+  requirePermission(PERMISSIONS.OR_SCHEDULE_WRITE),
+  asyncHandler(async (req, res) => {
+    const data = await recordEpisodeEvent(req, req.params.id, req.body || {});
+    res.json({ data });
+  })
+);
+
+router.post(
+  '/episodes/:id/postop-followup',
+  authenticate,
+  requirePermission(PERMISSIONS.OR_SCHEDULE_WRITE),
+  asyncHandler(async (req, res) => {
+    const data = await savePostopFollowup(req, req.params.id, req.body || {});
+    res.json({ data });
+  })
+);
+
+router.post(
+  '/episodes/:id/link-keratoplasty',
+  authenticate,
+  requirePermission(PERMISSIONS.OR_SCHEDULE_WRITE),
+  asyncHandler(async (req, res) => {
+    const data = await linkKeratoplastyToEpisode(req, req.params.id, req.body || {});
     res.json({ data });
   })
 );

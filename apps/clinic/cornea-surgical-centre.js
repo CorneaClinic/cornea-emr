@@ -1,5 +1,5 @@
 /**
- * Surgical Centre — Phase 2: pre-op, safety checklist, OT scheduling, episode detail.
+ * Surgical Centre — Phases 1–4: workflow, pre-op, intra-op WHO, recovery, post-op.
  */
 (function (global) {
   'use strict';
@@ -15,7 +15,10 @@
     waiting: 'surgicalWaitingPanel',
     episodes: 'surgicalEpisodesPanel',
     preop: 'surgicalPreopPanel',
-    scheduling: 'surgicalSchedulingPanel'
+    scheduling: 'surgicalSchedulingPanel',
+    intraop: 'surgicalIntraopPanel',
+    recovery: 'surgicalRecoveryPanel',
+    postop: 'surgicalPostopPanel'
   });
 
   function apiOn() {
@@ -85,6 +88,8 @@
     statsHost.innerHTML = cards
       .map(([label, value]) => `<div class="kp-stat"><div class="val">${esc(value)}</div><div class="lbl">${esc(label)}</div></div>`)
       .join('');
+
+    syncRoleDashboardStats(d);
 
     const flags = document.getElementById('surgicalSafetyFlags');
     if (!flags) return;
@@ -180,6 +185,99 @@
     `).join('');
   }
 
+  function syncRoleDashboardStats(d) {
+    const map = {
+      roleW_otSched: d.todaysCases || 0,
+      roleW_inBlock: d.inBlockRoom || 0,
+      roleW_inOt: d.inOt || 0,
+      roleW_inRecovery: d.inRecovery || 0,
+      roleW_sxPending: d.pendingDecisions || 0,
+      roleW_postopDue: d.postopDue || 0
+    };
+    Object.entries(map).forEach(([id, val]) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = String(val);
+    });
+    global.CorneaRoleDashboard?.syncWidgetValues?.();
+  }
+
+  function whoSummary(ep) {
+    return [
+      ep.whoSignInStatus === 'COMPLETED' ? 'SI✓' : 'SI—',
+      ep.whoTimeOutStatus === 'COMPLETED' ? 'TO✓' : 'TO—',
+      ep.whoSignOutStatus === 'COMPLETED' ? 'SO✓' : 'SO—'
+    ].join(' ');
+  }
+
+  function renderIntraopPanel() {
+    const host = document.getElementById('surgicalIntraopBody');
+    if (!host) return;
+    const rows = _episodes.filter((e) =>
+      ['BLOCK_ROOM', 'OPERATING_THEATRE', 'PRE_OP_VERIFICATION', 'OT_SCHEDULING'].includes(e.stage) ||
+      e.workflowStatus === 'OPEN'
+    ).filter((e) => ['BLOCK_ROOM', 'OPERATING_THEATRE', 'PRE_OP_VERIFICATION', 'OT_SCHEDULING'].includes(e.stage) || e.scheduledAt);
+    const list = rows.length ? rows : _episodes.filter((e) => ['BLOCK_ROOM', 'OPERATING_THEATRE'].includes(e.stage));
+    if (!list.length) {
+      host.innerHTML = '<tr><td colspan="6" class="text-muted">No cases in block room or theatre.</td></tr>';
+      return;
+    }
+    host.innerHTML = list.map((e) => `
+      <tr>
+        <td>${esc(e.surgicalEpisodeId)}</td>
+        <td>${esc(e.patientName)}</td>
+        <td>${esc(stageLabel(e.stage))}</td>
+        <td>${esc(whoSummary(e))}</td>
+        <td>${esc(e.surgeonName || '—')}</td>
+        <td class="no-print">
+          ${actionBtn('WHO', 'fa-clipboard-list', 'openWhoForEpisode', e.id)}
+          ${actionBtn('Start', 'fa-play', 'recordEventForEpisode', e.id + ':SURGERY_STARTED')}
+          ${actionBtn('Complete', 'fa-check', 'recordEventForEpisode', e.id + ':SURGERY_COMPLETED')}
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  function renderRecoveryPanel() {
+    const host = document.getElementById('surgicalRecoveryBody');
+    if (!host) return;
+    const rows = _episodes.filter((e) => ['RECOVERY', 'WARD_DAY_CARE', 'DISCHARGE'].includes(e.stage));
+    if (!rows.length) {
+      host.innerHTML = '<tr><td colspan="6" class="text-muted">No patients in recovery or discharge workflow.</td></tr>';
+      return;
+    }
+    host.innerHTML = rows.map((e) => `
+      <tr>
+        <td>${esc(e.surgicalEpisodeId)}</td>
+        <td>${esc(e.patientName)}</td>
+        <td>${esc(e.plannedProcedure)}</td>
+        <td>${esc(stageLabel(e.stage))}</td>
+        <td>${esc(fmtDate(e.surgeryCompletedAt))}</td>
+        <td class="no-print">${actionBtn('Discharge', 'fa-door-open', 'recordEventForEpisode', e.id + ':DISCHARGED')}</td>
+      </tr>
+    `).join('');
+  }
+
+  function renderPostopPanel() {
+    const host = document.getElementById('surgicalPostopBody');
+    if (!host) return;
+    const rows = _episodes.filter((e) =>
+      e.stage.startsWith('POST_OP_') || e.stage === 'LONG_TERM_FOLLOW_UP' || e.stage === 'FINAL_SURGICAL_OUTCOME' || e.surgeryCompletedAt
+    );
+    if (!rows.length) {
+      host.innerHTML = '<tr><td colspan="5" class="text-muted">No post-operative episodes yet.</td></tr>';
+      return;
+    }
+    host.innerHTML = rows.map((e) => `
+      <tr>
+        <td>${esc(e.surgicalEpisodeId)}</td>
+        <td>${esc(e.patientName)}</td>
+        <td>${esc(stageLabel(e.stage))}</td>
+        <td>${esc((e.postopFollowups || []).length)} recorded</td>
+        <td class="no-print">${actionBtn('Follow-up', 'fa-user-doctor', 'openPostopForEpisode', e.id)}</td>
+      </tr>
+    `).join('');
+  }
+
   function renderSchedulingPanel() {
     const host = document.getElementById('surgicalSchedulingBody');
     if (!host) return;
@@ -259,6 +357,9 @@
     renderEpisodes();
     renderPreopPanel();
     renderSchedulingPanel();
+    renderIntraopPanel();
+    renderRecoveryPanel();
+    renderPostopPanel();
   }
 
   function setOfflineBanner(message) {
@@ -306,6 +407,9 @@
       renderEpisodes();
       renderPreopPanel();
       renderSchedulingPanel();
+      renderIntraopPanel();
+      renderRecoveryPanel();
+      renderPostopPanel();
       renderDashboard();
     } catch (err) {
       setOfflineBanner(`Unable to load episodes: ${err?.message || err}`);
@@ -333,6 +437,12 @@
     });
   }
 
+  function openFromNav(panel) {
+    if (typeof global.switchTab === 'function') global.switchTab('surgicalCentreTab');
+    switchPanel(panel || 'dashboard');
+    refreshAll().catch(() => {});
+  }
+
   async function openEpisodeDetail(id) {
     if (!apiOn()) return;
     try {
@@ -351,7 +461,7 @@
       setOfflineBanner('Cloud sign-in required to create a surgical episode.');
       return;
     }
-    ['surgicalNewPatientName', 'surgicalNewPatientMrn', 'surgicalNewDiagnosis', 'surgicalNewProcedure', 'surgicalNewSurgeon', 'surgicalNewNotes'].forEach((id) => {
+    ['surgicalNewPatientName', 'surgicalNewPatientMrn', 'surgicalNewDiagnosis', 'surgicalNewProcedure', 'surgicalNewSurgeon', 'surgicalNewNotes', 'surgicalNewKpId'].forEach((id) => {
       const el = document.getElementById(id);
       if (el) el.value = '';
     });
@@ -374,7 +484,8 @@
     }
 
     try {
-      await global.CorneaApi.request('/api/v1/surgical-centre/episodes', {
+      const kpId = document.getElementById('surgicalNewKpId')?.value?.trim() || null;
+      const res = await global.CorneaApi.request('/api/v1/surgical-centre/episodes', {
         method: 'POST',
         body: {
           patientName,
@@ -384,9 +495,17 @@
           eye: document.getElementById('surgicalNewEye')?.value || 'OD',
           priority: document.getElementById('surgicalNewPriority')?.value || 'ELECTIVE',
           surgeonName: document.getElementById('surgicalNewSurgeon')?.value?.trim() || null,
-          notes: document.getElementById('surgicalNewNotes')?.value?.trim() || null
+          notes: document.getElementById('surgicalNewNotes')?.value?.trim() || null,
+          keratoplastyPatientId: kpId || undefined
         }
       });
+      const created = res?.data;
+      if (created?.id && kpId) {
+        await global.CorneaApi.request(`/api/v1/surgical-centre/episodes/${encodeURIComponent(created.id)}/link-keratoplasty`, {
+          method: 'POST',
+          body: { keratoplastyPatientId: kpId }
+        }).catch(() => {});
+      }
       global.closeEmrModal?.('surgicalNewEpisodeModal');
       setOfflineBanner('');
       await refreshAll();
@@ -597,6 +716,141 @@
     if (ep) renderEpisodeDetail(ep);
   }
 
+  async function recordEpisodeEvent(id, event, extra = {}) {
+    if (!id || !event || !apiOn()) return;
+    try {
+      await global.CorneaApi.request(`/api/v1/surgical-centre/episodes/${encodeURIComponent(id)}/events`, {
+        method: 'POST',
+        body: { event, ...extra }
+      });
+      await refreshAll();
+    } catch (err) {
+      showActionError(err, 'Unable to record episode event.');
+    }
+  }
+
+  async function recordEventForEpisode(combined) {
+    const sep = String(combined).indexOf(':');
+    if (sep < 0) return;
+    const id = combined.slice(0, sep);
+    const event = combined.slice(sep + 1);
+    await recordEpisodeEvent(id, event);
+  }
+
+  async function recordConsentComplete() {
+    const id = document.getElementById('surgicalEpisodeId')?.value || _currentEpisode?.id;
+    if (!id) return;
+    await recordEpisodeEvent(id, 'CONSENT_COMPLETE');
+    const ep = await fetchEpisode(id);
+    if (ep) renderEpisodeDetail(ep);
+  }
+
+  function renderWhoPhaseForm() {
+    const host = document.getElementById('surgicalWhoChecklistForm');
+    const phaseId = document.getElementById('surgicalWhoPhase')?.value || 'sign_in';
+    if (!host) return;
+    const phase = (_workflow?.whoChecklistPhases || []).find((p) => p.id === phaseId);
+    const checklist = _currentEpisode?.whoChecklist || {};
+    const entries = checklist[phaseId] || {};
+    if (!phase) {
+      host.innerHTML = '<p class="form-hint">WHO checklist template unavailable.</p>';
+      return;
+    }
+    host.innerHTML = phase.items.map((item) => {
+      const entry = entries[item.key] || {};
+      const checked = entry.done ? 'checked' : '';
+      return `<label class="d-block mb-2"><input type="checkbox" data-who-key="${esc(item.key)}" ${checked} /> ${esc(item.label)}</label>`;
+    }).join('');
+  }
+
+  async function openWhoForEpisode(id) {
+    await fetchWorkflow();
+    const ep = _episodes.find((x) => x.id === id) || await fetchEpisode(id);
+    if (!ep) return;
+    _currentEpisode = ep;
+    document.getElementById('surgicalWhoEpisodeId').value = ep.id;
+    renderWhoPhaseForm();
+    global.openEmrModal?.('surgicalWhoModal');
+  }
+
+  function openWhoModal() {
+    if (!_currentEpisode) {
+      showActionError(null, 'Open an episode first.');
+      return;
+    }
+    document.getElementById('surgicalWhoEpisodeId').value = _currentEpisode.id;
+    renderWhoPhaseForm();
+    global.openEmrModal?.('surgicalWhoModal');
+  }
+
+  async function saveWhoChecklist() {
+    const id = document.getElementById('surgicalWhoEpisodeId')?.value || _currentEpisode?.id;
+    const phase = document.getElementById('surgicalWhoPhase')?.value;
+    if (!id || !phase) return;
+    const checklist = {};
+    checklist[phase] = {};
+    document.querySelectorAll('#surgicalWhoChecklistForm input[data-who-key]').forEach((el) => {
+      const key = el.getAttribute('data-who-key');
+      checklist[phase][key] = { done: el.checked };
+    });
+    try {
+      await global.CorneaApi.request(`/api/v1/surgical-centre/episodes/${encodeURIComponent(id)}/who-checklist`, {
+        method: 'POST',
+        body: { phase, checklist: checklist[phase] }
+      });
+      global.closeEmrModal?.('surgicalWhoModal');
+      await refreshAll();
+    } catch (err) {
+      showActionError(err, 'Unable to save WHO checklist.');
+    }
+  }
+
+  function fillPostopModal(ep) {
+    document.getElementById('surgicalPostopEpisodeId').value = ep.id;
+    const sel = document.getElementById('surgicalPostopMilestone');
+    if (sel) {
+      const milestones = _workflow?.postopMilestoneStages || [];
+      sel.innerHTML = milestones.map((m) => `<option value="${esc(m.id)}">${esc(m.label)}</option>`).join('');
+    }
+    document.getElementById('surgicalPostopDate').value = new Date().toISOString().slice(0, 10);
+    document.getElementById('surgicalPostopVa').value = '';
+    document.getElementById('surgicalPostopGraft').value = '';
+    document.getElementById('surgicalPostopComplications').value = '';
+    document.getElementById('surgicalPostopNotes').value = '';
+  }
+
+  async function openPostopForEpisode(id) {
+    await fetchWorkflow();
+    const ep = _episodes.find((x) => x.id === id) || await fetchEpisode(id);
+    if (!ep) return;
+    _currentEpisode = ep;
+    fillPostopModal(ep);
+    global.openEmrModal?.('surgicalPostopModal');
+  }
+
+  async function savePostopFollowup() {
+    const id = document.getElementById('surgicalPostopEpisodeId')?.value || _currentEpisode?.id;
+    if (!id) return;
+    try {
+      await global.CorneaApi.request(`/api/v1/surgical-centre/episodes/${encodeURIComponent(id)}/postop-followup`, {
+        method: 'POST',
+        body: {
+          milestoneId: document.getElementById('surgicalPostopMilestone')?.value,
+          visitDate: document.getElementById('surgicalPostopDate')?.value,
+          visualAcuity: document.getElementById('surgicalPostopVa')?.value,
+          graftStatus: document.getElementById('surgicalPostopGraft')?.value,
+          complications: document.getElementById('surgicalPostopComplications')?.value,
+          notes: document.getElementById('surgicalPostopNotes')?.value,
+          completed: true
+        }
+      });
+      global.closeEmrModal?.('surgicalPostopModal');
+      await refreshAll();
+    } catch (err) {
+      showActionError(err, 'Unable to save post-operative follow-up.');
+    }
+  }
+
   function init() {
     const picker = document.getElementById('surgicalDatePicker');
     if (picker && !picker.value) picker.value = new Date().toISOString().slice(0, 10);
@@ -609,11 +863,15 @@
   global.CorneaSurgicalCentre = {
     init,
     switchPanel,
+    openFromNav,
     refreshAll,
     refreshDashboard,
     renderWaitingList,
     renderPreopPanel,
     renderSchedulingPanel,
+    renderIntraopPanel,
+    renderRecoveryPanel,
+    renderPostopPanel,
     openNewEpisodeModal,
     saveNewEpisode,
     openEpisodeDetail,
@@ -627,6 +885,14 @@
     openScheduleModal,
     openScheduleForEpisode,
     saveSchedule,
+    openWhoModal,
+    openWhoForEpisode,
+    renderWhoPhaseForm,
+    saveWhoChecklist,
+    openPostopForEpisode,
+    savePostopFollowup,
+    recordEventForEpisode,
+    recordConsentComplete,
     advanceStage,
     advanceCurrentEpisode
   };
