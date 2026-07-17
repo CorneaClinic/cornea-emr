@@ -121,10 +121,15 @@ Workflow: `.github/workflows/e2e-nightly.yml` (02:00 UTC daily).
 
 **1. Create the monitor user** (production DB — requires `apps/api/.env.production`):
 
+Use **`admin`** role so the dashboard institute KPI block is visible (required by `staging-smoke`):
+
 ```powershell
+$env:STAGING_E2E_ROLE = "admin"
 npm run e2e:staging-user
 # Prints STAGING_E2E_EMAIL and a generated STAGING_E2E_PASSWORD — save both.
 ```
+
+If the monitor user already exists with another role (e.g. `receptionist`), re-run the command above with the same email/password to upgrade the role.
 
 **2. Add GitHub repository secrets** (GitHub CLI):
 

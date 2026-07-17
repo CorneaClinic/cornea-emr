@@ -59,8 +59,26 @@ async function main() {
     process.exit(1);
   }
 
+  const meRes = await fetch(`${apiUrl}/api/v1/auth/me`, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'X-Device-Id': 'staging-login-check'
+    },
+    signal: AbortSignal.timeout(20_000)
+  });
+  const meBody = meRes.ok ? await meRes.json() : null;
+  const role = (meBody?.user?.role || '').trim().toLowerCase();
+  const kpiUiRoles = new Set(['admin', 'cornea_consultant']);
+  if (role && !kpiUiRoles.has(role)) {
+    console.warn('');
+    console.warn(`Warning: role "${role}" hides institute KPIs in the dashboard UI.`);
+    console.warn('  staging-smoke will fail on "dashboard institute KPIs load after sign-in".');
+    console.warn('  Fix: STAGING_E2E_ROLE=admin npm run e2e:staging-user');
+    console.warn('');
+  }
+
   console.log(`OK — ${email} @ ${apiUrl}`);
-  console.log(`  visits.total=${visits.total} today=${visits.today}`);
+  console.log(`  role=${role || '(unknown)'} visits.total=${visits.total} today=${visits.today}`);
 }
 
 main().catch((err) => {

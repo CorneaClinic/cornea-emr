@@ -120,6 +120,18 @@ export async function waitForInstituteKpis(page) {
     }
   });
   await kpiResponse;
+
+  const shellHidden = await page.locator('#dashInstituteSection').evaluate((el) => Boolean(el?.hidden));
+  if (shellHidden) {
+    const role = await page.evaluate(
+      () => window.CorneaRoleDashboard?.getIdentity?.()?.role || 'unknown'
+    );
+    throw new Error(
+      `Institute KPI block hidden for role "${role}" (role dashboard showInstituteMetrics=false). ` +
+        'Re-create the monitor user: STAGING_E2E_ROLE=admin npm run e2e:staging-user'
+    );
+  }
+
   await expect(page.locator('#instituteKpisSection')).toBeVisible({ timeout: 25_000 });
   await expect(page.locator('#instituteKpisHint')).toBeHidden();
 }
