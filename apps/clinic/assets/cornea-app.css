@@ -4408,6 +4408,11 @@ body.cornea-auth-pending .nav-fab {
     .emr-findings-summary.all-normal { background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; }
 
     /* ===== Anterior Drawing Studio ===== */
+    /* Must sit above #emrPatientModal (z-index 10060) when opened from New Patient Visit. */
+    #anteriorDrawingModal.emr-modal-overlay,
+    .drawing-modal.emr-modal-overlay {
+        z-index: 10070;
+    }
     .drawing-inline-preview {
         margin-top: 12px;
         border: 1px solid var(--border);
