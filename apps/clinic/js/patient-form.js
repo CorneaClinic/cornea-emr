@@ -334,7 +334,7 @@ window.renderPatientReadOnly = function(data, containerId) {
         container.innerHTML = `<div class="emr-empty-state">
             <i class="fa-solid fa-file-medical"></i>
             <p>No visit selected. Register a new patient visit or open a record from Patient Records.</p>
-            <button type="button" class="btn-primary" onclick="openPatientFormModal('new')"><i class="fa-solid fa-user-plus"></i> New Patient Visit</button>
+            <button type="button" class="btn-primary" data-csp-action="openPatientFormModal" data-csp-args='["new"]'><i class="fa-solid fa-user-plus"></i> New Patient Visit</button>
         </div>`;
         return;
     }
@@ -837,7 +837,7 @@ function selectVisitHistoryItem(recordId, visits) {
             </button>
             ${isCurrent
                 ? '<p style="margin:0 0 8px;font-size:0.78rem;color:var(--success);font-weight:600;"><i class="fa-solid fa-circle-check"></i> This visit is open in the form</p>'
-                : `<button type="button" class="btn-primary btn-sm" style="width:100%;" onclick="openVisitFromHistory(${record.id})">
+                : `<button type="button" class="btn-primary btn-sm" style="width:100%;" data-csp-action="openVisitFromHistory" data-csp-args='[${JSON.stringify(record.id)}]'>
                     <i class="fa-solid fa-folder-open"></i> View this visit
                    </button>`}
         </div>
