@@ -854,7 +854,7 @@
 
           <button type="button" class="btn-secondary btn-sm visit-media-preview-btn" title="Preview"
 
-            onclick="CorneaVisitMedia.openPreview('${escapeHtml(item.localId)}')">
+            data-csp-action="CorneaVisitMedia.openPreview" data-csp-args='${JSON.stringify([item.localId])}'>
 
             <i class="fa-solid fa-eye"></i> Preview
 
@@ -862,7 +862,7 @@
 
           ${!item.serverAssetId ? `<button type="button" class="btn-secondary btn-sm visit-media-retry-btn" title="Retry cloud upload"
 
-            onclick="CorneaVisitMedia.retryUpload('${escapeHtml(item.localId)}')">
+            data-csp-action="CorneaVisitMedia.retryUpload" data-csp-args='${JSON.stringify([item.localId])}'>
 
             <i class="fa-solid fa-rotate-right"></i> Retry sync
 
@@ -870,7 +870,7 @@
 
           <button type="button" class="btn-danger btn-sm visit-media-remove" title="Remove"
 
-            onclick="CorneaVisitMedia.removeItem('${escapeHtml(item.localId)}')">
+            data-csp-action="CorneaVisitMedia.removeItem" data-csp-args='${JSON.stringify([item.localId])}'>
 
             <i class="fa-solid fa-trash"></i>
 

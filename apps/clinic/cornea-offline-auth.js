@@ -283,16 +283,18 @@
   }
 
   function toggleAdminPanels() {
+    if (global.CorneaSections?.syncAdminPanels) {
+      global.CorneaSections.syncAdminPanels();
+      return;
+    }
     const cloudPanel = document.getElementById('adminUsersPanel');
     const offlinePanel = document.getElementById('offlineUsersPanel');
     const cloudOn = !!global.__corneaCloudMode;
     if (cloudPanel) {
       cloudPanel.classList.toggle('emr-section-hidden', !cloudOn);
-      cloudPanel.toggleAttribute('hidden', !cloudOn);
     }
     if (offlinePanel) {
       offlinePanel.classList.toggle('emr-section-hidden', cloudOn);
-      offlinePanel.toggleAttribute('hidden', cloudOn);
     }
   }
 

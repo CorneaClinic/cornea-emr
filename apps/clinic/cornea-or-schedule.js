@@ -72,7 +72,7 @@
       <td>${esc(c.theatre || '—')}</td>
       <td>${statusBadge(c.status)}</td>
       <td class="no-print">
-        ${c.id ? `<button type="button" class="btn-secondary btn-sm" data-or-id="${esc(c.id)}" onclick="CorneaOrSchedule.markInProgress(this.dataset.orId)">Start</button>` : ''}
+        ${c.id ? `<button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaOrSchedule.markInProgress" data-csp-args='${JSON.stringify([c.id])}'>Start</button>` : ''}
       </td>
     </tr>`).join('');
   }

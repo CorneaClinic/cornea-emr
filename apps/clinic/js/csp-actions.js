@@ -10,14 +10,17 @@
       .reduce((current, key) => (current == null ? undefined : current[key]), root);
   }
 
-  function parseArgs(raw) {
+  function parseArgs(raw, target) {
     if (!raw) return [];
     try {
       const parsed = JSON.parse(raw);
       const list = Array.isArray(parsed) ? parsed : [parsed];
       return list.map((entry) => {
-        if (!entry || typeof entry !== 'object' || !entry.__expr) return entry;
-        return resolveCallable(entry.__expr);
+        if (!entry || typeof entry !== 'object') return entry;
+        if (Object.prototype.hasOwnProperty.call(entry, '__this')) return target;
+        if (typeof entry.__prop === 'string') return target?.[entry.__prop];
+        if (entry.__expr) return resolveCallable(entry.__expr);
+        return entry;
       });
     } catch {
       return [];
@@ -43,7 +46,7 @@
       return;
     }
 
-    const args = parseArgs(target.getAttribute('data-csp-args'));
+    const args = parseArgs(target.getAttribute('data-csp-args'), target);
     let result;
     try {
       result = fn.apply(target, args);

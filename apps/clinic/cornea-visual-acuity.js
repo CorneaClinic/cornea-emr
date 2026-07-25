@@ -212,8 +212,6 @@
     ['vaReNearUcva', 'vaLeNearUcva'],
     ['vaRePinholeStatus', 'vaLePinholeStatus'],
     ['vaRePinholeImprovesTo', 'vaLePinholeImprovesTo'],
-    ['vaRePresentDist', 'vaLePresentDist'],
-    ['vaRePresentNear', 'vaLePresentNear'],
     ['vaReDistBcva', 'vaLeDistBcva'],
     ['vaReNearBcva', 'vaLeNearBcva'],
     ['rxReAdd', 'rxLeAdd'],
@@ -494,14 +492,7 @@
       html += `<div class="refraction-ro-block"><h5>Unaided Visual Acuity</h5><div class="table-scroll"><table class="records-table"><thead><tr><th>Eye</th><th>Distance UCVA</th><th>Near UCVA</th><th>Pinhole</th></tr></thead><tbody>${uaRows}</tbody></table></div></div>`;
     }
 
-    const presRows = ['Re', 'Le'].map((eye) => {
-      const label = eye === 'Re' ? 'RE (OD)' : 'LE (OS)';
-      const dist = gv(d, `va${eye}PresentDist`);
-      const near = gv(d, `va${eye}PresentNear`);
-      if (!dist && !near) return '';
-      return `<tr><td><strong>${label}</strong></td><td>${dist || '—'}</td><td>${near || '—'}</td></tr>`;
-    }).filter(Boolean).join('');
-    const presMeta = [
+    const opticalMeta = [
       row('Current glasses', gv(d, 'vaPresentGlasses')),
       row('Current contact lenses', gv(d, 'vaPresentCl')),
       row('Aphakia RE / LE', [
@@ -513,12 +504,9 @@
       d.vaLePseudophakia ? 'LE' : ''
     ].filter(Boolean).join(', ') || '')
     ].filter(Boolean).join('');
-    if (presRows || presMeta) {
-      html += `<div class="refraction-ro-block"><h5>Presenting Vision</h5>`;
-      if (presRows) {
-        html += `<div class="table-scroll"><table class="records-table"><thead><tr><th>Eye</th><th>Distance</th><th>Near</th></tr></thead><tbody>${presRows}</tbody></table></div>`;
-      }
-      if (presMeta) html += `<div class="table-scroll"><table class="records-table"><tbody>${presMeta}</tbody></table></div>`;
+    if (opticalMeta) {
+      html += `<div class="refraction-ro-block"><h5>Current optical status</h5>`;
+      html += `<div class="table-scroll"><table class="records-table"><tbody>${opticalMeta}</tbody></table></div>`;
       html += `</div>`;
     }
 
@@ -698,8 +686,6 @@
       const near = $(`va${eye}NearUcva`);
       const bcvaDist = $(`va${eye}DistBcva`);
       const bcvaNear = $(`va${eye}NearBcva`);
-      const presDist = $(`va${eye}PresentDist`);
-      const presNear = $(`va${eye}PresentNear`);
       const phStatus = $(`va${eye}PinholeStatus`);
       const phImp = $(`va${eye}PinholeImprovesTo`);
       const distVal = d[`va${eye}DistUcva`] || dist?.value;
@@ -708,8 +694,6 @@
       if (near) near.innerHTML = optionHtml(NEAR_UCVA, nearVal);
       if (bcvaDist) bcvaDist.innerHTML = optionHtml(DISTANCE_UCVA, d[`va${eye}DistBcva`] || bcvaDist.value);
       if (bcvaNear) bcvaNear.innerHTML = optionHtml(NEAR_UCVA, d[`va${eye}NearBcva`] || bcvaNear.value);
-      if (presDist) presDist.innerHTML = optionHtml(DISTANCE_UCVA, d[`va${eye}PresentDist`] || presDist.value);
-      if (presNear) presNear.innerHTML = optionHtml(NEAR_UCVA, d[`va${eye}PresentNear`] || presNear.value);
       if (phStatus) phStatus.innerHTML = optionHtml(PINHOLE_STATUS, d[`va${eye}PinholeStatus`] || phStatus.value);
       if (phImp) phImp.innerHTML = optionHtml(DISTANCE_UCVA, d[`va${eye}PinholeImprovesTo`] || phImp.value);
     });

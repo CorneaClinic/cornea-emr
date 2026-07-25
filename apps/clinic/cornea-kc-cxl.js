@@ -225,7 +225,7 @@
         <td>${prog}</td>
         <td>${global.escapeHtml?.(r.kcIndexDate) || '—'}</td>
         <td class="no-print">
-          <button type="button" class="btn-secondary btn-sm" onclick="viewKcPatientDetail(${r.id})">Open</button>
+          <button type="button" class="btn-secondary btn-sm" data-csp-action="viewKcPatientDetail" data-csp-args='[${r.id}]'>Open</button>
         </td>
       </tr>`;
     }).join('');
@@ -263,7 +263,7 @@
           <td>${t.kcTopoKmax ?? '—'}</td><td>${t.kcTopoKmean ?? '—'}</td><td>${t.kcTopoThinnestPachy ?? '—'}</td>
           <td>${t.kcTopoBadD ?? '—'}</td>
           <td>${t.kcTopoProgressionFlag || 'None'}</td>
-          <td class="no-print"><button type="button" class="btn-secondary btn-sm" onclick="openKcTopoModal('edit',${t.id})">Edit</button></td>
+          <td class="no-print"><button type="button" class="btn-secondary btn-sm" data-csp-action="openKcTopoModal" data-csp-args='["edit",${t.id}]'>Edit</button></td>
         </tr>`).join('');
       }
     }
@@ -277,7 +277,7 @@
           <td>${c.kcCxlProcedureDate || ''}</td><td>${c.kcCxlEye || ''}</td><td>${c.kcCxlProtocol || ''}</td>
           <td>${c.kcCxlEpiType || ''}</td><td>${c.kcCxlUvEnergy ?? '—'}</td>
           <td>${c.kcCxlOutcome || ''}</td>
-          <td class="no-print"><button type="button" class="btn-secondary btn-sm" onclick="openKcCxlModal('edit',${c.id})">Edit</button></td>
+          <td class="no-print"><button type="button" class="btn-secondary btn-sm" data-csp-action="openKcCxlModal" data-csp-args='["edit",${c.id}]'>Edit</button></td>
         </tr>`).join('');
       }
     }
@@ -285,10 +285,10 @@
     const linksEl = document.getElementById('kcModuleLinks');
     if (linksEl) {
       linksEl.innerHTML = `
-        <button type="button" class="btn-secondary btn-sm" onclick="CorneaKcCxl.openLinkedModule('scleral')"><i class="fa-solid fa-circle"></i> Scleral lens wizard</button>
-        <button type="button" class="btn-secondary btn-sm" onclick="CorneaKcCxl.openLinkedModule('laser')"><i class="fa-solid fa-bolt"></i> Laser refractive work-up</button>
-        <button type="button" class="btn-secondary btn-sm" onclick="CorneaKcCxl.openClinicalMedia('${global.escapeHtml?.(p.kcEmrPatientMrn) || ''}')"><i class="fa-solid fa-images"></i> Topography media</button>
-        <button type="button" class="btn-secondary btn-sm" onclick="CorneaKcCxl.importFromCurrentVisit()"><i class="fa-solid fa-file-import"></i> Import from visit laser module</button>`;
+        <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaKcCxl.openLinkedModule" data-csp-args='["scleral"]'><i class="fa-solid fa-circle"></i> Scleral lens wizard</button>
+        <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaKcCxl.openLinkedModule" data-csp-args='["laser"]'><i class="fa-solid fa-bolt"></i> Laser refractive work-up</button>
+        <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaKcCxl.openClinicalMedia" data-csp-args='${JSON.stringify([p.kcEmrPatientMrn || ""])}'><i class="fa-solid fa-images"></i> Topography media</button>
+        <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaKcCxl.importFromCurrentVisit" data-csp-args='[]'><i class="fa-solid fa-file-import"></i> Import from visit laser module</button>`;
     }
 
     if (global.CorneaClinicalMedia?.loadPatientTimeline && p.kcEmrPatientMrn) {

@@ -286,7 +286,7 @@
           <td>${patientLabel}</td>
           <td><span class="patient-id-badge">${actionLabel}</span></td>
           <td class="no-print">
-            <button type="button" class="btn-secondary btn-sm" onclick="document.getElementById('${detailId}').classList.toggle('is-open')">
+            <button type="button" class="btn-secondary btn-sm" data-csp-action="toggleElementClass" data-csp-args='${JSON.stringify([detailId, "is-open"])}'>
               <i class="fa-solid fa-eye"></i> Values
             </button>
           </td>

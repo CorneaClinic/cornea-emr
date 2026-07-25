@@ -104,8 +104,8 @@
       <td>${esc(a.station || '—')}</td>
       <td>${statusBadge(a.status)}</td>
       <td class="no-print">
-        <button type="button" class="btn-secondary btn-sm" onclick="CorneaAppointments.openEdit('${a.id || a.localId}')">Edit</button>
-        ${a.status !== 'completed' ? `<button type="button" class="btn-info btn-sm" onclick="CorneaAppointments.markArrived('${a.id || a.localId}')">Arrived</button>` : ''}
+        <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaAppointments.openEdit" data-csp-args='${JSON.stringify([a.id || a.localId])}'>Edit</button>
+        ${a.status !== 'completed' ? `<button type="button" class="btn-info btn-sm" data-csp-action="CorneaAppointments.markArrived" data-csp-args='${JSON.stringify([a.id || a.localId])}'>Arrived</button>` : ''}
       </td>
     </tr>`).join('');
   }
@@ -124,7 +124,7 @@
       <td>${esc(r.patientMrn || '—')}</td>
       <td>${esc(r.purpose || 'Follow-up')}</td>
       <td>${esc(r.severity || '—')}</td>
-      <td class="no-print"><button type="button" class="btn-primary btn-sm" onclick="CorneaAppointments.scheduleRecall(${i})">Schedule</button></td>
+      <td class="no-print"><button type="button" class="btn-primary btn-sm" data-csp-action="CorneaAppointments.scheduleRecall" data-csp-args='[${i}]'>Schedule</button></td>
     </tr>`).join('');
   }
 

@@ -15,6 +15,7 @@ const CRITICAL = [
   'js/ui.js',
   'js/dashboard.js',
   'js/csp-actions.js',
+  'js/csp-helpers.js',
   'cornea-section-access.js',
   'cornea-api-adapter.js',
   'cornea-admin-users.js',

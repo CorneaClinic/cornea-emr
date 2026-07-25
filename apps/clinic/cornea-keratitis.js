@@ -137,7 +137,7 @@
     body.innerHTML = rows.length ? rows.map((r) => `<tr class="${_selectedId === r.id ? 'row-selected' : ''}">
       <td>${esc(r.ukCaseId)}</td><td>${esc(r.ukFullName)}</td><td>${esc(r.ukEye)}</td>
       <td>${esc(r.ukEtiology)}</td><td>${esc(r.ukStatus)}</td><td>${esc(r.ukPresentationDate)}</td>
-      <td class="no-print"><button type="button" class="btn-secondary btn-sm" onclick="CorneaKeratitis.openCase(${r.id})">Open</button></td>
+      <td class="no-print"><button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaKeratitis.openCase" data-csp-args='[${r.id}]'>Open</button></td>
     </tr>`).join('') : '<tr><td colspan="7" class="text-muted">No ulcer cases yet.</td></tr>';
   }
 

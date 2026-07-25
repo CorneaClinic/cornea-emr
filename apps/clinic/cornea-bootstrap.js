@@ -33,6 +33,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.body.classList.remove('cornea-auth-pending');
             window.CorneaAuthEnv?.unlockUi?.();
         } else if (isPublic && !cloudOpen && !offlineOpen) {
+            // Only reopen if nothing is already prompting the user.
             console.warn('[Cornea] No auth UI visible — reopening cloud sign-in.');
             window.CorneaApiForceCloudSignIn?.();
         }

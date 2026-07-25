@@ -210,7 +210,7 @@
               <option value="">Send to…</option>
               ${routeOptions}
             </select>
-            <button type="button" class="btn-teal btn-sm" onclick="CorneaPatientFlow.sendPatient(${v.id})">
+            <button type="button" class="btn-teal btn-sm" data-csp-action="CorneaPatientFlow.sendPatient" data-csp-args='[${v.id}]'>
               <i class="fa-solid fa-arrow-right"></i> Send
             </button>
           </div>`
@@ -224,10 +224,10 @@
         <td>${escapeHtml(v.phone || '—')}</td>
         <td>${escapeHtml(formatWaitTime(v.flowCheckedInAt))} ${historyHint}</td>
         <td class="flow-actions">
-          <button type="button" class="btn-info btn-sm" onclick="viewRecordReadOnly(${v.id}, 'flow')">
+          <button type="button" class="btn-info btn-sm" data-csp-action="viewRecordReadOnly" data-csp-args='[${v.id},"flow"]'>
             <i class="fa-solid fa-eye"></i> View
           </button>
-          ${canEditClinicalRecord() ? `<button type="button" class="btn-secondary btn-sm" onclick="loadAndEditRecord(${v.id})">
+          ${canEditClinicalRecord() ? `<button type="button" class="btn-secondary btn-sm" data-csp-action="loadAndEditRecord" data-csp-args='[${v.id}]'>
             <i class="fa-solid fa-pen"></i> Edit
           </button>` : ''}
         </td>
@@ -271,7 +271,7 @@
         data-flow-station="${s.id}" role="tab"
         aria-selected="${i === 0 ? 'true' : 'false'}"
         aria-controls="flowPanel-${s.id}"
-        onclick="CorneaPatientFlow.switchStation('${s.id}')">
+        data-csp-action="CorneaPatientFlow.switchStation" data-csp-args='${JSON.stringify([s.id])}'>
         <i class="fa-solid ${s.icon}" aria-hidden="true"></i>
         ${escapeHtml(s.label)}
         <span class="flow-station-badge" id="flowBadge-${s.id}" hidden></span>
@@ -291,7 +291,7 @@
             </div>
             <div class="flow-panel-meta">
               <span class="flow-count-pill"><span id="flowCount-${s.id}">0</span> today</span>
-              <button type="button" class="btn-secondary btn-sm" onclick="CorneaPatientFlow.refresh()">
+              <button type="button" class="btn-secondary btn-sm" data-csp-action="CorneaPatientFlow.refresh" data-csp-args='[]'>
                 <i class="fa-solid fa-rotate"></i> Refresh
               </button>
             </div>

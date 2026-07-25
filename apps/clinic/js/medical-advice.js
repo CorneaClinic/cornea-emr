@@ -48,7 +48,7 @@ window.createMedicalAdviceRow = function(data = {}) {
             <textarea data-field="instruction" aria-label="Instruction" placeholder="e.g. 1 drop in affected eye"></textarea>
         </td>
         <td class="col-actions no-print">
-            <button type="button" class="btn-danger btn-sm btn-icon" onclick="removeMedicalAdviceRow(this)" title="Remove row" aria-label="Remove medication row">
+            <button type="button" class="btn-danger btn-sm btn-icon" data-csp-action="removeMedicalAdviceRow" data-csp-args='[{"__this":true}]' title="Remove row" aria-label="Remove medication row">
                 <i class="fa-solid fa-trash" aria-hidden="true"></i>
             </button>
         </td>

@@ -125,7 +125,7 @@
       <td>${esc(c.deSubtype || '—')}</td>
       <td>${esc(c.deStatus || 'Active')}</td>
       <td>${esc(c.deMrn || '—')}</td>
-      <td class="no-print"><button type="button" class="btn-link btn-sm" onclick="CorneaDryEye.selectCase(${c.id})">Open</button></td>
+      <td class="no-print"><button type="button" class="btn-link btn-sm" data-csp-action="CorneaDryEye.selectCase" data-csp-args='[${c.id}]'>Open</button></td>
     </tr>`).join('');
   }
 
