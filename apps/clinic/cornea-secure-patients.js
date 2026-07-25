@@ -7,6 +7,9 @@
   const MARKER = '_phiEnc';
   const STORE = typeof STORE_NAME !== 'undefined' ? STORE_NAME : 'patients';
 
+  /** @type {CryptoKey[]} */
+  let legacyKeys = [];
+
   function promisifyRequest(req) {
     return new Promise((resolve, reject) => {
       req.onsuccess = () => resolve(req.result);
@@ -60,7 +63,7 @@
     if (!stored) return stored;
     if (!stored[MARKER]) return stored;
     const { [MARKER]: enc, ...meta } = stored;
-    if (!global.CorneaIdbCrypto?.hasSessionKey?.()) {
+    if (!global.CorneaIdbCrypto?.hasSessionKey?.() && !legacyKeys.length) {
       return {
         ...meta,
         fullName: '[Locked]',
@@ -69,11 +72,33 @@
       };
     }
     try {
-      const sensitive = await global.CorneaIdbCrypto.decryptJson(enc);
-      return { ...meta, ...sensitive };
+      const result = await global.CorneaIdbCrypto.tryDecryptJsonWithFallbacks(enc, legacyKeys);
+      if (!result) {
+        return {
+          ...meta,
+          fullName: '[Decrypt error]',
+          patientId: meta.patientId || '—',
+          _locked: true,
+          _decryptError: true
+        };
+      }
+      const plain = { ...meta, ...result.data };
+      // Lazily re-wrap records that only opened with a legacy token-derived key.
+      if (result.usedLegacy && plain.id != null) {
+        queueMicrotask(() => {
+          put(plain).catch((err) => console.warn('[CorneaSecurePatients] rewrap failed', err));
+        });
+      }
+      return plain;
     } catch (err) {
       console.error('[CorneaSecurePatients] decrypt failed', err);
-      return { ...meta, fullName: '[Decrypt error]', _locked: true };
+      return {
+        ...meta,
+        fullName: '[Decrypt error]',
+        patientId: meta.patientId || '—',
+        _locked: true,
+        _decryptError: true
+      };
     }
   }
 
@@ -153,6 +178,101 @@
     return { migrated };
   }
 
+  /** Flatten GET /api/v1/visits/:id (nested) into the local IndexedDB visit shape. */
+  function visitApiToLegacy(visit, localRow) {
+    const patient = visit.patient && typeof visit.patient === 'object' ? visit.patient : {};
+    const payload = visit.payload && typeof visit.payload === 'object' ? visit.payload : {};
+    // Already-legacy sync payloads (from pull/serverState) are flat.
+    if (visit.fullName || visit.uuid) {
+      return {
+        ...visit,
+        id: localRow.id,
+        uuid: visit.uuid || visit.id || localRow.uuid,
+        patientId: visit.patientId || patient.mrn || localRow.patientId,
+        sync_status: 'synced',
+        revision: visit.revision ?? localRow.revision ?? 0
+      };
+    }
+    return {
+      ...payload,
+      id: localRow.id,
+      uuid: visit.id || localRow.uuid,
+      patientId: patient.mrn || localRow.patientId || '',
+      fullName: patient.fullName || '',
+      dob: patient.dob || '',
+      sex: patient.sex || '',
+      phone: patient.phone || '',
+      address: patient.address || '',
+      visitDate: visit.visitDate || localRow.visitDate || '',
+      revision: visit.revision ?? localRow.revision ?? 0,
+      sync_status: 'synced',
+      updated_at: visit.updatedAt || visit.updated_at || localRow.updated_at,
+      lastModified: visit.updatedAt || visit.updated_at || localRow.lastModified
+    };
+  }
+
+  async function fetchVisitForRecovery(apiFn, row) {
+    const uuid = row.uuid;
+    if (uuid) {
+      try {
+        const res = await apiFn(`/api/v1/visits/${encodeURIComponent(uuid)}`);
+        return res?.data || res;
+      } catch (err) {
+        console.warn('[CorneaSecurePatients] recover by uuid failed', uuid, err?.message || err);
+      }
+    }
+    const legacyId = row.id != null ? Number(row.id) : NaN;
+    if (!Number.isNaN(legacyId)) {
+      try {
+        const res = await apiFn(`/api/v1/visits/legacy/${legacyId}`);
+        return res?.data || res;
+      } catch (err) {
+        console.warn('[CorneaSecurePatients] recover by legacy id failed', legacyId, err?.message || err);
+      }
+    }
+    return null;
+  }
+
+  /**
+   * Recover records that fail local decrypt by re-pulling plaintext from cloud.
+   */
+  async function recoverFromCloud(apiFn) {
+    if (!global.db || typeof apiFn !== 'function') return { recovered: 0, failed: 0 };
+    const rows = await promisifyRequest(
+      global.db.transaction([STORE], 'readonly').objectStore(STORE).getAll()
+    );
+    let recovered = 0;
+    let failed = 0;
+    for (const row of rows || []) {
+      if (!row?.[MARKER]) continue;
+      const probe = await unwrapRecord(row);
+      if (!probe?._decryptError) continue;
+      try {
+        const visit = await fetchVisitForRecovery(apiFn, row);
+        if (!visit || typeof visit !== 'object') {
+          failed += 1;
+          continue;
+        }
+        const plain = visitApiToLegacy(visit, row);
+        delete plain._phiEnc;
+        delete plain._locked;
+        delete plain._decryptError;
+        delete plain.patient;
+        delete plain.payload;
+        await put(plain);
+        recovered += 1;
+      } catch (err) {
+        console.warn('[CorneaSecurePatients] cloud recover failed', row.uuid || row.id, err?.message || err);
+        failed += 1;
+      }
+    }
+    return { recovered, failed };
+  }
+
+  function setLegacyKeys(keys) {
+    legacyKeys = (keys || []).filter(Boolean);
+  }
+
   async function getAllByIndex(indexName, value) {
     if (!global.db) return [];
     const rows = await promisifyRequest(
@@ -178,6 +298,8 @@
     getAllByIndex,
     remove,
     forEachCursor,
-    migratePlainRecords
+    migratePlainRecords,
+    recoverFromCloud,
+    setLegacyKeys
   };
 })(typeof window !== 'undefined' ? window : globalThis);

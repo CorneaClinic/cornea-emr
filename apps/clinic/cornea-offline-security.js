@@ -97,10 +97,40 @@
     resetIdleTimer();
   }
 
-  async function unlockAfterCloudLogin(accessToken) {
-    await global.CorneaIdbCrypto.unlockWithCloudSession(accessToken, deviceId());
+  async function unlockAfterCloudLogin(accessToken, user) {
+    // Prefer any already-restored in-memory key as a legacy decrypt fallback.
+    // If memory is empty, try sessionStorage once before deriving the stable key
+    // (avoids overwriting a prior token-derived key that can still open old rows).
+    if (!global.CorneaIdbCrypto?.hasSessionKey?.()) {
+      await global.CorneaIdbCrypto?.restoreSessionKeyFromStorage?.();
+    }
+    const profile = user || global.__corneaUser || null;
+    const result = await global.CorneaIdbCrypto.unlockWithCloudSession(
+      accessToken,
+      deviceId(),
+      profile
+    );
+    if (result?.legacyKeys?.length) {
+      global.CorneaSecurePatients?.setLegacyKeys?.(result.legacyKeys);
+    } else if (result?.legacyKey) {
+      global.CorneaSecurePatients?.setLegacyKeys?.([result.legacyKey]);
+    }
     touchUnlockTime();
     await global.CorneaSecurePatients?.migratePlainRecords?.();
+    // Re-open rows encrypted under a prior key (rewrap to stable), then refill from cloud if needed.
+    try {
+      await global.CorneaSecurePatients?.getAll?.();
+    } catch (_) { /* ignore */ }
+    if (global.CorneaApi?.request) {
+      const recovered = await global.CorneaSecurePatients?.recoverFromCloud?.(
+        global.CorneaApi.request.bind(global.CorneaApi)
+      );
+      if (recovered?.recovered > 0) {
+        console.info('[CorneaOfflineSecurity] Recovered', recovered.recovered, 'visit(s) from cloud after key rotation');
+        global.loadRecords?.();
+        global.CorneaApi?.refreshRecordsList?.();
+      }
+    }
     resetIdleTimer();
   }
 
