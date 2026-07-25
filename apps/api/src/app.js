@@ -30,7 +30,11 @@ export function createApp() {
   app.use(cors({ origin: corsOrigins, credentials: true }));
   app.use(cookieParser());
   app.use((req, res, next) => {
-    const limit = req.path.startsWith('/api/v1/admin/migration') ? '50mb' : '1mb';
+    const limit = req.path.startsWith('/api/v1/admin/migration')
+      ? '50mb'
+      : req.path.startsWith('/api/v1/sync')
+        ? '10mb'
+        : '1mb';
     return express.json({ limit })(req, res, next);
   });
   app.use(pinoHttp({

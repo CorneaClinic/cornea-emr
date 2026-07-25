@@ -82,6 +82,7 @@
     onInboundChanges: null,
     api: null,
     draining: false,
+    drainAgain: false,
     pullInProgress: false,
     retryTimer: null,
     intervalTimer: null,
@@ -131,10 +132,16 @@
           await this.drainQueue();
         }
         const stats = await this.getQueueStats();
+        let lastError = this._lastDrainError || null;
+        if (!lastError && stats.pending > 0) {
+          const pending = await this.getPendingQueue();
+          lastError = pending.find((p) => p.last_error)?.last_error || null;
+        }
         return {
           ok: stats.pending === 0 && stats.failed === 0 && stats.conflicts === 0,
           pulled,
-          stats
+          stats,
+          error: lastError || undefined
         };
       } catch (err) {
         return { ok: false, error: err.message, stats: await this.getQueueStats().catch(() => ({})) };
@@ -441,6 +448,13 @@
     async markRecordConflict(entityType, localId) {
       const storeName = this.storeForEntity(entityType);
       if (!storeName || localId == null) return;
+      if (entityType === 'visit') {
+        const record = await patientsGet(localId);
+        if (!record) return;
+        record.sync_status = 'conflict';
+        await patientsPut(record);
+        return;
+      }
       const store = tx([storeName], 'readwrite').objectStore(storeName);
       const record = await promisifyRequest(store.get(localId));
       if (!record) return;
@@ -892,12 +906,71 @@
       }
     },
 
+    /** Drop oversized inline media so sync push stays under the API body limit. */
+    sanitizePushPayload(entityType, payload) {
+      if (!payload || typeof payload !== 'object') return payload;
+      const out = { ...payload };
+      delete out._phiEnc;
+      if (entityType === 'visit') {
+        const img = out.anteriorDrawingImage;
+        if (typeof img === 'string' && img.length > 80000) {
+          out.anteriorDrawingImage = '';
+          out._drawingImageDeferred = true;
+        }
+        // Keep annotation JSON; strip accidental binary blobs in visitMediaJSON if huge.
+        if (typeof out.visitMediaJSON === 'string' && out.visitMediaJSON.length > 200000) {
+          try {
+            const parsed = JSON.parse(out.visitMediaJSON);
+            if (Array.isArray(parsed)) {
+              out.visitMediaJSON = JSON.stringify(parsed.map((m) => {
+                if (!m || typeof m !== 'object') return m;
+                const copy = { ...m };
+                delete copy.dataUrl;
+                delete copy.blob;
+                return copy;
+              }));
+            }
+          } catch (_) { /* keep original */ }
+        }
+      }
+      return out;
+    },
+
+    async buildPushPayload(item) {
+      let payload = item.payload;
+      if (item.entity_type === 'visit' && item.local_id != null) {
+        try {
+          const live = await patientsGet(item.local_id);
+          if (live && !live._locked) {
+            payload = { ...live, id: item.local_id };
+          }
+        } catch (_) { /* use queued payload */ }
+      } else if (item.local_id != null) {
+        const storeName = this.storeForEntity(item.entity_type);
+        if (storeName) {
+          try {
+            const live = await promisifyRequest(
+              tx([storeName]).objectStore(storeName).get(item.local_id)
+            );
+            if (live) payload = { ...live, id: item.local_id };
+          } catch (_) { /* use queued payload */ }
+        }
+      }
+      return this.sanitizePushPayload(item.entity_type, payload);
+    },
+
     async drainQueue() {
-      if (!this.api || this.draining || global.navigator.onLine === false) return;
+      if (!this.api || global.navigator.onLine === false) return;
+      if (this.draining) {
+        this.drainAgain = true;
+        return;
+      }
       this.draining = true;
+      this.drainAgain = false;
 
       let newConflicts = 0;
       let pushedOk = 0;
+      let lastPushError = '';
 
       try {
         const pending = await this.getPendingQueue();
@@ -913,22 +986,30 @@
             if (item.operation !== 'upsert' || item.local_id == null) continue;
             const storeName = this.storeForEntity(item.entity_type);
             if (!storeName) continue;
-            const record = await promisifyRequest(
-              tx([storeName]).objectStore(storeName).get(item.local_id)
-            );
-            if (record?.revision != null) item.base_revision = record.revision;
-            if (record?.uuid) item.entity_id = record.uuid;
+            try {
+              const record = item.entity_type === 'visit'
+                ? await patientsGet(item.local_id)
+                : await promisifyRequest(tx([storeName]).objectStore(storeName).get(item.local_id));
+              if (record?.revision != null) item.base_revision = record.revision;
+              if (record?.uuid) item.entity_id = record.uuid;
+            } catch (_) { /* keep queued meta */ }
           }
 
-          const mutations = batch.map((item) => ({
-            mutationId: item.mutation_id,
-            entityType: item.entity_type,
-            operation: item.operation,
-            entityId: item.entity_id,
-            localId: item.local_id,
-            baseRevision: item.base_revision,
-            payload: item.payload
-          }));
+          const mutations = [];
+          for (const item of batch) {
+            const payload = item.operation === 'delete'
+              ? null
+              : await this.buildPushPayload(item);
+            mutations.push({
+              mutationId: item.mutation_id,
+              entityType: item.entity_type,
+              operation: item.operation,
+              entityId: item.entity_id,
+              localId: item.local_id,
+              baseRevision: item.base_revision,
+              payload
+            });
+          }
 
           const { data } = await this.api('/api/v1/sync/push', {
             method: 'POST',
@@ -938,7 +1019,13 @@
 
           const results = data?.results || [];
           if (!results.length && batch.length) {
-            await this.log('error', 'Push returned no results', { batchSize: batch.length });
+            lastPushError = 'Push returned no results from server';
+            await this.log('error', lastPushError, { batchSize: batch.length });
+            for (const item of batch) {
+              const attempts = (item.attempts || 0) + 1;
+              await this.markQueueError(item.mutation_id, lastPushError, attempts);
+            }
+            continue;
           }
 
           for (const result of results) {
@@ -954,27 +1041,28 @@
                 entityId: result.entityId
               });
             } else if (result.status === 'conflict') {
-              // Keep the local version on disk; flag the record and let the
-              // user decide (resolveConflict) instead of silently overwriting.
               await this.markQueueConflict(result.mutationId, result.details || result);
               await this.markRecordConflict(queueItem.entity_type, queueItem.local_id);
               newConflicts++;
             } else {
               const attempts = (queueItem.attempts || 0) + 1;
-              await this.markQueueError(result.mutationId, result.error || 'Push failed', attempts);
+              const errMsg = result.error || 'Push failed';
+              lastPushError = errMsg;
+              await this.markQueueError(result.mutationId, errMsg, attempts);
               if (attempts < MAX_ATTEMPTS) {
                 const backoff = BASE_RETRY_MS * Math.pow(2, Math.min(attempts, 5));
                 await this.log('warn', `Push retry scheduled in ${backoff}ms`, {
                   mutationId: result.mutationId,
-                  attempts
+                  attempts,
+                  error: errMsg
                 });
                 setTimeout(() => this.scheduleDrain(true), backoff);
               } else {
                 await this.log('error', 'Push failed permanently', {
                   mutationId: result.mutationId,
-                  error: result.error
+                  error: errMsg
                 });
-                this.notifyPushFailure(result.error || 'Push failed');
+                this.notifyPushFailure(errMsg);
               }
             }
           }
@@ -986,7 +1074,9 @@
         } else if (pushedOk > 0) {
           await this.pull();
         }
+        this._lastDrainError = lastPushError || null;
       } catch (err) {
+        this._lastDrainError = err.message;
         await this.log('error', 'Queue drain failed', { error: err.message });
         this.notifyPushFailure(err.message);
         const backoff = BASE_RETRY_MS * 2;
@@ -994,6 +1084,10 @@
       } finally {
         this.draining = false;
         this.updateSyncBadge();
+        if (this.drainAgain) {
+          this.drainAgain = false;
+          setTimeout(() => this.scheduleDrain(true), 50);
+        }
       }
     },
 

@@ -15,6 +15,7 @@ import { deletePatientIfOrphaned, purgeOrphanPatients } from './patientService.j
 import { resolveEmrPatientLink } from './patientIdentityService.js';
 
 const PULL_LIMIT_MAX = 500;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
 /**
  * @param {object} params
@@ -35,6 +36,13 @@ async function writeSyncLog({ clinicId, userId, deviceId, direction, level, mess
  * @param {Record<string, unknown>} demographics
  */
 async function upsertPatientRow(client, clinicId, demographics) {
+  let dob = demographics.dob || null;
+  if (dob === '' || dob === undefined) dob = null;
+  if (dob && String(dob) > new Date().toISOString().slice(0, 10)) {
+    dob = null;
+  }
+  const sex = demographics.sex || null;
+
   const { rows } = await client.query(
     `
       INSERT INTO patients (clinic_id, mrn, full_name, dob, sex, phone, address, national_id)
@@ -53,10 +61,10 @@ async function upsertPatientRow(client, clinicId, demographics) {
       clinicId,
       demographics.mrn,
       demographics.fullName,
-      demographics.dob,
-      demographics.sex,
-      demographics.phone,
-      demographics.address,
+      dob,
+      sex,
+      demographics.phone || null,
+      demographics.address || null,
       demographics.nationalId || null
     ]
   );
@@ -117,18 +125,25 @@ async function applyVisitMutation(client, clinicId, userId, mutation) {
   const demographics = extractPatientFromPayload(payload);
   const patient = await upsertPatientRow(client, clinicId, demographics);
   const clinicalPayload = stripPatientFromPayload(payload);
-  const visitDate = payload.visitDate || new Date().toISOString().slice(0, 10);
+  let visitDate = String(payload.visitDate || '').trim() || new Date().toISOString().slice(0, 10);
+  // Avoid CHECK visits_visit_date_not_future when client clock is ahead of DB.
+  const todayUtc = new Date().toISOString().slice(0, 10);
+  if (visitDate > todayUtc) visitDate = todayUtc;
   const legacyLocalId = localId != null ? Number(localId) : (payload.id != null ? Number(payload.id) : null);
+  const clientUuid = entityId && UUID_RE.test(String(entityId)) ? String(entityId) : null;
 
   let existing = null;
-  if (entityId) {
+  if (clientUuid) {
     const byUuid = await client.query(
       `SELECT * FROM visits WHERE id = $1 AND clinic_id = $2`,
-      [entityId, clinicId]
+      [clientUuid, clinicId]
     );
     existing = byUuid.rows[0];
   }
-  if (!existing && legacyLocalId != null) {
+  // Only match by legacy local id when the client has no UUID (old offline rows).
+  // Matching by legacy alone after an IndexedDB reset wrongly attaches to another visit
+  // and causes revision conflicts / unique violations.
+  if (!existing && !clientUuid && legacyLocalId != null && !Number.isNaN(legacyLocalId)) {
     const byLegacy = await client.query(
       `SELECT * FROM visits WHERE clinic_id = $1 AND legacy_local_id = $2`,
       [clinicId, legacyLocalId]
@@ -174,6 +189,15 @@ async function applyVisitMutation(client, clinicId, userId, mutation) {
     visitRow = updated.rows[0];
   } else {
     let resolvedLegacyId = legacyLocalId;
+    if (resolvedLegacyId != null && !Number.isNaN(resolvedLegacyId)) {
+      const taken = await client.query(
+        `SELECT id FROM visits WHERE clinic_id = $1 AND legacy_local_id = $2`,
+        [clinicId, resolvedLegacyId]
+      );
+      if (taken.rows[0]) {
+        resolvedLegacyId = null;
+      }
+    }
     if (resolvedLegacyId == null || Number.isNaN(resolvedLegacyId)) {
       const maxRes = await client.query(
         `SELECT COALESCE(MAX(legacy_local_id), 0) + 1 AS next_id FROM visits WHERE clinic_id = $1`,
@@ -182,17 +206,29 @@ async function applyVisitMutation(client, clinicId, userId, mutation) {
       resolvedLegacyId = maxRes.rows[0].next_id;
     }
 
-    const inserted = await client.query(
-      `
-        INSERT INTO visits (
-          clinic_id, patient_id, visit_date, status, payload,
-          legacy_local_id, created_by, updated_by
-        )
-        VALUES ($1, $2, $3, 'finalized', $4, $5, $6, $6)
-        RETURNING *
-      `,
-      [clinicId, patient.id, visitDate, clinicalPayload, resolvedLegacyId, userId]
-    );
+    const inserted = clientUuid
+      ? await client.query(
+        `
+          INSERT INTO visits (
+            id, clinic_id, patient_id, visit_date, status, payload,
+            legacy_local_id, created_by, updated_by
+          )
+          VALUES ($1, $2, $3, $4, 'finalized', $5, $6, $7, $7)
+          RETURNING *
+        `,
+        [clientUuid, clinicId, patient.id, visitDate, clinicalPayload, resolvedLegacyId, userId]
+      )
+      : await client.query(
+        `
+          INSERT INTO visits (
+            clinic_id, patient_id, visit_date, status, payload,
+            legacy_local_id, created_by, updated_by
+          )
+          VALUES ($1, $2, $3, 'finalized', $4, $5, $6, $6)
+          RETURNING *
+        `,
+        [clinicId, patient.id, visitDate, clinicalPayload, resolvedLegacyId, userId]
+      );
     visitRow = inserted.rows[0];
   }
 
@@ -680,10 +716,19 @@ export async function pushMutations(req, body) {
         continue;
       }
 
+      let message = err.message || 'Push failed';
+      if (err.code === '23505') {
+        message = 'A matching patient or visit already exists on the server (unique constraint). Try Sync again.';
+      } else if (err.code === '23514') {
+        message = 'Visit data failed a database rule (often visit date or date of birth). Check the visit date is not in the future.';
+      } else if (err.code === '22P02') {
+        message = 'Visit data has an invalid date or number format.';
+      }
+
       results.push({
         mutationId,
         status: 'error',
-        error: err.message || 'Push failed'
+        error: message
       });
     }
   }
