@@ -21,7 +21,11 @@
   const META_KEYS = ['uuid', 'patientId', 'visitDate', 'sync_status', 'revision', 'client_mutation_id', 'updated_at', 'lastModified'];
 
   function splitRecord(record) {
-    const meta = { id: record.id };
+    const meta = {};
+    // Never write id: undefined — IndexedDB keyPath + autoIncrement rejects it (DataError).
+    if (record.id != null && record.id !== '' && !Number.isNaN(Number(record.id))) {
+      meta.id = typeof record.id === 'number' ? record.id : Number(record.id);
+    }
     const sensitive = {};
     for (const [k, v] of Object.entries(record)) {
       if (k === 'id' || k === MARKER) continue;
@@ -31,8 +35,20 @@
     return { meta, sensitive };
   }
 
+  /** Strip invalid primary keys so autoIncrement can assign a new id. */
+  function sanitizePrimaryKey(record) {
+    if (!record || typeof record !== 'object') return record;
+    if (record.id == null || record.id === '' || Number.isNaN(Number(record.id))) {
+      delete record.id;
+    } else if (typeof record.id !== 'number') {
+      record.id = Number(record.id);
+    }
+    return record;
+  }
+
   async function wrapRecord(record) {
     if (!record || record[MARKER]) return record;
+    sanitizePrimaryKey(record);
     if (!global.CorneaIdbCrypto?.hasSessionKey?.()) return record;
     const { meta, sensitive } = splitRecord(record);
     if (!Object.keys(sensitive).length) return record;
@@ -71,6 +87,7 @@
 
   async function put(record) {
     if (!global.db) throw new Error('Database not ready');
+    sanitizePrimaryKey(record);
     const wrapped = await wrapRecord(record);
     const id = await promisifyRequest(
       global.db.transaction([STORE], 'readwrite').objectStore(STORE).put(wrapped)
@@ -153,6 +170,7 @@
     STORE,
     wrapRecord,
     unwrapRecord,
+    sanitizePrimaryKey,
     isPlainPhi,
     get,
     put,

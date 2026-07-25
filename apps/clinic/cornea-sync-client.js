@@ -583,6 +583,12 @@
     },
 
     async saveVisitLocal(data) {
+      if (data && (data.id == null || data.id === '' || Number.isNaN(Number(data.id)))) {
+        delete data.id;
+      } else if (data && typeof data.id !== 'number') {
+        data.id = Number(data.id);
+      }
+
       let existing = null;
       if (data?.id != null) {
         existing = await patientsGet(data.id);
