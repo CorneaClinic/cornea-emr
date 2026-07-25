@@ -20,14 +20,28 @@
 
   const META_KEYS = ['uuid', 'patientId', 'visitDate', 'sync_status', 'revision', 'client_mutation_id', 'updated_at', 'lastModified'];
 
-  /** IndexedDB autoIncrement only runs when keyPath is absent/undefined — not null/NaN. */
+  /**
+   * IndexedDB autoIncrement only runs when keyPath is absent.
+   * Explicit undefined/null/NaN/"" throws DataError on put().
+   */
+  function normalizeInlineKey(id) {
+    if (typeof id === 'number' && Number.isFinite(id)) return id;
+    if (typeof id === 'string' && id.trim() !== '') {
+      const n = Number(id);
+      if (Number.isFinite(n) && String(n) === id.trim()) return n;
+    }
+    return undefined;
+  }
+
   function isValidInlineKey(id) {
-    return typeof id === 'number' && Number.isFinite(id);
+    return normalizeInlineKey(id) !== undefined;
   }
 
   function stripInvalidInlineKey(record) {
     if (!record || typeof record !== 'object') return record;
-    if (!isValidInlineKey(record.id)) delete record.id;
+    const normalized = normalizeInlineKey(record.id);
+    if (normalized === undefined) delete record.id;
+    else record.id = normalized;
     return record;
   }
 
@@ -169,6 +183,8 @@
   global.CorneaSecurePatients = {
     MARKER,
     STORE,
+    /** Bumped when new-visit IndexedDB key sanitization shipped (verify after deploy). */
+    VERSION: 2,
     wrapRecord,
     unwrapRecord,
     isPlainPhi,
