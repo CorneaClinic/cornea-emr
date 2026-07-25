@@ -68,6 +68,7 @@
     "audit:final": "node scripts/run-final-go-live-audit.mjs",
     "test:unit": "npm test --prefix apps/api",
     "test:topography-import": "node apps/clinic/tests/topography-import.test.mjs",
+    "test:secure-patients-idb": "node apps/clinic/tests/secure-patients-idb-key.test.mjs",
     "test:api-live": "npm run verify:api --prefix apps/api",
     "test:api-sync": "npm run verify:sync --prefix apps/api",
     "test:sync-matrix": "npm run verify:sync-matrix --prefix apps/api",
@@ -96,6 +97,7 @@
   "devDependencies": {
     "@playwright/test": "^1.52.0",
     "docx": "^9.7.1",
+    "fake-indexeddb": "^6.2.5",
     "wrangler": "^4.100.0"
   }
 }

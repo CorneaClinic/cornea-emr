@@ -20,8 +20,35 @@
 
   const META_KEYS = ['uuid', 'patientId', 'visitDate', 'sync_status', 'revision', 'client_mutation_id', 'updated_at', 'lastModified'];
 
+  /**
+   * IndexedDB autoIncrement only runs when keyPath is absent.
+   * Explicit undefined/null/NaN/"" throws DataError on put().
+   */
+  function normalizeInlineKey(id) {
+    if (typeof id === 'number' && Number.isFinite(id)) return id;
+    if (typeof id === 'string' && id.trim() !== '') {
+      const n = Number(id);
+      if (Number.isFinite(n) && String(n) === id.trim()) return n;
+    }
+    return undefined;
+  }
+
+  function isValidInlineKey(id) {
+    return normalizeInlineKey(id) !== undefined;
+  }
+
+  function stripInvalidInlineKey(record) {
+    if (!record || typeof record !== 'object') return record;
+    const normalized = normalizeInlineKey(record.id);
+    if (normalized === undefined) delete record.id;
+    else record.id = normalized;
+    return record;
+  }
+
   function splitRecord(record) {
-    const meta = { id: record.id };
+    // Never set id: undefined/null — IDB treats an explicit invalid keyPath as DataError.
+    const meta = {};
+    if (isValidInlineKey(record.id)) meta.id = record.id;
     const sensitive = {};
     for (const [k, v] of Object.entries(record)) {
       if (k === 'id' || k === MARKER) continue;
@@ -35,7 +62,7 @@
     if (!record || record[MARKER]) return record;
     if (!global.CorneaIdbCrypto?.hasSessionKey?.()) return record;
     const { meta, sensitive } = splitRecord(record);
-    if (!Object.keys(sensitive).length) return record;
+    if (!Object.keys(sensitive).length) return stripInvalidInlineKey({ ...record });
     const payload = await global.CorneaIdbCrypto.encryptJson(sensitive);
     return { ...meta, [MARKER]: payload };
   }
@@ -71,11 +98,16 @@
 
   async function put(record) {
     if (!global.db) throw new Error('Database not ready');
+    stripInvalidInlineKey(record);
     const wrapped = await wrapRecord(record);
     const id = await promisifyRequest(
       global.db.transaction([STORE], 'readwrite').objectStore(STORE).put(wrapped)
     );
-    return typeof id === 'number' ? id : record.id;
+    if (typeof id === 'number') {
+      record.id = id;
+      return id;
+    }
+    return record.id;
   }
 
   async function getAll() {
@@ -151,6 +183,8 @@
   global.CorneaSecurePatients = {
     MARKER,
     STORE,
+    /** Bumped when new-visit IndexedDB key sanitization shipped (verify after deploy). */
+    VERSION: 2,
     wrapRecord,
     unwrapRecord,
     isPlainPhi,

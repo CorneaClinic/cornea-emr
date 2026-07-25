@@ -72,6 +72,10 @@ window.saveToDatabase = async function() {
         const parsed = parseInt(String(currentId), 10);
         if (!Number.isNaN(parsed)) data.id = parsed;
     }
+    // New visits must omit id so IndexedDB autoIncrement can assign a key.
+    if (typeof data.id !== 'number' || !Number.isFinite(data.id)) {
+        delete data.id;
+    }
     delete data.currentRecordId;
     delete data.currentRecordUuid;
 
