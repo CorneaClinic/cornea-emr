@@ -579,7 +579,10 @@
     });
     data.lastModified = new Date().toISOString();
     const currentId = document.getElementById('currentRecordId')?.value;
-    if (currentId) data.id = parseInt(currentId, 10);
+    if (currentId) {
+      const parsed = parseInt(currentId, 10);
+      if (!Number.isNaN(parsed)) data.id = parsed;
+    }
     const uuid = document.getElementById('currentRecordUuid')?.value;
     if (uuid) data.uuid = uuid;
     return data;
@@ -1007,6 +1010,10 @@
               const parsed = parseInt(String(currentId), 10);
               if (!Number.isNaN(parsed)) data.id = parsed;
             }
+          }
+          // New visits must omit id so IndexedDB autoIncrement can assign a key.
+          if (typeof data.id !== 'number' || !Number.isFinite(data.id)) {
+            delete data.id;
           }
           if (!data.uuid) {
             const uuidVal = document.getElementById('currentRecordUuid')?.value?.trim();

@@ -583,6 +583,11 @@
     },
 
     async saveVisitLocal(data) {
+      // AutoIncrement stores reject explicit null/undefined/NaN keyPath values.
+      if (data && (typeof data.id !== 'number' || !Number.isFinite(data.id))) {
+        delete data.id;
+      }
+
       let existing = null;
       if (data?.id != null) {
         existing = await patientsGet(data.id);
