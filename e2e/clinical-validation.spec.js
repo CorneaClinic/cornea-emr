@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { clickSidebarNav } from './helpers.js';
 import { signInStaging, stagingCredentials } from './staging-helpers.js';
 
 const { email: STAGING_EMAIL, password: STAGING_PASSWORD } = stagingCredentials();
@@ -28,18 +29,18 @@ test.describe('Clinical validation — workflow tabs', () => {
 
   for (const wf of WORKFLOW_TABS) {
     test(`${wf.id} ${wf.name} tab opens`, async ({ page }) => {
-      await page.locator(wf.nav).click();
+      await clickSidebarNav(page, wf.nav);
       await expect(page.locator(wf.panel)).toHaveClass(/active/, { timeout: 15_000 });
     });
   }
 
   test('printing controls present on patient form', async ({ page }) => {
-    await page.locator('#nav-formTab').click();
+    await clickSidebarNav(page, '#nav-formTab');
     await expect(page.locator('button:has-text("Print")').first()).toBeVisible({ timeout: 15_000 });
   });
 
   test('contact lens and scleral sections exist in visit form', async ({ page }) => {
-    await page.locator('#nav-formTab').click();
+    await clickSidebarNav(page, '#nav-formTab');
     await expect(page.locator('#btnToggleContactLens')).toBeVisible();
     await page.locator('#btnToggleContactLens').click();
     await expect(page.locator('#section-contact-lens')).toBeVisible();

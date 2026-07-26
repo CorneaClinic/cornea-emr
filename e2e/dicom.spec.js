@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import crypto from 'crypto';
-import { apiLogin, authHeaders, loadCredentials, signInCloud, waitForCloudRegistryMode } from './helpers.js';
+import { apiLogin, authHeaders, loadCredentials, signInCloud, openClinicalMediaTab, waitForCloudRegistryMode } from './helpers.js';
 import { buildMinimalDicomBuffer } from './fixtures/minimal-dicom.js';
 
 const DEVICE_ID = 'playwright-e2e-dicom';
@@ -110,8 +110,7 @@ test.describe('DICOM ingest UI (Phase 4 P6)', () => {
   test('clinical media tab shows DICOM import entry point', async ({ page }) => {
     await signInCloud(page);
     await waitForCloudRegistryMode(page);
-    await page.locator('#nav-clinicalMediaTab').click();
-    await expect(page.locator('#clinicalMediaTab')).toHaveClass(/active/);
+    await openClinicalMediaTab(page);
     await expect(page.getByRole('button', { name: /Import DICOM/i })).toBeVisible();
   });
 });

@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { waitForInstituteKpis } from './helpers.js';
+import { waitForInstituteKpis, clickSidebarNav } from './helpers.js';
 import { signInStaging, stagingCredentials } from './staging-helpers.js';
 
 const { email: STAGING_EMAIL, password: STAGING_PASSWORD } = stagingCredentials();
@@ -46,7 +46,7 @@ test.describe('Staging live smoke', () => {
 
   test('appointments schedule tab opens (Phase 4 P5)', async ({ page }) => {
     await signInStaging(page);
-    await page.locator('#nav-appointmentsTab').click();
+    await clickSidebarNav(page, '#nav-appointmentsTab');
     await expect(page.locator('#appointmentsTab')).toHaveClass(/active/, { timeout: 15_000 });
     await expect(page.locator('#apptSchedulePanel')).toHaveClass(/active/);
   });

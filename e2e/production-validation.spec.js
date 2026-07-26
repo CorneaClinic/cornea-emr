@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { clickSidebarNav } from './helpers.js';
 import { signInStaging, stagingCredentials } from './staging-helpers.js';
 
 const { email: STAGING_EMAIL, password: STAGING_PASSWORD } = stagingCredentials();
@@ -16,8 +17,8 @@ test.describe('Production validation — desktop', () => {
 
   test('New Visit opens patient form modal (regression)', async ({ page }) => {
     await signInStaging(page);
-    await page.locator('#nav-patientTab').click();
-    await expect(page.locator('#patientTab')).toHaveClass(/active/, { timeout: 15_000 });
+    await clickSidebarNav(page, '#nav-formTab');
+    await expect(page.locator('#formTab')).toHaveClass(/active/, { timeout: 15_000 });
 
     await page.locator('button:has-text("New Visit")').first().click();
     const modal = page.locator('#emrPatientModal');
@@ -30,9 +31,9 @@ test.describe('Production validation — desktop', () => {
     page.on('pageerror', (err) => pageErrors.push(String(err)));
 
     await signInStaging(page);
-    const tabs = ['#nav-dashboardTab', '#nav-patientTab', '#nav-appointmentsTab'];
+    const tabs = ['#nav-dashboardTab', '#nav-formTab', '#nav-appointmentsTab'];
     for (const sel of tabs) {
-      await page.locator(sel).click();
+      await clickSidebarNav(page, sel);
       await page.waitForTimeout(500);
     }
 

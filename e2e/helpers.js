@@ -76,22 +76,76 @@ export async function signInCloud(page) {
   return { elapsed, creds };
 }
 
+/**
+ * Expand the parent sidebar accordion (if any), then click a nav item.
+ * Accordion panels use `hidden` when collapsed — Playwright cannot click them otherwise.
+ * @param {import('@playwright/test').Page} page
+ * @param {string} selector CSS selector for the nav button (e.g. '#nav-keratoplastyTab')
+ */
+export async function clickSidebarNav(page, selector) {
+  await page.evaluate((sel) => {
+    const el = document.querySelector(sel);
+    if (!el) return;
+    const parent = el.getAttribute('data-nav-parent');
+    if (!parent) return;
+    const accordion = document.querySelector(`.nav-accordion[data-nav-section="${parent}"]`);
+    if (!accordion || accordion.classList.contains('is-open')) return;
+    if (typeof window.toggleNavSection === 'function') {
+      window.toggleNavSection(parent);
+    } else if (window.CorneaSidebarNav?.expandForTab) {
+      const tabId = el.getAttribute('data-tab') || el.getAttribute('aria-controls');
+      if (tabId) window.CorneaSidebarNav.expandForTab(tabId);
+    } else {
+      accordion.classList.add('is-open');
+      const toggle = accordion.querySelector('.nav-accordion-toggle');
+      const panel = accordion.querySelector('.nav-accordion-panel');
+      if (toggle) toggle.setAttribute('aria-expanded', 'true');
+      if (panel) panel.hidden = false;
+    }
+  }, selector);
+
+  const loc = page.locator(selector).first();
+  await expect(loc).toBeVisible({ timeout: 15_000 });
+  await loc.click();
+}
+
 export async function openKeratoplastyTab(page) {
-  await page.locator('#nav-keratoplastyTab').click();
+  await clickSidebarNav(page, '#nav-keratoplastyTab');
   const tab = page.locator('#keratoplastyTab');
   await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
   await expect(tab).toHaveAttribute('aria-hidden', 'false');
 }
 
 export async function openKcRegistryTab(page) {
-  await page.locator('#nav-kcRegistryTab').click();
+  await clickSidebarNav(page, '#nav-kcRegistryTab');
   const tab = page.locator('#kcRegistryTab');
   await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
   await expect(tab).toHaveAttribute('aria-hidden', 'false');
 }
 
+export async function openDryEyeTab(page) {
+  await clickSidebarNav(page, '#nav-dryEyeTab');
+  const tab = page.locator('#dryEyeTab');
+  await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
+  await expect(tab).toHaveAttribute('aria-hidden', 'false');
+}
+
+export async function openResearchTab(page) {
+  await clickSidebarNav(page, '#nav-researchTab');
+  const tab = page.locator('#researchTab');
+  await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
+  await expect(tab).toHaveAttribute('aria-hidden', 'false');
+}
+
+export async function openClinicalMediaTab(page) {
+  await clickSidebarNav(page, '#nav-clinicalMediaTab');
+  const tab = page.locator('#clinicalMediaTab');
+  await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
+  await expect(tab).toHaveAttribute('aria-hidden', 'false');
+}
+
 export async function openAppointmentsSchedule(page) {
-  await page.locator('#nav-appointmentsTab').click();
+  await clickSidebarNav(page, '#nav-appointmentsTab');
   const tab = page.locator('#appointmentsTab');
   await expect(tab).toHaveClass(/active/, { timeout: 15_000 });
   await expect(page.locator('#apptSchedulePanel')).toHaveClass(/active/);

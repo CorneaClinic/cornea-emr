@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { signInCloud, waitForCloudRegistryMode } from './helpers.js';
+import { signInCloud, openResearchTab, waitForCloudRegistryMode } from './helpers.js';
 
 test.describe('Research offline summaries (Phase 4 P2)', () => {
   test('live overview caches then offline shows cached badge', async ({ page }) => {
@@ -11,8 +11,7 @@ test.describe('Research offline summaries (Phase 4 P2)', () => {
       (r) => r.url().includes('/api/v1/research-analytics/overview') && r.ok(),
       { timeout: 30_000 }
     );
-    await page.locator('#nav-researchTab').click();
-    await expect(page.locator('#researchTab')).toHaveClass(/active/);
+    await openResearchTab(page);
     await overviewResponse;
     await expect(badge).toContainText(/Live institute data from cloud/i, { timeout: 25_000 });
 

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import {
   signInCloud,
   openKcRegistryTab,
+  openDryEyeTab,
   openAppointmentsSchedule,
   setRegistryOffline,
   waitForCloudRegistryMode
@@ -31,8 +32,7 @@ test.describe('Registry offline policy (M2.2 / M2.4)', () => {
   test('dry eye: offline blocks saves; reconnect restores controls (M2.4)', async ({ page }) => {
     await signInCloud(page);
     await waitForCloudRegistryMode(page);
-    await page.locator('#nav-dryEyeTab').click();
-    await expect(page.locator('#dryEyeTab')).toHaveClass(/active/);
+    await openDryEyeTab(page);
     await page.locator('[data-de-panel="deCasesPanel"]').click();
     await expect(page.locator('#deCasesPanel')).toHaveClass(/active/);
 

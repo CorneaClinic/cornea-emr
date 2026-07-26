@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { apiLogin, authHeaders, signInCloud, openAppointmentsSchedule, waitForCloudRegistryMode } from './helpers.js';
+import { apiLogin, authHeaders, signInCloud, openAppointmentsSchedule, openDryEyeTab, waitForCloudRegistryMode } from './helpers.js';
 
 const DEVICE_ID = 'playwright-e2e-p7';
 
@@ -134,8 +134,7 @@ test.describe('P7 clinical modules UI', () => {
   test('dry eye tab loads after cloud sign-in', async ({ page }) => {
     await signInCloud(page);
     await waitForCloudRegistryMode(page);
-    await page.locator('#nav-dryEyeTab').click();
-    await expect(page.locator('#dryEyeTab')).toHaveClass(/active/);
+    await openDryEyeTab(page);
     await expect(page.locator('#deOverviewPanel')).toHaveClass(/active/);
     await expect(page.locator('#deStatTotal')).toBeVisible();
   });
