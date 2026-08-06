@@ -82,7 +82,10 @@ function resolveDatabaseSsl(databaseUrl) {
   if (optional('DATABASE_SSL', '').toLowerCase() === 'false') return undefined;
 
   const urlWantsSsl = /[?&]sslmode=(require|verify-full|verify-ca|prefer)/i.test(databaseUrl);
-  const managedCloud = /ondigitalocean\.com/i.test(databaseUrl);
+  const managedCloud =
+    /ondigitalocean\.com/i.test(databaseUrl) ||
+    /neon\.tech/i.test(databaseUrl) ||
+    /\.supabase\.co/i.test(databaseUrl);
   const useSsl = optional('DATABASE_SSL', '').toLowerCase() === 'true' || urlWantsSsl || managedCloud;
 
   if (!useSsl) return undefined;

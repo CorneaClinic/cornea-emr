@@ -5,7 +5,7 @@
   'use strict';
 
   const STORAGE_BASE = 'corneaEmr_apiBase';
-  const DEFAULT_API_BASE = 'https://corneaclinic-2zfpt.ondigitalocean.app';
+  const DEFAULT_API_BASE = 'https://cornea-emr-api.visionemr-somtec.workers.dev';
   const LEGACY_API_BASE = 'https://api.visionemr.net';
   const API_CANDIDATES = [DEFAULT_API_BASE, LEGACY_API_BASE];
 

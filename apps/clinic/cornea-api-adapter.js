@@ -8,9 +8,9 @@
   const STORAGE_TOKEN = 'corneaEmr_apiToken';
   const STORAGE_BASE = 'corneaEmr_apiBase';
   const STORAGE_EMAIL = 'corneaEmr_apiEmail';
-  /** Primary production API (DigitalOcean App Platform). */
-  const DEFAULT_API_BASE = 'https://corneaclinic-2zfpt.ondigitalocean.app';
-  /** Custom domain — used when Cloudflare routing is healthy. */
+  /** Primary API — Cloudflare Containers Worker (fresh stack). */
+  const DEFAULT_API_BASE = 'https://cornea-emr-api.visionemr-somtec.workers.dev';
+  /** Optional custom domain once DNS is wired. */
   const LEGACY_API_BASE = 'https://api.visionemr.net';
   const API_CANDIDATES = [DEFAULT_API_BASE, LEGACY_API_BASE];
   const STORE_PATIENTS = 'patients';

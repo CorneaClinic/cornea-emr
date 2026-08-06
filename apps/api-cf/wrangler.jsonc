@@ -1,0 +1,45 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "cornea-emr-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "preview_urls": true,
+  "containers": [
+    {
+      "class_name": "CorneaApiContainer",
+      "image": "../api/Dockerfile",
+      "max_instances": 3
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "class_name": "CorneaApiContainer",
+        "name": "API_CONTAINER"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["CorneaApiContainer"]
+    }
+  ],
+  "vars": {
+    "CORS_ORIGIN": "https://corneaclinic.visionemr.net,http://127.0.0.1:8080",
+    "CLINIC_PUBLIC_URL": "https://corneaclinic.visionemr.net",
+    "APP_PUBLIC_URL": "https://cornea-emr-api.visionemr-somtec.workers.dev",
+    "MEDIA_STORAGE_PROVIDER": "s3",
+    "MEDIA_S3_BUCKET": "cornea-emr-media",
+    "MEDIA_S3_ENDPOINT": "https://f2c41820d69631f2365f03a76922e190.r2.cloudflarestorage.com",
+    "MEDIA_S3_REGION": "auto",
+    "MEDIA_S3_FORCE_PATH_STYLE": "true",
+    "AUTH_COOKIE_SECURE": "true",
+    "AUTH_COOKIE_SAME_SITE": "none",
+    "AUTH_EXPOSE_REFRESH_IN_BODY": "false",
+    "DB_CONNECTION_TIMEOUT_MS": "90000"
+  }
+}

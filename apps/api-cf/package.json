@@ -1,0 +1,18 @@
+{
+  "name": "@cornea-emr/api-cf",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Cloudflare Worker + Container gateway for Cornea EMR API (fresh stack)",
+  "type": "module",
+  "scripts": {
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "tail": "wrangler tail"
+  },
+  "dependencies": {
+    "@cloudflare/containers": "^0.0.28"
+  },
+  "devDependencies": {
+    "wrangler": "^4.100.0"
+  }
+}

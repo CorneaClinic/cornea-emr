@@ -7,13 +7,13 @@ const CLINIC_CONNECT_SRC = [
   "'self'",
   'http://127.0.0.1:*',
   'http://localhost:*',
-  'https://corneaclinic-2zfpt.ondigitalocean.app',
+  'https://cornea-emr-api.visionemr-somtec.workers.dev',
   'https://api.visionemr.net'
 ];
 
 const PRODUCTION_CONNECT_SRC = [
   "'self'",
-  'https://corneaclinic-2zfpt.ondigitalocean.app',
+  'https://cornea-emr-api.visionemr-somtec.workers.dev',
   'https://api.visionemr.net'
 ];
 

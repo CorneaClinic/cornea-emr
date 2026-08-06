@@ -2,7 +2,7 @@
       const STORAGE_TOKEN = 'corneaEmr_apiToken';
       const STORAGE_BASE = 'corneaEmr_apiBase';
       const STORAGE_EMAIL = 'corneaEmr_apiEmail';
-      const DEFAULT_API_BASE = 'https://corneaclinic-2zfpt.ondigitalocean.app';
+      const DEFAULT_API_BASE = 'https://cornea-emr-api.visionemr-somtec.workers.dev';
 
       const panel = document.getElementById('panel');
       const params = new URLSearchParams(location.search);

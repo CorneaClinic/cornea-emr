@@ -1,0 +1,43 @@
+# Deploy clinic UI (Cloudflare Workers + Assets) on push to main.
+# Stage 1 polish for DO → Cloudflare migration — does not touch DigitalOcean API/DB/Spaces.
+name: Deploy Clinic
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/clinic/**'
+      - 'wrangler.toml'
+      - 'scripts/check-clinic-assets.mjs'
+      - '.github/workflows/deploy-clinic.yml'
+      - 'package.json'
+      - 'package-lock.json'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - name: Install root dependencies
+        run: npm ci
+      - name: Deploy clinic Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "::error::Set repository secret CLOUDFLARE_API_TOKEN (Workers Scripts Edit + Account Read)."
+            exit 1
+          fi
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "::warning::CLOUDFLARE_ACCOUNT_ID secret unset — wrangler may still resolve via token."
+          fi
+          npm run deploy:clinic
