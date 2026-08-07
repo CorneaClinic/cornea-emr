@@ -1,0 +1,56 @@
+# Render Blueprint — Express API (alternative to Cloudflare Containers / DigitalOcean)
+# Dashboard: New → Blueprint → connect CorneaClinic/cornea-emr
+# https://render.com/docs/blueprint-spec
+#
+# Prefer Railway if you need always-on (Render free tier sleeps). Use paid Render Starter for prod.
+
+services:
+  - type: web
+    name: cornea-emr-api
+    runtime: docker
+    plan: starter
+    region: oregon
+    rootDir: apps/api
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health/live
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: "3000"
+      - key: AUTH_COOKIE_SECURE
+        value: "true"
+      - key: AUTH_COOKIE_SAME_SITE
+        value: none
+      - key: AUTH_EXPOSE_REFRESH_IN_BODY
+        value: "false"
+      - key: CORS_ORIGIN
+        value: https://corneaclinic.visionemr.net,http://127.0.0.1:8080
+      - key: CLINIC_PUBLIC_URL
+        value: https://corneaclinic.visionemr.net
+      - key: MEDIA_STORAGE_PROVIDER
+        value: s3
+      - key: MEDIA_S3_BUCKET
+        value: cornea-emr-media
+      - key: MEDIA_S3_ENDPOINT
+        value: https://f2c41820d69631f2365f03a76922e190.r2.cloudflarestorage.com
+      - key: MEDIA_S3_REGION
+        value: auto
+      - key: MEDIA_S3_FORCE_PATH_STYLE
+        value: "true"
+      - key: DB_CONNECTION_TIMEOUT_MS
+        value: "90000"
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SECRETS_ENCRYPTION_KEY
+        sync: false
+      - key: APP_PUBLIC_URL
+        sync: false
+      - key: MEDIA_S3_ACCESS_KEY_ID
+        sync: false
+      - key: MEDIA_S3_SECRET_ACCESS_KEY
+        sync: false

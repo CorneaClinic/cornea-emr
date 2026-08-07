@@ -19,14 +19,14 @@
 
 ## Path forward (greenfield)
 
-1. Create empty Postgres (Neon) → `CF_DATABASE_URL`
-2. R2 bucket `cornea-emr-media` ✅ already created
-3. Deploy `apps/api-cf` via **Deploy API (Cloudflare)** GitHub Action
-4. Seed admin → deploy clinic (`DEFAULT_API_BASE` already points at workers.dev)
+Cloudflare Containers need **Workers Paid** (payment blocked). Host the API on **Railway** (or Render/VPS) instead — see [API_DEPLOY_RAILWAY.md](./API_DEPLOY_RAILWAY.md).
 
-DO unlock is optional cleanup only — not required for EMR to come back.
+1. Neon Postgres ✅ empty schema + admin seed  
+2. R2 bucket `cornea-emr-media` ✅  
+3. Deploy Express API on Railway from `apps/api`  
+4. Point clinic `DEFAULT_API_BASE` at Railway URL → `npm run deploy:clinic`
 
-For the older “rescue PHI from DO” plan, see git history of this file; it is no longer the active plan.
+DO unlock / CF Paid are optional later.
 
 ---
 

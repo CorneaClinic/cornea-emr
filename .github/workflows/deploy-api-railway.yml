@@ -1,0 +1,57 @@
+# Deploy Express API to Railway (no Cloudflare Containers).
+name: Deploy API (Railway)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/deploy-api-railway.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Require Railway credentials
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: |
+          if [ -z "$RAILWAY_TOKEN" ] || [ -z "$RAILWAY_SERVICE_ID" ]; then
+            echo "::error::Set RAILWAY_TOKEN and RAILWAY_SERVICE_ID — see docs/API_DEPLOY_RAILWAY.md"
+            exit 1
+          fi
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy apps/api
+        working-directory: apps/api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ secrets.RAILWAY_SERVICE_ID }}
+        run: railway up --service "$RAILWAY_SERVICE_ID" --detach
+
+      - name: Smoke (optional URL secret)
+        env:
+          RAILWAY_PUBLIC_URL: ${{ secrets.RAILWAY_PUBLIC_URL }}
+        run: |
+          if [ -z "$RAILWAY_PUBLIC_URL" ]; then
+            echo "RAILWAY_PUBLIC_URL not set — skip smoke"
+            exit 0
+          fi
+          url="${RAILWAY_PUBLIC_URL%/}/health/live"
+          echo "GET $url"
+          for i in 1 2 3 4 5 6; do
+            code=$(curl -sS -o /tmp/health.json -w "%{http_code}" "$url" || echo "000")
+            echo "attempt $i → HTTP $code"
+            if [ "$code" = "200" ]; then cat /tmp/health.json; exit 0; fi
+            sleep 10
+          done
+          echo "::warning::Health not 200 yet"
+          exit 0
