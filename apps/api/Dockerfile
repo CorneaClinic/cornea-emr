@@ -16,4 +16,5 @@ EXPOSE 3000
 USER node
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
   CMD node -e "fetch('http://127.0.0.1:3000/health/live').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
-ENTRYPOINT ["./docker-entrypoint.sh"]
+# Use /bin/sh explicitly so CRLF shebang issues cannot break startup on Railway
+ENTRYPOINT ["/bin/sh", "/app/docker-entrypoint.sh"]
