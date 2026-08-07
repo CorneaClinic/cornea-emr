@@ -8,8 +8,8 @@
   const STORAGE_TOKEN = 'corneaEmr_apiToken';
   const STORAGE_BASE = 'corneaEmr_apiBase';
   const STORAGE_EMAIL = 'corneaEmr_apiEmail';
-  /** Primary API — Cloudflare Containers Worker (fresh stack). */
-  const DEFAULT_API_BASE = 'https://cornea-emr-api.visionemr-somtec.workers.dev';
+  /** Primary API — Railway (Express + Neon). */
+  const DEFAULT_API_BASE = 'https://cornea-emr-api-production.up.railway.app';
   /** Optional custom domain once DNS is wired. */
   const LEGACY_API_BASE = 'https://api.visionemr.net';
   const API_CANDIDATES = [DEFAULT_API_BASE, LEGACY_API_BASE];

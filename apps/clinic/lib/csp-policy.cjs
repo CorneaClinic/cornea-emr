@@ -7,7 +7,7 @@ const CLINIC_CONNECT_SRC = [
   "'self'",
   'http://127.0.0.1:*',
   'http://localhost:*',
-  'https://cornea-emr-api.visionemr-somtec.workers.dev',
+  'https://cornea-emr-api-production.up.railway.app',
   'https://api.visionemr.net',
   'https://*.up.railway.app',
   'https://*.onrender.com'
@@ -15,7 +15,7 @@ const CLINIC_CONNECT_SRC = [
 
 const PRODUCTION_CONNECT_SRC = [
   "'self'",
-  'https://cornea-emr-api.visionemr-somtec.workers.dev',
+  'https://cornea-emr-api-production.up.railway.app',
   'https://api.visionemr.net',
   'https://*.up.railway.app',
   'https://*.onrender.com'
